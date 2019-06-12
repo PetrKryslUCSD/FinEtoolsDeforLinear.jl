@@ -1,6 +1,7 @@
 module distorted_block_infsup_examples
 using FinEtools
-using FinEtools.AlgoDeforLinearModule
+using FinEtoolsDeforLinear
+using FinEtoolsDeforLinear.AlgoDeforLinearModule
 using FinEtools.MeshExportModule
 using FinEtools.FEMMDeforLinearBaseModule: infsup_gh, infsup_sh
 using Test
@@ -28,7 +29,7 @@ function distorted_block_infsup_T10()
 			fens.xyz[i,:] = fens.xyz[i,:] + vec(reshape(fens.xyz[i,:], 1, 3)*A);
 		end
 		# @show fens.xyz
-	
+
 		# File =  "minfsuptest1.vtk"
 		# vtkexportmesh(File, fens, fes)
 		# try rm(File); catch end
@@ -37,7 +38,7 @@ function distorted_block_infsup_T10()
 
 		material = MatDeforElastIso(MR, E, nu)
 
-		
+
 		geom = NodalField(fens.xyz)
 		u = NodalField(zeros(size(fens.xyz,1), 3)) # displacement field
 		bfes = meshboundary(fes)
@@ -77,7 +78,7 @@ function distorted_block_infsup_T10()
 	@show lambdamin
 	a = lineplot(log.(h), log.(lambdamin), name = "infsup", xlabel = "log(Element Size)", ylabel = "log(minimum eigenvalue)", canvas = DotCanvas)
 	display(a)
-	
+
 	# @test norm(lambdamin - [0.262065, 0.1709, 0.126159, 0.100228, 0.0828139]) / norm(lambdamin) <= 1.0e-4
 
 end
@@ -102,7 +103,7 @@ function distorted_block_infsup_T4()
 			fens.xyz[i,:] = fens.xyz[i,:] + vec(reshape(fens.xyz[i,:], 1, 3)*A);
 		end
 		# @show fens.xyz
-	
+
 		# File =  "minfsuptest1.vtk"
 		# vtkexportmesh(File, fens, fes)
 		# try rm(File); catch end
@@ -111,7 +112,7 @@ function distorted_block_infsup_T4()
 
 		material = MatDeforElastIso(MR, E, nu)
 
-		
+
 		geom = NodalField(fens.xyz)
 		u = NodalField(zeros(size(fens.xyz,1), 3)) # displacement field
 		bfes = meshboundary(fes)
@@ -151,7 +152,7 @@ function distorted_block_infsup_T4()
 	@show lambdamin
 	a = lineplot(log.(h), log.(lambdamin), name = "infsup", xlabel = "log(Element Size)", ylabel = "log(minimum eigenvalue)", canvas = DotCanvas)
 	display(a)
-	
+
 	# @test norm(lambdamin - [0.262065, 0.1709, 0.126159, 0.100228, 0.0828139]) / norm(lambdamin) <= 1.0e-4
 
 end
@@ -176,7 +177,7 @@ function distorted_block_infsup_H8()
 			fens.xyz[i,:] = fens.xyz[i,:] + vec(reshape(fens.xyz[i,:], 1, 3)*A);
 		end
 		# @show fens.xyz
-	
+
 		# File =  "minfsuptest1.vtk"
 		# vtkexportmesh(File, fens, fes)
 		# try rm(File); catch end
@@ -185,7 +186,7 @@ function distorted_block_infsup_H8()
 
 		material = MatDeforElastIso(MR, E, nu)
 
-		
+
 		geom = NodalField(fens.xyz)
 		u = NodalField(zeros(size(fens.xyz,1), 3)) # displacement field
 		bfes = meshboundary(fes)
@@ -225,7 +226,7 @@ function distorted_block_infsup_H8()
 	@show lambdamin
 	a = lineplot(log.(h), log.(lambdamin), name = "infsup", xlabel = "log(Element Size)", ylabel = "log(minimum eigenvalue)", canvas = DotCanvas)
 	display(a)
-	
+
 	# @test norm(lambdamin - [0.262065, 0.1709, 0.126159, 0.100228, 0.0828139]) / norm(lambdamin) <= 1.0e-4
 
 end
@@ -250,7 +251,7 @@ function distorted_block_infsup_H20()
 			fens.xyz[i,:] = fens.xyz[i,:] + vec(reshape(fens.xyz[i,:], 1, 3)*A);
 		end
 		# @show fens.xyz
-	
+
 		# File =  "minfsuptest1.vtk"
 		# vtkexportmesh(File, fens, fes)
 		# try rm(File); catch end
@@ -259,7 +260,7 @@ function distorted_block_infsup_H20()
 
 		material = MatDeforElastIso(MR, E, nu)
 
-		
+
 		geom = NodalField(fens.xyz)
 		u = NodalField(zeros(size(fens.xyz,1), 3)) # displacement field
 		bfes = meshboundary(fes)
@@ -299,22 +300,22 @@ function distorted_block_infsup_H20()
 	@show lambdamin
 	a = lineplot(log.(h), log.(lambdamin), name = "infsup", xlabel = "log(Element Size)", ylabel = "log(minimum eigenvalue)", canvas = DotCanvas)
 	display(a)
-	
+
 	# @test norm(lambdamin - [0.262065, 0.1709, 0.126159, 0.100228, 0.0828139]) / norm(lambdamin) <= 1.0e-4
 
 end
 
 function allrun()
-    println("#####################################################") 
+    println("#####################################################")
     println("# distorted_block_infsup_T4 ")
     distorted_block_infsup_T4()
-    println("#####################################################") 
+    println("#####################################################")
     println("# distorted_block_infsup_H8 ")
     distorted_block_infsup_H8()
-    println("#####################################################") 
+    println("#####################################################")
     println("# distorted_block_infsup_T10 ")
     distorted_block_infsup_T10()
-    println("#####################################################") 
+    println("#####################################################")
     println("# distorted_block_infsup_H20 ")
     distorted_block_infsup_H20()
     return true

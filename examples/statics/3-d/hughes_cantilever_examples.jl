@@ -1,7 +1,9 @@
 module hughes_cantilever_examples
 using FinEtools
+using FinEtoolsDeforLinear
+using FinEtoolsDeforLinear.AlgoDeforLinearModule
 using FinEtools.AlgoBaseModule: evalconvergencestudy
-using FinEtools.AlgoDeforLinearModule: linearstatics, exportstresselementwise, exportstress
+using FinEtoolsDeforLinear.AlgoDeforLinearModule: linearstatics, exportstresselementwise, exportstress
 using Statistics: mean
 using LinearAlgebra: Symmetric, cholesky
 
@@ -34,14 +36,14 @@ function evaluateerrors(filebase, modeldatasequence)
         md["targetfields"] = [e["field"] for e in md["postprocessing"]["exported"]]
     end
     elementsizes, errornorms, p = evalconvergencestudy(modeldatasequence)
-    
+
     println("Normalized Approximate Error = $(errornorms)")
-    
+
     f = log.(vec(errornorms))
     A = hcat(log.(vec(elementsizes[1:end-1])), ones(size(f)))
     p = A \ f
     println("Linear log-log fit: p = $(p)")
-    
+
     csvFile = filebase * "_Stress" * ".CSV"
     savecsv(csvFile,
     elementsizes=vec(elementsizes[1:end-1]),
@@ -50,21 +52,21 @@ function evaluateerrors(filebase, modeldatasequence)
     errornorms=vec(errornorms)
     )
     println("Wrote $csvFile")
-    
+
     println("")
     println("Displacement RMS error")
     for md = modeldatasequence
         md["targetfields"] = [md["u"] for r in md["regions"]]
     end
     elementsizes, errornorms, p = evalconvergencestudy(modeldatasequence)
-    
+
     println("Normalized Approximate Error = $(errornorms)")
-    
+
     f = log.(vec(errornorms))
     A = hcat(log.(vec(elementsizes[1:end-1])), ones(size(f)))
     p = A \ f
     println("Linear log-log fit: p = $(p)")
-    
+
     csvFile = filebase * "_Displ" * ".CSV"
     savecsv(csvFile,
     elementsizes=vec(elementsizes[1:end-1]),
@@ -87,7 +89,7 @@ function hughes_cantilever_stresses_H8_by_hand()
     exactuy(x,y) = (P/(6*E1*I)*(((L-x)^3-L^3)-((4+5*nu1)*c^2+3*L^2)*(L-x-L)+3*nu1*(L-x)*y^2));
 
     n = 2 #
-        
+
     nL = 3*n # number of elements lengthwise
     nc = 2*n # number of elements through the depth
     nh = 1 # number of elements through the thickness
@@ -101,22 +103,22 @@ function hughes_cantilever_stresses_H8_by_hand()
     sshearL = selectelem(fens, bfes; facing=true, direction = [+1.0 0.0 0.0])
     # 0 cross-section surface  for the reactions
     sshear0 = selectelem(fens, bfes; facing=true, direction = [-1.0 0.0 0.0])
-    
+
     MR = DeforModelRed3D
     material = MatDeforElastIso(MR, 0.0, E, nu, CTE)
-    
+
     # Material orientation matrix
     csmat = [i==j ? one(FFlt) : zero(FFlt) for i=1:3, j=1:3]
-    
+
     function updatecs!(csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, fe_label::FInt)
         copyto!(csmatout, csmat)
     end
-        
+
     femm = FEMMDeforLinear(MR, IntegDomain(fes, GaussRule(3, 2)), material)
-    
+
     geom = NodalField(fens.xyz)
     u = NodalField(zeros(size(fens.xyz,1), 3)) # displacement field
-    
+
     lx0 = selectnode(fens, box=[0.0 0.0 0.0 0.0 0.0 0.0], inflate=tolerance)
     setebc!(u,lx0,true,1,0.0)
     setebc!(u,lx0,true,2,0.0)
@@ -143,7 +145,7 @@ function hughes_cantilever_stresses_H8_by_hand()
     K = cholesky(K)
     U = K\(F1 + F2)
     scattersysvec!(u,U[:])
-    
+
     Tipl = selectnode(fens, box=[L L 0.0 0.0 0. 0.], inflate=tolerance)
     utip = mean(u.values[Tipl, 3])
     println("Deflection: $(utip), compared to $(exactuy(L,0.0))")
@@ -153,15 +155,15 @@ function hughes_cantilever_stresses_H8_by_hand()
     @async run(`"paraview.exe" $File`)
     # modeldata["postprocessing"] = FDataDict("file"=>"hughes_cantilever_stresses_$(elementtag)", "outputcsys"=>CSys(3, 3, updatecs!), "quantity"=>:Cauchy, "component"=>[5])
     # modeldata = exportstresselementwise(modeldata)
-    
+
     # modeldata["postprocessing"] = FDataDict("file"=>"hughes_cantilever_stresses_$(elementtag)",
     # "outputcsys"=>CSys(3, 3, updatecs!), "quantity"=>:Cauchy,
     # "component"=>collect(1:6))
     # modeldata = exportstresselementwise(modeldata)
     # stressfields = ElementalField[modeldata["postprocessing"]["exported"][1]["field"]]
-    
+
     true
-    
+
 end # hughes_cantilever_stresses_H8_by_hand
 
 function hughes_cantilever_stresses_H20_by_hand()
@@ -176,7 +178,7 @@ function hughes_cantilever_stresses_H20_by_hand()
     exactuy(x,y) = (P/(6*E1*I)*(((L-x)^3-L^3)-((4+5*nu1)*c^2+3*L^2)*(L-x-L)+3*nu1*(L-x)*y^2));
 
     n = 8 #
-        
+
     nL = 3*n # number of elements lengthwise
     nc = 2*n # number of elements through the depth
     nh = 1 # number of elements through the thickness
@@ -190,22 +192,22 @@ function hughes_cantilever_stresses_H20_by_hand()
     sshearL = selectelem(fens, bfes; facing=true, direction = [+1.0 0.0 0.0])
     # 0 cross-section surface  for the reactions
     sshear0 = selectelem(fens, bfes; facing=true, direction = [-1.0 0.0 0.0])
-    
+
     MR = DeforModelRed3D
     material = MatDeforElastIso(MR, 0.0, E, nu, CTE)
-    
+
     # Material orientation matrix
     csmat = [i==j ? one(FFlt) : zero(FFlt) for i=1:3, j=1:3]
-    
+
     function updatecs!(csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, fe_label::FInt)
         copyto!(csmatout, csmat)
     end
-        
+
     femm = FEMMDeforLinear(MR, IntegDomain(fes, GaussRule(3, 2)), material)
-    
+
     geom = NodalField(fens.xyz)
     u = NodalField(zeros(size(fens.xyz,1), 3)) # displacement field
-    
+
     lx0 = selectnode(fens, box=[0.0 0.0 0.0 0.0 0.0 0.0], inflate=tolerance)
     setebc!(u,lx0,true,1,0.0)
     setebc!(u,lx0,true,2,0.0)
@@ -233,7 +235,7 @@ function hughes_cantilever_stresses_H20_by_hand()
     K = cholesky(K)
     U = K\(F1 + F2)
     scattersysvec!(u,U[:])
-    
+
     Tipl = selectnode(fens, box=[L L 0.0 0.0 0. 0.], inflate=tolerance)
     utip = mean(u.values[Tipl, 3])
     println("Deflection: $(utip), compared to $(exactuy(L,0.0))")
@@ -243,15 +245,15 @@ function hughes_cantilever_stresses_H20_by_hand()
     @async run(`"paraview.exe" $File`)
     # modeldata["postprocessing"] = FDataDict("file"=>"hughes_cantilever_stresses_$(elementtag)", "outputcsys"=>CSys(3, 3, updatecs!), "quantity"=>:Cauchy, "component"=>[5])
     # modeldata = exportstresselementwise(modeldata)
-    
+
     # modeldata["postprocessing"] = FDataDict("file"=>"hughes_cantilever_stresses_$(elementtag)",
     # "outputcsys"=>CSys(3, 3, updatecs!), "quantity"=>:Cauchy,
     # "component"=>collect(1:6))
     # modeldata = exportstresselementwise(modeldata)
     # stressfields = ElementalField[modeldata["postprocessing"]["exported"][1]["field"]]
-    
+
     true
-    
+
 end # hughes_cantilever_stresses_MST10
 
 function hughes_cantilever_stresses_T10_by_hand()
@@ -266,7 +268,7 @@ function hughes_cantilever_stresses_T10_by_hand()
     exactuy(x,y) = (P/(6*E1*I)*(((L-x)^3-L^3)-((4+5*nu1)*c^2+3*L^2)*(L-x-L)+3*nu1*(L-x)*y^2));
 
     n = 2 #
-        
+
     nL = 3*n # number of elements lengthwise
     nc = 2*n # number of elements through the depth
     nh = n # number of elements through the thickness
@@ -279,24 +281,24 @@ function hughes_cantilever_stresses_T10_by_hand()
     sshearL = selectelem(fens, bfes; facing=true, direction = [+1.0 0.0 0.0])
     # 0 cross-section surface  for the reactions
     sshear0 = selectelem(fens, bfes; facing=true, direction = [-1.0 0.0 0.0])
-    
+
     MR = DeforModelRed3D
     material = MatDeforElastIso(MR, 0.0, E, nu, CTE)
-    
+
     # Material orientation matrix
     csmat = [i==j ? one(FFlt) : zero(FFlt) for i=1:3, j=1:3]
-    
+
     function updatecs!(csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, fe_label::FInt)
         copyto!(csmatout, csmat)
     end
-        
+
     gr = SimplexRule(3, 4)
-    
+
     femm = FEMMDeforLinear(MR, IntegDomain(fes, gr), material)
-    
+
     geom = NodalField(fens.xyz)
     u = NodalField(zeros(size(fens.xyz,1), 3)) # displacement field
-    
+
     lx0 = selectnode(fens, box=[0.0 0.0 0.0 0.0 0.0 0.0], inflate=tolerance)
     setebc!(u,lx0,true,1,0.0)
     setebc!(u,lx0,true,2,0.0)
@@ -310,7 +312,7 @@ function hughes_cantilever_stresses_T10_by_hand()
     applyebc!(u)
     numberdofs!(u)
 
-    
+
     fi = ForceIntensity(FFlt, 3, getfrc0!);
     el1femm = FEMMBase(IntegDomain(subset(bfes, sshear0), SimplexRule(2, 3)))
     F1 = distribloads(el1femm, geom, u, fi, 2);
@@ -323,7 +325,7 @@ function hughes_cantilever_stresses_T10_by_hand()
     K=cholesky(K)
     U = K\(F1 + F2)
     scattersysvec!(u,U[:])
-    
+
     Tipl = selectnode(fens, box=[L L 0.0 0.0 0. 0.], inflate=tolerance)
     utip = mean(u.values[Tipl, 3])
     println("Deflection: $(utip), compared to $(exactuy(L,0.0))")
@@ -333,15 +335,15 @@ function hughes_cantilever_stresses_T10_by_hand()
     @async run(`"paraview.exe" $File`)
     # modeldata["postprocessing"] = FDataDict("file"=>"hughes_cantilever_stresses_$(elementtag)", "outputcsys"=>CSys(3, 3, updatecs!), "quantity"=>:Cauchy, "component"=>[5])
     # modeldata = exportstresselementwise(modeldata)
-    
+
     # modeldata["postprocessing"] = FDataDict("file"=>"hughes_cantilever_stresses_$(elementtag)",
     # "outputcsys"=>CSys(3, 3, updatecs!), "quantity"=>:Cauchy,
     # "component"=>collect(1:6))
     # modeldata = exportstresselementwise(modeldata)
     # stressfields = ElementalField[modeldata["postprocessing"]["exported"][1]["field"]]
-    
+
     true
-    
+
 end # hughes_cantilever_stresses_MST10
 
 function hughes_cantilever_stresses_MST10_by_hand()
@@ -356,7 +358,7 @@ function hughes_cantilever_stresses_MST10_by_hand()
     exactuy(x,y) = (P/(6*E1*I)*(((L-x)^3-L^3)-((4+5*nu1)*c^2+3*L^2)*(L-x-L)+3*nu1*(L-x)*y^2));
 
     n = 2 #
-        
+
     nL = 3*n # number of elements lengthwise
     nc = 2*n # number of elements through the depth
     nh = n # number of elements through the thickness
@@ -369,24 +371,24 @@ function hughes_cantilever_stresses_MST10_by_hand()
     sshearL = selectelem(fens, bfes; facing=true, direction = [+1.0 0.0 0.0])
     # 0 cross-section surface  for the reactions
     sshear0 = selectelem(fens, bfes; facing=true, direction = [-1.0 0.0 0.0])
-    
+
     MR = DeforModelRed3D
     material = MatDeforElastIso(MR, 0.0, E, nu, CTE)
-    
+
     # Material orientation matrix
     csmat = [i==j ? one(FFlt) : zero(FFlt) for i=1:3, j=1:3]
-    
+
     function updatecs!(csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, fe_label::FInt)
         copyto!(csmatout, csmat)
     end
-        
+
     gr = SimplexRule(3, 4)
-    
+
     femm = FEMMDeforLinearMST10(MR, IntegDomain(fes, gr), material)
-    
+
     geom = NodalField(fens.xyz)
     u = NodalField(zeros(size(fens.xyz,1), 3)) # displacement field
-    
+
     lx0 = selectnode(fens, box=[0.0 0.0 0.0 0.0 0.0 0.0], inflate=tolerance)
     setebc!(u,lx0,true,1,0.0)
     setebc!(u,lx0,true,2,0.0)
@@ -400,7 +402,7 @@ function hughes_cantilever_stresses_MST10_by_hand()
     applyebc!(u)
     numberdofs!(u)
 
-    
+
     fi = ForceIntensity(FFlt, 3, getfrc0!);
     el1femm = FEMMBase(IntegDomain(subset(bfes, sshear0), SimplexRule(2, 3)))
     F1 = distribloads(el1femm, geom, u, fi, 2);
@@ -413,22 +415,22 @@ function hughes_cantilever_stresses_MST10_by_hand()
     K=cholesky(K)
     U=  K\(F1 + F2)
     scattersysvec!(u,U[:])
-    
+
     Tipl = selectnode(fens, box=[L L 0.0 0.0 0. 0.], inflate=tolerance)
     utip = mean(u.values[Tipl, 3])
     println("Deflection: $(utip), compared to $(exactuy(L,0.0))")
-    
+
     # modeldata["postprocessing"] = FDataDict("file"=>"hughes_cantilever_stresses_$(elementtag)", "outputcsys"=>CSys(3, 3, updatecs!), "quantity"=>:Cauchy, "component"=>[5])
     # modeldata = exportstresselementwise(modeldata)
-    
+
     # modeldata["postprocessing"] = FDataDict("file"=>"hughes_cantilever_stresses_$(elementtag)",
     # "outputcsys"=>CSys(3, 3, updatecs!), "quantity"=>:Cauchy,
     # "component"=>collect(1:6))
     # modeldata = exportstresselementwise(modeldata)
     # stressfields = ElementalField[modeldata["postprocessing"]["exported"][1]["field"]]
-    
+
     true
-    
+
 end # hughes_cantilever_stresses_MST10
 
 function hughes_cantilever_stresses_MST10()
@@ -444,7 +446,7 @@ function hughes_cantilever_stresses_MST10()
 
     modeldatasequence = FDataDict[]
     for n = [1 2 4 8] #
-        
+
         nL = 3*n # number of elements lengthwise
         nc = 2*n # number of elements through the depth
         nh = n # number of elements through the thickness
@@ -457,21 +459,21 @@ function hughes_cantilever_stresses_MST10()
         sshearL = selectelem(fens, bfes; facing=true, direction = [+1.0 0.0 0.0])
         # 0 cross-section surface  for the reactions
         sshear0 = selectelem(fens, bfes; facing=true, direction = [-1.0 0.0 0.0])
-        
+
         MR = DeforModelRed3D
         material = MatDeforElastIso(MR, 0.0, E, nu, CTE)
-        
+
         # Material orientation matrix
         csmat = [i==j ? one(FFlt) : zero(FFlt) for i=1:3, j=1:3]
-        
+
         function updatecs!(csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, fe_label::FInt)
             copyto!(csmatout, csmat)
         end
-        
+
         gr = SimplexRule(3, 4)
-        
+
         region = FDataDict("femm"=>FEMMDeforLinearMST10(MR, IntegDomain(fes, gr), material))
-        
+
         lx0 = selectnode(fens, box=[0.0 0.0 0.0 0.0 0.0 0.0], inflate=tolerance)
         # println("lx0 = $(lx0)")
         ex01 = FDataDict( "displacement"=>  0.0, "component"=> 1, "node_list"=>lx0 )
@@ -485,10 +487,10 @@ function hughes_cantilever_stresses_MST10()
         ly2 = selectnode(fens, box=[-Inf Inf h h -Inf Inf], inflate=tolerance)
         # println("vcat(ly1, ly2) = $(vcat(ly1, ly2))")
         ey01 = FDataDict( "displacement"=>  0.0, "component"=> 2, "node_list"=>vcat(ly1, ly2) )
-        
+
         Trac0 = FDataDict("traction_vector"=>getfrc0!, "femm"=>FEMMBase(IntegDomain(subset(bfes, sshear0), SimplexRule(2, 3))))
         TracL = FDataDict("traction_vector"=>getfrcL!, "femm"=>FEMMBase(IntegDomain(subset(bfes, sshearL), SimplexRule(2, 3))))
-        
+
         modeldata = FDataDict("fens"=>fens,
         "regions"=>[region],
         "essential_bcs"=>[ex01, ex02, ex03, ex04, ey01],
@@ -496,33 +498,33 @@ function hughes_cantilever_stresses_MST10()
         "temperature_change"=>FDataDict("temperature"=>0.0)
         )
         modeldata = linearstatics(modeldata)
-        
+
         u = modeldata["u"]
         geom = modeldata["geom"]
-        
+
         Tipl = selectnode(fens, box=[L L 0.0 0.0 0. 0.], inflate=tolerance)
         utip = mean(u.values[Tipl, 3])
         println("Deflection: $(utip), compared to $(exactuy(L,0.0))")
-        
+
         modeldata["postprocessing"] = FDataDict("file"=>"hughes_cantilever_stresses_$(elementtag)", "outputcsys"=>CSys(3, 3, updatecs!), "quantity"=>:Cauchy, "component"=>[5])
         modeldata = exportstresselementwise(modeldata)
-        
+
         modeldata["postprocessing"] = FDataDict("file"=>"hughes_cantilever_stresses_$(elementtag)",
         "outputcsys"=>CSys(3, 3, updatecs!), "quantity"=>:Cauchy,
         "component"=>collect(1:6))
         modeldata = exportstresselementwise(modeldata)
         stressfields = ElementalField[modeldata["postprocessing"]["exported"][1]["field"]]
-        
+
         modeldata["geometricaltolerance"] = tolerance
         modeldata["elementsize"] = 1.0 / n
         push!(modeldatasequence, modeldata)
     end
-    
+
     filebase = "hughes_cantilever_stresses_$(elementtag)"
     evaluateerrors(filebase, modeldatasequence)
-    
+
     true
-    
+
 end # hughes_cantilever_stresses_MST10
 
 
@@ -539,7 +541,7 @@ function hughes_cantilever_stresses_MST10_incompressible()
 
     modeldatasequence = FDataDict[]
     for n = [1 2 4 8] #
-        
+
         nL = 3*n # number of elements lengthwise
         nc = 2*n # number of elements through the wwith
         nh = n # number of elements through the thickness
@@ -552,22 +554,22 @@ function hughes_cantilever_stresses_MST10_incompressible()
         sshearL = selectelem(fens, bfes; facing=true, direction = [+1.0 0.0 0.0])
         # 0 cross-section surface  for the reactions
         sshear0 = selectelem(fens, bfes; facing=true, direction = [-1.0 0.0 0.0])
-        
+
         MR = DeforModelRed3D
         material = MatDeforElastIso(MR,  0.0, E, nu, CTE)
-        
+
         # Material orientation matrix
         csmat = [i==j ? one(FFlt) : zero(FFlt) for i=1:3, j=1:3]
-        
+
         function updatecs!(csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, fe_label::FInt)
             copyto!(csmatout, csmat)
         end
-        
+
         gr = SimplexRule(3, 4)
-        
+
         region = FDataDict("femm"=>FEMMDeforLinearMST10(MR,
         IntegDomain(fes, gr), material))
-        
+
         lx0 = selectnode(fens, box=[0.0 0.0 0.0 0.0 0.0 0.0], inflate=tolerance)
         # println("lx0 = $(lx0)")
         ex01 = FDataDict( "displacement"=>  0.0, "component"=> 1, "node_list"=>lx0 )
@@ -581,12 +583,12 @@ function hughes_cantilever_stresses_MST10_incompressible()
         ly2 = selectnode(fens, box=[-Inf Inf h h -Inf Inf], inflate=tolerance)
         # println("vcat(ly1, ly2) = $(vcat(ly1, ly2))")
         ey01 = FDataDict( "displacement"=>  0.0, "component"=> 2, "node_list"=>vcat(ly1, ly2) )
-        
+
         Trac0 = FDataDict("traction_vector"=>getfrc0!,
         "femm"=>FEMMBase(IntegDomain(subset(bfes, sshear0), SimplexRule(2, 3))))
         TracL = FDataDict("traction_vector"=>getfrcL!,
         "femm"=>FEMMBase(IntegDomain(subset(bfes, sshearL), SimplexRule(2, 3))))
-        
+
         modeldata = FDataDict("fens"=>fens,
         "regions"=>[region],
         "essential_bcs"=>[ex01, ex02, ex03, ex04, ey01],
@@ -594,35 +596,35 @@ function hughes_cantilever_stresses_MST10_incompressible()
         "temperature_change"=>FDataDict("temperature"=>0.0)
         )
         modeldata = linearstatics(modeldata)
-        
+
         u = modeldata["u"]
         geom = modeldata["geom"]
-        
+
         Tipl = selectnode(fens, box=[L L 0.0 0.0 0. 0.], inflate=tolerance)
         utip = mean(u.values[Tipl, 3])
         println("Deflection: $(utip), compared to $(exactuy(L,0.0))")
-        
+
         modeldata["postprocessing"] = FDataDict("file"=>"hughes_cantilever_stresses_$(elementtag)",
         "outputcsys"=>CSys(3, 3, updatecs!), "quantity"=>:Cauchy,
         "component"=>[5])
         modeldata = exportstresselementwise(modeldata)
-        
+
         modeldata["postprocessing"] = FDataDict("file"=>"hughes_cantilever_stresses_$(elementtag)",
         "outputcsys"=>CSys(3, 3, updatecs!), "quantity"=>:Cauchy,
         "component"=>collect(1:6))
         modeldata = exportstresselementwise(modeldata)
         stressfields = ElementalField[modeldata["postprocessing"]["exported"][1]["field"]]
-        
+
         modeldata["geometricaltolerance"] = tolerance
         modeldata["elementsize"] = 1.0 / n
         push!(modeldatasequence, modeldata)
     end
-    
+
     filebase = "hughes_cantilever_stresses_incompressible_$(elementtag)"
     evaluateerrors(filebase, modeldatasequence)
-    
+
     true
-    
+
 end # hughes_cantilever_stresses_MST10_incompressible
 
 
@@ -639,7 +641,7 @@ function hughes_cantilever_stresses_nodal_MST10()
 
     modeldatasequence = FDataDict[]
     for n = [1 2 4 8] #
-        
+
         nL = 3*n # number of elements lengthwise
         nc = 2*n # number of elements through the wwith
         nh = n # number of elements through the thickness
@@ -652,22 +654,22 @@ function hughes_cantilever_stresses_nodal_MST10()
         sshearL = selectelem(fens, bfes; facing=true, direction = [+1.0 0.0 0.0])
         # 0 cross-section surface  for the reactions
         sshear0 = selectelem(fens, bfes; facing=true, direction = [-1.0 0.0 0.0])
-        
+
         MR = DeforModelRed3D
         material = MatDeforElastIso(MR,   0.0, E, nu, CTE)
-        
+
         # Material orientation matrix
         csmat = [i==j ? one(FFlt) : zero(FFlt) for i=1:3, j=1:3]
-        
+
         function updatecs!(csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, fe_label::FInt)
             copyto!(csmatout, csmat)
         end
-        
+
         gr = SimplexRule(3, 4) # rule for tetrahedral meshes
-        
+
         region = FDataDict("femm"=>FEMMDeforLinearMST10(MR,
         IntegDomain(fes, gr), material))
-        
+
         lx0 = selectnode(fens, box=[0.0 0.0 0.0 0.0 0.0 0.0], inflate=tolerance)
         # println("lx0 = $(lx0)")
         ex01 = FDataDict( "displacement"=>  0.0, "component"=> 1, "node_list"=>lx0 )
@@ -681,13 +683,13 @@ function hughes_cantilever_stresses_nodal_MST10()
         ly2 = selectnode(fens, box=[-Inf Inf h h -Inf Inf], inflate=tolerance)
         # println("vcat(ly1, ly2) = $(vcat(ly1, ly2))")
         ey01 = FDataDict( "displacement"=>  0.0, "component"=> 2, "node_list"=>vcat(ly1, ly2) )
-        
-        
+
+
         Trac0 = FDataDict("traction_vector"=>getfrc0!,
         "femm"=>FEMMBase(IntegDomain(subset(bfes, sshear0), SimplexRule(2, 3))))
         TracL = FDataDict("traction_vector"=>getfrcL!,
         "femm"=>FEMMBase(IntegDomain(subset(bfes, sshearL), SimplexRule(2, 3))))
-        
+
         modeldata = FDataDict("fens"=>fens,
         "regions"=>[region],
         "essential_bcs"=>[ex01, ex02, ex03, ex04, ey01],
@@ -695,30 +697,30 @@ function hughes_cantilever_stresses_nodal_MST10()
         "temperature_change"=>FDataDict("temperature"=>0.0)
         )
         modeldata = linearstatics(modeldata)
-        
+
         u = modeldata["u"]
         geom = modeldata["geom"]
-        
+
         Tipl = selectnode(fens, box=[L L 0.0 0.0 0. 0.], inflate=tolerance)
         utip = mean(u.values[Tipl, 3])
         println("Deflection: $(utip), compared to $(exactuy(L,0.0))")
-        
+
         modeldata["postprocessing"] = FDataDict("file"=>"hughes_cantilever_stresses_nodal_$(elementtag)",
         "outputcsys"=>CSys(3, 3, updatecs!), "quantity"=>:Cauchy,
         "component"=>collect(1:6), "nodevalmethod"=>:averaging, "reportat"=>:extraptrend)
         modeldata = exportstress(modeldata)
         stressfields = NodalField[modeldata["postprocessing"]["exported"][1]["field"]]
-        
+
         modeldata["geometricaltolerance"] = tolerance
         modeldata["elementsize"] = 1.0 / n
         push!(modeldatasequence, modeldata)
     end
-    
+
     filebase = "hughes_cantilever_stresses_nodal_$(elementtag)"
     evaluateerrors(filebase, modeldatasequence)
-    
+
     true
-    
+
 end # hughes_cantilever_stresses_nodal_MST10
 
 
@@ -735,7 +737,7 @@ function hughes_cantilever_stresses_nodal_T10()
 
     modeldatasequence = FDataDict[]
     for n = [1 2 4 8] #
-        
+
         nL = 3*n # number of elements lengthwise
         nc = 2*n # number of elements through the wwith
         nh = n # number of elements through the thickness
@@ -748,23 +750,23 @@ function hughes_cantilever_stresses_nodal_T10()
         sshearL = selectelem(fens, bfes; facing=true, direction = [+1.0 0.0 0.0])
         # 0 cross-section surface  for the reactions
         sshear0 = selectelem(fens, bfes; facing=true, direction = [-1.0 0.0 0.0])
-        
+
         MR = DeforModelRed3D
         material = MatDeforElastIso(MR,
         0.0, E, nu, CTE)
-        
+
         # Material orientation matrix
         csmat = [i==j ? 1.0 : 0.0 for i=1:3, j=1:3]
-        
+
         function updatecs!(csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, fe_label::FInt)
             copyto!(csmatout, csmat)
         end
-        
+
         gr = SimplexRule(3, 4)
-        
+
         region = FDataDict("femm"=>FEMMDeforLinear(MR,
         IntegDomain(fes, gr), material))
-        
+
         lx0 = selectnode(fens, box=[0.0 0.0 0.0 0.0 0.0 0.0], inflate=tolerance)
         # println("lx0 = $(lx0)")
         ex01 = FDataDict( "displacement"=>  0.0, "component"=> 1, "node_list"=>lx0 )
@@ -778,12 +780,12 @@ function hughes_cantilever_stresses_nodal_T10()
         ly2 = selectnode(fens, box=[-Inf Inf h h -Inf Inf], inflate=tolerance)
         # println("vcat(ly1, ly2) = $(vcat(ly1, ly2))")
         ey01 = FDataDict( "displacement"=>  0.0, "component"=> 2, "node_list"=>vcat(ly1, ly2) )
-        
+
         Trac0 = FDataDict("traction_vector"=>getfrc0!,
         "femm"=>FEMMBase(IntegDomain(subset(bfes, sshear0), SimplexRule(2, 3))))
         TracL = FDataDict("traction_vector"=>getfrcL!,
         "femm"=>FEMMBase(IntegDomain(subset(bfes, sshearL), SimplexRule(2, 3))))
-        
+
         modeldata = FDataDict("fens"=>fens,
         "regions"=>[region],
         "essential_bcs"=>[ex01, ex02, ex03, ex04, ey01],
@@ -791,30 +793,30 @@ function hughes_cantilever_stresses_nodal_T10()
         "temperature_change"=>FDataDict("temperature"=>0.0)
         )
         modeldata = linearstatics(modeldata)
-        
+
         u = modeldata["u"]
         geom = modeldata["geom"]
-        
+
         Tipl = selectnode(fens, box=[L L 0.0 0.0 0. 0.], inflate=tolerance)
         utip = mean(u.values[Tipl, 3])
         println("Deflection: $(utip), compared to $(exactuy(L,0.0))")
-        
+
         modeldata["postprocessing"] = FDataDict("file"=>"hughes_cantilever_stresses_nodal_$(elementtag)",
         "outputcsys"=>CSys(3, 3, updatecs!), "quantity"=>:Cauchy,
         "component"=>collect(1:6))
         modeldata = exportstress(modeldata)
         stressfields = NodalField[modeldata["postprocessing"]["exported"][1]["field"]]
-        
+
         modeldata["geometricaltolerance"] = tolerance
         modeldata["elementsize"] = 1.0 / n
         push!(modeldatasequence, modeldata)
     end
-    
+
     filebase = "hughes_cantilever_stresses_nodal_$(elementtag)"
     evaluateerrors(filebase, modeldatasequence)
-    
+
     true
-    
+
 end # hughes_cantilever_stresses_nodal_T10
 
 
@@ -831,7 +833,7 @@ function hughes_cantilever_stresses_T10()
 
     modeldatasequence = FDataDict[]
     for n = [1 2 4 8] #
-        
+
         nL = 3*n # number of elements lengthwise
         nc = 2*n # number of elements through the wwith
         nh = n # number of elements through the thickness
@@ -844,22 +846,22 @@ function hughes_cantilever_stresses_T10()
         sshearL = selectelem(fens, bfes; facing=true, direction = [+1.0 0.0 0.0])
         # 0 cross-section surface  for the reactions
         sshear0 = selectelem(fens, bfes; facing=true, direction = [-1.0 0.0 0.0])
-        
+
         MR = DeforModelRed3D
         material = MatDeforElastIso(MR,
         0.0, E, nu, CTE)
-        
+
         # Material orientation matrix
         csmat = [i==j ? one(FFlt) : zero(FFlt) for i=1:3, j=1:3]
-        
+
         function updatecs!(csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, fe_label::FInt)
             copyto!(csmatout, csmat)
         end
-        
+
         gr = SimplexRule(3, 4)
-        
+
         region = FDataDict("femm"=>FEMMDeforLinear(MR, IntegDomain(fes, gr), material))
-        
+
         lx0 = selectnode(fens, box=[0.0 0.0 0.0 0.0 0.0 0.0], inflate=tolerance)
         # println("lx0 = $(lx0)")
         ex01 = FDataDict( "displacement"=>  0.0, "component"=> 1, "node_list"=>lx0 )
@@ -873,12 +875,12 @@ function hughes_cantilever_stresses_T10()
         ly2 = selectnode(fens, box=[-Inf Inf h h -Inf Inf], inflate=tolerance)
         # println("vcat(ly1, ly2) = $(vcat(ly1, ly2))")
         ey01 = FDataDict( "displacement"=>  0.0, "component"=> 2, "node_list"=>vcat(ly1, ly2) )
-        
+
         Trac0 = FDataDict("traction_vector"=>getfrc0!,
         "femm"=>FEMMBase(IntegDomain(subset(bfes, sshear0), SimplexRule(2, 3))))
         TracL = FDataDict("traction_vector"=>getfrcL!,
         "femm"=>FEMMBase(IntegDomain(subset(bfes, sshearL), SimplexRule(2, 3))))
-        
+
         modeldata = FDataDict("fens"=>fens,
         "regions"=>[region],
         "essential_bcs"=>[ex01, ex02, ex03, ex04, ey01],
@@ -886,35 +888,35 @@ function hughes_cantilever_stresses_T10()
         "temperature_change"=>FDataDict("temperature"=>0.0)
         )
         modeldata = linearstatics(modeldata)
-        
+
         u = modeldata["u"]
         geom = modeldata["geom"]
-        
+
         Tipl = selectnode(fens, box=[L L 0.0 0.0 0. 0.], inflate=tolerance)
         utip = mean(u.values[Tipl, 3])
         println("Deflection: $(utip), compared to $(exactuy(L,0.0))")
-        
+
         modeldata["postprocessing"] = FDataDict("file"=>"hughes_cantilever_stresses_$(elementtag)",
         "outputcsys"=>CSys(3, 3, updatecs!), "quantity"=>:Cauchy,
         "component"=>[5])
         modeldata = exportstresselementwise(modeldata)
-        
+
         modeldata["postprocessing"] = FDataDict("file"=>"hughes_cantilever_stresses_$(elementtag)",
         "outputcsys"=>CSys(3, 3, updatecs!), "quantity"=>:Cauchy,
         "component"=>collect(1:6))
         modeldata = exportstresselementwise(modeldata)
         stressfields = ElementalField[modeldata["postprocessing"]["exported"][1]["field"]]
-        
+
         modeldata["geometricaltolerance"] = tolerance
         modeldata["elementsize"] = 1.0 / n
         push!(modeldatasequence, modeldata)
     end
-    
+
     filebase = "hughes_cantilever_stresses_$(elementtag)"
     evaluateerrors(filebase, modeldatasequence)
-    
+
     true
-    
+
 end # hughes_cantilever_stresses_T10
 
 
@@ -931,7 +933,7 @@ function hughes_cantilever_stresses_T10_incompressible()
 
     modeldatasequence = FDataDict[]
     for n = [1 2 4 8] #
-        
+
         nL = 3*n # number of elements lengthwise
         nc = 2*n # number of elements through the wwith
         nh = n # number of elements through the thickness
@@ -944,22 +946,22 @@ function hughes_cantilever_stresses_T10_incompressible()
         sshearL = selectelem(fens, bfes; facing=true, direction = [+1.0 0.0 0.0])
         # 0 cross-section surface  for the reactions
         sshear0 = selectelem(fens, bfes; facing=true, direction = [-1.0 0.0 0.0])
-        
+
         MR = DeforModelRed3D
         material = MatDeforElastIso(MR,  0.0, E, nu, CTE)
-        
+
         # Material orientation matrix
         csmat = [i==j ? one(FFlt) : zero(FFlt) for i=1:3, j=1:3]
-        
+
         function updatecs!(csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, fe_label::FInt)
             copyto!(csmatout, csmat)
         end
-        
+
         gr = SimplexRule(3, 4)
-        
+
         region = FDataDict("femm"=>FEMMDeforLinear(MR,
         IntegDomain(fes, gr), material))
-        
+
         lx0 = selectnode(fens, box=[0.0 0.0 0.0 0.0 0.0 0.0], inflate=tolerance)
         # println("lx0 = $(lx0)")
         ex01 = FDataDict( "displacement"=>  0.0, "component"=> 1, "node_list"=>lx0 )
@@ -973,12 +975,12 @@ function hughes_cantilever_stresses_T10_incompressible()
         ly2 = selectnode(fens, box=[-Inf Inf h h -Inf Inf], inflate=tolerance)
         # println("vcat(ly1, ly2) = $(vcat(ly1, ly2))")
         ey01 = FDataDict( "displacement"=>  0.0, "component"=> 2, "node_list"=>vcat(ly1, ly2) )
-        
+
         Trac0 = FDataDict("traction_vector"=>getfrc0!,
         "femm"=>FEMMBase(IntegDomain(subset(bfes, sshear0), SimplexRule(2, 3))))
         TracL = FDataDict("traction_vector"=>getfrcL!,
         "femm"=>FEMMBase(IntegDomain(subset(bfes, sshearL), SimplexRule(2, 3))))
-        
+
         modeldata = FDataDict("fens"=>fens,
         "regions"=>[region],
         "essential_bcs"=>[ex01, ex02, ex03, ex04, ey01],
@@ -986,63 +988,63 @@ function hughes_cantilever_stresses_T10_incompressible()
         "temperature_change"=>FDataDict("temperature"=>0.0)
         )
         modeldata = linearstatics(modeldata)
-        
+
         u = modeldata["u"]
         geom = modeldata["geom"]
-        
+
         Tipl = selectnode(fens, box=[L L 0.0 0.0 0. 0.], inflate=tolerance)
         utip = mean(u.values[Tipl, 3])
         println("Deflection: $(utip), compared to $(exactuy(L,0.0))")
-        
+
         modeldata["postprocessing"] = FDataDict("file"=>"hughes_cantilever_stresses_$(elementtag)",
         "outputcsys"=>CSys(3, 3, updatecs!), "quantity"=>:Cauchy,
         "component"=>[5])
         modeldata = exportstresselementwise(modeldata)
-        
+
         modeldata["postprocessing"] = FDataDict("file"=>"hughes_cantilever_stresses_$(elementtag)",
         "outputcsys"=>CSys(3, 3, updatecs!), "quantity"=>:Cauchy,
         "component"=>collect(1:6))
         modeldata = exportstresselementwise(modeldata)
         stressfields = ElementalField[modeldata["postprocessing"]["exported"][1]["field"]]
-        
+
         modeldata["geometricaltolerance"] = tolerance
         modeldata["elementsize"] = 1.0 / n
         push!(modeldatasequence, modeldata)
     end
-    
+
     filebase = "hughes_cantilever_stresses_incompressible_$(elementtag)"
     evaluateerrors(filebase, modeldatasequence)
-    
+
     true
-    
+
 end # hughes_cantilever_stresses_T10_incompressible
 
 function allrun()
-    println("#####################################################") 
+    println("#####################################################")
     println("# hughes_cantilever_stresses_H8_by_hand ")
     hughes_cantilever_stresses_H8_by_hand()
-    println("#####################################################") 
+    println("#####################################################")
     println("# hughes_cantilever_stresses_H20_by_hand ")
     hughes_cantilever_stresses_H20_by_hand()
-    println("#####################################################") 
+    println("#####################################################")
     println("# hughes_cantilever_stresses_T10_by_hand ")
     hughes_cantilever_stresses_T10_by_hand()
-    println("#####################################################") 
+    println("#####################################################")
     println("# hughes_cantilever_stresses_MST10 ")
     hughes_cantilever_stresses_MST10()
-    println("#####################################################") 
+    println("#####################################################")
     println("# hughes_cantilever_stresses_MST10_incompressible ")
     hughes_cantilever_stresses_MST10_incompressible()
-    println("#####################################################") 
+    println("#####################################################")
     println("# hughes_cantilever_stresses_nodal_MST10 ")
     hughes_cantilever_stresses_nodal_MST10()
-    println("#####################################################") 
+    println("#####################################################")
     println("# hughes_cantilever_stresses_nodal_T10 ")
     hughes_cantilever_stresses_nodal_T10()
-    println("#####################################################") 
+    println("#####################################################")
     println("# hughes_cantilever_stresses_T10 ")
     hughes_cantilever_stresses_T10()
-    println("#####################################################") 
+    println("#####################################################")
     println("# hughes_cantilever_stresses_T10_incompressible ")
     hughes_cantilever_stresses_T10_incompressible()
     return true

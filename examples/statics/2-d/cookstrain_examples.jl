@@ -109,8 +109,8 @@ function cookstrain_algo_export()
     NODE(AE, fens.xyz);
     COMMENT(AE, "We are assuming three node triangles in plane-stress");
     COMMENT(AE, "CPE3 are pretty poor-accuracy elements, but here we don't care about it.");
-    @assert nodesperelem(modeldata["regions"][1]["femm"].integdata.fes) == 3
-    ELEMENT(AE, "CPE3", "AllElements", connasarray(modeldata["regions"][1]["femm"].integdata.fes))
+    @assert nodesperelem(modeldata["regions"][1]["femm"].integdomain.fes) == 3
+    ELEMENT(AE, "CPE3", "AllElements", connasarray(modeldata["regions"][1]["femm"].integdomain.fes))
     NSET_NSET(AE, "clamped", modeldata["essential_bcs"][1]["node_list"])
     ORIENTATION(AE, "GlobalOrientation", vec([1. 0 0]), vec([0 1. 0]));
     SOLID_SECTION(AE, "elasticity", "GlobalOrientation", "AllElements", thickness);
@@ -121,7 +121,7 @@ function cookstrain_algo_export()
     STEP_PERTURBATION_STATIC(AE)
     BOUNDARY(AE, "ASSEM1.INSTNC1.clamped", 1)
     BOUNDARY(AE, "ASSEM1.INSTNC1.clamped", 2)
-    bfes = modeldata["traction_bcs"][1]["femm"].integdata.fes
+    bfes = modeldata["traction_bcs"][1]["femm"].integdomain.fes
     COMMENT(AE, "Concentrated loads: we are assuming that the elements on the boundary");
     COMMENT(AE, "have two nodes each and also that they are the same length.");
     COMMENT(AE, "Then the concentrated loads below will be correctly lumped.");
@@ -250,8 +250,8 @@ function cookstrain_algo_export_ortho()
     NODE(AE, fens.xyz);
     COMMENT(AE, "We are assuming three node triangles in plane-stress");
     COMMENT(AE, "CPE3 are pretty poor-accuracy elements, but here we don't care about it.");
-    @assert nodesperelem(modeldata["regions"][1]["femm"].integdata.fes) == 3
-    ELEMENT(AE, "CPE3", "AllElements", connasarray(modeldata["regions"][1]["femm"].integdata.fes))
+    @assert nodesperelem(modeldata["regions"][1]["femm"].integdomain.fes) == 3
+    ELEMENT(AE, "CPE3", "AllElements", connasarray(modeldata["regions"][1]["femm"].integdomain.fes))
     NSET_NSET(AE, "clamped", modeldata["essential_bcs"][1]["node_list"])
     ORIENTATION(AE, "GlobalOrientation", vec([1. 0 0]), vec([0 1. 0]));
     SOLID_SECTION(AE, "elasticity", "GlobalOrientation", "AllElements", thickness);
@@ -262,7 +262,7 @@ function cookstrain_algo_export_ortho()
     STEP_PERTURBATION_STATIC(AE)
     BOUNDARY(AE, "ASSEM1.INSTNC1.clamped", 1)
     BOUNDARY(AE, "ASSEM1.INSTNC1.clamped", 2)
-    bfes = modeldata["traction_bcs"][1]["femm"].integdata.fes
+    bfes = modeldata["traction_bcs"][1]["femm"].integdomain.fes
     COMMENT(AE, "Concentrated loads: we are assuming that the elements on the boundary");
     COMMENT(AE, "have two nodes each and also that they are the same length.");
     COMMENT(AE, "Then the concentrated loads below will be correctly lumped.");

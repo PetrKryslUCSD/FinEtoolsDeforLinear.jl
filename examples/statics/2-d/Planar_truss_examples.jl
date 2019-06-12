@@ -1,5 +1,6 @@
 module Planar_truss_examples
 using FinEtools
+using FinEtoolsDeforLinear
 using FinEtools.FENodeSetModule
 using FinEtools.MeshExportModule
 using LinearAlgebra
@@ -31,12 +32,12 @@ function Planar_truss()
     5     4
     6     4
     5     6])
-    
-    
+
+
     MR = DeforModelRed1D
     material = MatDeforElastIso(MR,  0.0, E, nu, alpha)
     # display(material )
-    
+
     geom = NodalField(fens.xyz)
     u = NodalField(zeros(size(fens.xyz, 1), 2)) # displacement field
     setebc!(u, 1)
@@ -44,12 +45,12 @@ function Planar_truss()
     applyebc!(u)
     numberdofs!(u)
     display(u)
-    
+
     integdata = IntegDomain(fes, GaussRule(1, 1), (loc, conn, N) -> Area, false)
     femm = FEMMDeforLinear(MR, integdata, CSys(2, 1), material)
     display(femm.mcsys)
     K = stiffness(femm,  geom,  u)
-    
+
     fi = ForceIntensity(vec([0 -2000.0]))
     lfemm = FEMMBase(IntegDomain(FESetP1(reshape([3], 1,1)), PointRule()))
     F = distribloads(lfemm,  geom,  u,  fi,  3);
@@ -59,27 +60,27 @@ function Planar_truss()
     fi = ForceIntensity(vec([+4000.0 +6000.0]))
     lfemm = FEMMBase(IntegDomain(FESetP1(reshape([6], 1,1)), PointRule()))
     F = F + distribloads(lfemm,  geom,  u,  fi,  3);
-    
+
     K = cholesky(K)
     U=  K\F
     scattersysvec!(u, U[:])
-    
+
     sfld =  elemfieldfromintegpoints(femm, geom, u, :Cauchy, 1)
     display(sfld)
     println("Cauchy = $(sfld.values)")
     vfld =  elemfieldfromintegpoints(femm, geom, u, :vm, 1)
     display(vfld)
-    
+
     File = "Planar_truss.vtk"
     MeshExportModule.vtkexportmesh(File, fens, fes;
     scalars=[("sx", sfld.values), ("vm", vfld.values)])
     @async run(`"paraview.exe" $File`)
     # try rm(File) catch end
-    
+
 end # Planar_truss
 
 function allrun()
-    println("#####################################################") 
+    println("#####################################################")
     println("# Planar_truss ")
     Planar_truss()
     return true
