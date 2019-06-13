@@ -4,7 +4,7 @@ using FinEtoolsDeforLinear
 using FinEtoolsDeforLinear.AlgoDeforLinearModule
 # using IterativeSolvers
 using Statistics: mean
-using LinearAlgebra: Symmetric, cholesky
+using LinearAlgebra: Symmetric, cholesky, norm
 
 function fiber_reinf_cant_iso()
     println("""
@@ -231,7 +231,7 @@ function fiber_reinf_cant_iso_stresses()
         #     write(file, "geom", geom)
         #     write(file, "u", u)
         #     # write(file, "femm", region["femm"])
-        #     write(file, "integrationrule", region["femm"].integdata.integration_rule)
+        #     write(file, "integrationrule", region["femm"].integdomain.integration_rule)
         #     write(file, "stressfields", stressfields)
         #     write(file, "tolerance", tolerance)
         # end
@@ -352,7 +352,7 @@ function fiber_reinf_cant_iso_stresses_MST10()
         "geom"=>geom,
         "u"=>u,
         "femm"=>region["femm"],
-        "integrationrule"=>region["femm"].integdata.integration_rule,
+        "integrationrule"=>region["femm"].integdomain.integration_rule,
         "stressfields"=>stressfields,
         "tolerance"=>tolerance)
         )
@@ -478,7 +478,7 @@ function fiber_reinf_cant_iso_stresses_T10()
         "geom"=>geom,
         "u"=>u,
         "femm"=>region["femm"],
-        "integrationrule"=>region["femm"].integdata.integration_rule,
+        "integrationrule"=>region["femm"].integdomain.integration_rule,
         "stressfields"=>stressfields,
         "tolerance"=>tolerance)
         )

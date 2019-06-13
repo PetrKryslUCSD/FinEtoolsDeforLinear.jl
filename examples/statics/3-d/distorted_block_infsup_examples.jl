@@ -3,7 +3,7 @@ using FinEtools
 using FinEtoolsDeforLinear
 using FinEtoolsDeforLinear.AlgoDeforLinearModule
 using FinEtools.MeshExportModule
-using FinEtools.FEMMDeforLinearBaseModule: infsup_gh, infsup_sh
+using FinEtoolsDeforLinear.FEMMDeforLinearBaseModule: infsup_gh, infsup_sh
 using Test
 import LinearAlgebra: norm, cholesky, I, eigen
 using UnicodePlots

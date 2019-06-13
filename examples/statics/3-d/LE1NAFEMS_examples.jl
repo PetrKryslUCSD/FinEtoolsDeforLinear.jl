@@ -4,7 +4,8 @@ using FinEtoolsDeforLinear
 using FinEtoolsDeforLinear.AlgoDeforLinearModule
 using FinEtools.MeshExportModule
 using FinEtools.MeshImportModule: import_ABAQUS
-
+using Statistics: mean
+using LinearAlgebra: Symmetric, cholesky, norm
 
 # function LE1NAFEMS_compare_meshes()
 #     Thick0 = 0.1*phun("m")/2.0 # to account for the symmetry reduction
@@ -239,11 +240,11 @@ function LE1NAFEMS_MSH8_convergence()
             nl = selectnode(fens, box=[2.0, 2.0, 0.0, 0.0, 0.0, Thickness], inflate=tolerance);
             thecorneru = zeros(FFlt,length(nl),3)
             gathervalues_asmat!(u, thecorneru, nl);
-            thecorneru = mean(thecorneru, 1)[1]/phun("mm")
+            thecorneru = mean(thecorneru, dims=1)[1]/phun("mm")
             println("displacement =$(thecorneru) vs -0.10215 [MM]")
 
             fld = fieldfromintegpoints(femm, geom, u, :Cauchy, 2; nodevalmethod = :averaging, reportat = extrapolation)
-            sigyd = mean(fld.values[nl,1], 1)[1]
+            sigyd = mean(fld.values[nl,1], dims=1)[1]
             println("Sigma_y =$(sigyd/phun("MPa")) vs $(sigma_yD/phun("MPa")) [MPa]")
 
             println("$extrapolation, $(count(fes)), $(sigyd/phun("MPa"))")
@@ -423,11 +424,11 @@ function LE1NAFEMS_MST10_convergence()
             nl = selectnode(fens, box=[2.0, 2.0, 0.0, 0.0, 0.0, Thickness], inflate=tolerance);
             thecorneru = zeros(FFlt,length(nl),3)
             gathervalues_asmat!(u, thecorneru, nl);
-            thecorneru = mean(thecorneru, 1)[1]/phun("mm")
+            thecorneru = mean(thecorneru, dims=1)[1]/phun("mm")
             println("displacement =$(thecorneru) vs -0.10215 [MM]")
 
             fld = fieldfromintegpoints(femm, geom, u, :Cauchy, 2; nodevalmethod = :averaging, reportat = extrapolation)
-            sigyd = mean(fld.values[nl,1], 1)[1]
+            sigyd = mean(fld.values[nl,1], dims=1)[1]
             println("Sigma_y =$(sigyd/phun("MPa")) vs $(sigma_yD/phun("MPa")) [MPa]")
 
             println("$extrapolation, $(count(fes)), $(sigyd/phun("MPa"))")
@@ -519,11 +520,11 @@ function LE1NAFEMS_MST10_one()
             nl = selectnode(fens, box=[2.0, 2.0, 0.0, 0.0, 0.0, Thickness], inflate=tolerance);
             thecorneru = zeros(FFlt,length(nl),3)
             gathervalues_asmat!(u, thecorneru, nl);
-            thecorneru = mean(thecorneru, 1)[1]/phun("mm")
+            thecorneru = mean(thecorneru, dims=1)[1]/phun("mm")
             println("displacement =$(thecorneru) vs -0.10215 [MM]")
 
             fld = fieldfromintegpoints(femm, geom, u, :Cauchy, 2; nodevalmethod = :averaging, reportat = extrapolation)
-            sigyd = mean(fld.values[nl,1], 1)[1]
+            sigyd = mean(fld.values[nl,1], dims=1)[1]
             println("Sigma_y =$(sigyd/phun("MPa")) vs $(sigma_yD/phun("MPa")) [MPa]")
 
             println("$extrapolation, $(count(fes)), $(sigyd/phun("MPa"))")
@@ -646,12 +647,12 @@ function LE1NAFEMS_MST10_stresses_nodal()
             nl = selectnode(fens, box=[2.0, 2.0, 0.0, 0.0, 0.0, Thickness], inflate=tolerance);
             thecorneru = zeros(FFlt,length(nl),3)
             gathervalues_asmat!(u, thecorneru, nl);
-            thecorneru = mean(thecorneru, 1)[1]/phun("mm")
+            thecorneru = mean(thecorneru, dims=1)[1]/phun("mm")
             println("displacement =$(thecorneru) vs -0.10215 [MM]")
 
             fld = fieldfromintegpoints(femm, geom, u, :Cauchy, 2;
             nodevalmethod = :averaging, reportat = extrapolation)
-            sigyd = mean(fld.values[nl,1], 1)[1]
+            sigyd = mean(fld.values[nl,1], dims=1)[1]
             println("Sigma_y =$(sigyd/phun("MPa")) vs $(sigma_yD/phun("MPa")) [MPa]")
 
             stressfield = fieldfromintegpoints(femm, geom, u, :Cauchy, collect(1:6);
@@ -670,7 +671,7 @@ function LE1NAFEMS_MST10_stresses_nodal()
             "geom"=>geom,
             "u"=>u,
             "femm"=>femm,
-            "integrationrule"=>femm.integdata.integration_rule,
+            "integrationrule"=>femm.integdomain.integration_rule,
             "stressfields"=>[stressfield],
             "tolerance"=>tolerance)
             )
@@ -759,11 +760,11 @@ function LE1NAFEMS_MST10_S_convergence()
             nl = selectnode(fens, box=[2.0, 2.0, 0.0, 0.0, 0.0, Thickness], inflate=tolerance);
             thecorneru = zeros(FFlt,length(nl),3)
             gathervalues_asmat!(u, thecorneru, nl);
-            thecorneru = mean(thecorneru, 1)[1]/phun("mm")
+            thecorneru = mean(thecorneru, dims=1)[1]/phun("mm")
             println("displacement =$(thecorneru) vs -0.10215 [MM]")
 
             fld = fieldfromintegpoints(femm, geom, u, :Cauchy, 2; nodevalmethod = :averaging, reportat = extrapolation)
-            sigyd = mean(fld.values[nl,1], 1)[1]
+            sigyd = mean(fld.values[nl,1], dims=1)[1]
             println("Sigma_y =$(sigyd/phun("MPa")) vs $(sigma_yD/phun("MPa")) [MPa]")
 
             println("$extrapolation, $(count(fes)), $(sigyd/phun("MPa"))")
@@ -850,11 +851,11 @@ function LE1NAFEMS_T10_stresses_nodal()
         nl = selectnode(fens, box=[2.0, 2.0, 0.0, 0.0, 0.0, Thickness], inflate=tolerance);
         thecorneru = zeros(FFlt,length(nl),3)
         gathervalues_asmat!(u, thecorneru, nl);
-        thecorneru = mean(thecorneru, 1)[1]/phun("mm")
+        thecorneru = mean(thecorneru, dims=1)[1]/phun("mm")
         println("displacement =$(thecorneru) vs -0.10215 [MM]")
 
         fld = fieldfromintegpoints(femm, geom, u, :Cauchy, 2)
-        sigyd = mean(fld.values[nl,1], 1)[1]
+        sigyd = mean(fld.values[nl,1], dims=1)[1]
         println("Sigma_y =$(sigyd/phun("MPa")) vs $(sigma_yD/phun("MPa")) [MPa]")
 
         stressfield = fieldfromintegpoints(femm, geom, u, :Cauchy, collect(1:6))
@@ -872,7 +873,7 @@ function LE1NAFEMS_T10_stresses_nodal()
         "geom"=>geom,
         "u"=>u,
         "femm"=>femm,
-        "integrationrule"=>femm.integdata.integration_rule,
+        "integrationrule"=>femm.integdomain.integration_rule,
         "stressfields"=>[stressfield],
         "tolerance"=>tolerance)
         )

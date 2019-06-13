@@ -1,7 +1,8 @@
 module rltb_examples
 using FinEtools
 using FinEtools.AlgoBaseModule: evalconvergencestudy
-using FinEtools.AlgoDeforLinearModule: linearstatics, exportstresselementwise, exportstress
+using FinEtoolsDeforLinear
+using FinEtoolsDeforLinear.AlgoDeforLinearModule: linearstatics, exportstresselementwise, exportstress
 using Statistics: mean
 using LinearAlgebra: Symmetric, cholesky
 
@@ -40,19 +41,19 @@ function rltb_H8_by_hand()
 
     MR = DeforModelRed3D
     material = MatDeforElastIso(MR, 0.0, E, nu, CTE)
-    
+
     # Material orientation matrix
     csmat = [i==j ? one(FFlt) : zero(FFlt) for i=1:3, j=1:3]
-    
+
     function updatecs!(csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, fe_label::FInt)
         copyto!(csmatout, csmat)
     end
-        
+
     femm = FEMMDeforLinear(MR, IntegDomain(fes, GaussRule(3, 2)), material)
-    
+
     geom = NodalField(fens.xyz)
     u = NodalField(zeros(size(fens.xyz,1), 3)) # displacement field
-    
+
     lx0 = connectednodes(subset(bfes, section0))
     setebc!(u,lx0,true,1,0.0)
     setebc!(u,lx0,true,2,0.0)
@@ -82,15 +83,15 @@ function rltb_H8_by_hand()
 
     # modeldata["postprocessing"] = FDataDict("file"=>"hughes_cantilever_stresses_$(elementtag)", "outputcsys"=>CSys(3, 3, updatecs!), "quantity"=>:Cauchy, "component"=>[5])
     # modeldata = exportstresselementwise(modeldata)
-    
+
     # modeldata["postprocessing"] = FDataDict("file"=>"hughes_cantilever_stresses_$(elementtag)",
     # "outputcsys"=>CSys(3, 3, updatecs!), "quantity"=>:Cauchy,
     # "component"=>collect(1:6))
     # modeldata = exportstresselementwise(modeldata)
     # stressfields = ElementalField[modeldata["postprocessing"]["exported"][1]["field"]]
-    
+
     true
-    
+
 end # hughes_cantilever_stresses_MST10
 
 function rltb_H20_by_hand()
@@ -110,19 +111,19 @@ function rltb_H20_by_hand()
 
     MR = DeforModelRed3D
     material = MatDeforElastIso(MR, 0.0, E, nu, CTE)
-    
+
     # Material orientation matrix
     csmat = [i==j ? one(FFlt) : zero(FFlt) for i=1:3, j=1:3]
-    
+
     function updatecs!(csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, fe_label::FInt)
         copyto!(csmatout, csmat)
     end
-        
+
     femm = FEMMDeforLinear(MR, IntegDomain(fes, GaussRule(3, 2)), material)
-    
+
     geom = NodalField(fens.xyz)
     u = NodalField(zeros(size(fens.xyz,1), 3)) # displacement field
-    
+
     lx0 = connectednodes(subset(bfes, section0))
     setebc!(u,lx0,true,1,0.0)
     setebc!(u,lx0,true,2,0.0)
@@ -152,34 +153,34 @@ function rltb_H20_by_hand()
 
     # modeldata["postprocessing"] = FDataDict("file"=>"hughes_cantilever_stresses_$(elementtag)", "outputcsys"=>CSys(3, 3, updatecs!), "quantity"=>:Cauchy, "component"=>[5])
     # modeldata = exportstresselementwise(modeldata)
-    
+
     # modeldata["postprocessing"] = FDataDict("file"=>"hughes_cantilever_stresses_$(elementtag)",
     # "outputcsys"=>CSys(3, 3, updatecs!), "quantity"=>:Cauchy,
     # "component"=>collect(1:6))
     # modeldata = exportstresselementwise(modeldata)
     # stressfields = ElementalField[modeldata["postprocessing"]["exported"][1]["field"]]
-    
+
     true
-    
+
 end # hughes_cantilever_stresses_MST10
 
 function allrun()
-    println("#####################################################") 
+    println("#####################################################")
     println("# hughes_cantilever_stresses_MST10 ")
     hughes_cantilever_stresses_MST10()
-    println("#####################################################") 
+    println("#####################################################")
     println("# hughes_cantilever_stresses_MST10_incompressible ")
     hughes_cantilever_stresses_MST10_incompressible()
-    println("#####################################################") 
+    println("#####################################################")
     println("# hughes_cantilever_stresses_nodal_MST10 ")
     hughes_cantilever_stresses_nodal_MST10()
-    println("#####################################################") 
+    println("#####################################################")
     println("# hughes_cantilever_stresses_nodal_T10 ")
     hughes_cantilever_stresses_nodal_T10()
-    println("#####################################################") 
+    println("#####################################################")
     println("# hughes_cantilever_stresses_T10 ")
     hughes_cantilever_stresses_T10()
-    println("#####################################################") 
+    println("#####################################################")
     println("# hughes_cantilever_stresses_T10_incompressible ")
     hughes_cantilever_stresses_T10_incompressible()
     return true
