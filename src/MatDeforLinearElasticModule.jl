@@ -1,8 +1,8 @@
 module MatDeforLinearElasticModule
 
 using FinEtools.FTypesModule: FInt, FFlt, FCplxFlt, FFltVec, FIntVec, FFltMat, FIntMat, FMat, FVec, FDataDict
-import ..DeforModelRedModule: AbstractDeforModelRed
-import ..MatDeforModule: AbstractMatDefor
+import FinEtoolsDeforLinear.DeforModelRedModule: AbstractDeforModelRed
+import FinEtoolsDeforLinear.MatDeforModule: AbstractMatDefor
 
 """
     AbstractMatDeforLinearElastic <: AbstractMatDefor

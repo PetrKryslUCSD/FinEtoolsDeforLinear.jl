@@ -14,9 +14,9 @@ my_A_mul_B!(C, A, B) = mul!(C, A, B)
 import FinEtools.FieldModule: AbstractField, ndofs, setebc!, numberdofs!, applyebc!, scattersysvec!
 import FinEtools.NodalFieldModule: NodalField, nnodes
 import FinEtools.FEMMBaseModule: associategeometry!, distribloads, fieldfromintegpoints, elemfieldfromintegpoints
-import ..FEMMDeforLinearBaseModule: stiffness, mass, nzebcloadsstiffness, thermalstrainloads, inspectintegpoints
-import ..FEMMDeforLinearMSModule: stiffness, mass, nzebcloadsstiffness, thermalstrainloads, inspectintegpoints
-import ..DeforModelRedModule: stresscomponentmap
+import FinEtoolsDeforLinear.FEMMDeforLinearBaseModule: stiffness, mass, nzebcloadsstiffness, thermalstrainloads, inspectintegpoints
+import FinEtoolsDeforLinear.FEMMDeforLinearMSModule: stiffness, mass, nzebcloadsstiffness, thermalstrainloads, inspectintegpoints
+import FinEtoolsDeforLinear.DeforModelRedModule: stresscomponentmap
 import FinEtools.ForceIntensityModule: ForceIntensity
 import FinEtools.MeshModificationModule: meshboundary
 import FinEtools.MeshExportModule: vtkexportmesh

@@ -19,20 +19,20 @@ using FinEtools.FTypesModule: FInt, FFlt, FCplxFlt, FFltVec, FIntVec, FFltMat, F
 import FinEtools.FENodeSetModule: FENodeSet
 import FinEtools.FESetModule: AbstractFESet, FESetH8, FESetT4, manifdim, nodesperelem, gradN!
 import FinEtools.IntegDomainModule: IntegDomain, integrationdata, Jacobianvolume
-import ..FEMMDeforLinearBaseModule: AbstractFEMMDeforLinear
-import ..DeforModelRedModule: AbstractDeforModelRed, DeforModelRed3D
-import ..MatDeforLinearElasticModule: AbstractMatDeforLinearElastic, tangentmoduli!, update!, thermalstrain!
-import ..MatDeforElastIsoModule: MatDeforElastIso
+import FinEtoolsDeforLinear.FEMMDeforLinearBaseModule: AbstractFEMMDeforLinear
+import FinEtoolsDeforLinear.DeforModelRedModule: AbstractDeforModelRed, DeforModelRed3D
+import FinEtoolsDeforLinear.MatDeforLinearElasticModule: AbstractMatDeforLinearElastic, tangentmoduli!, update!, thermalstrain!
+import FinEtoolsDeforLinear.MatDeforElastIsoModule: MatDeforElastIso
 import FinEtools.FieldModule: ndofs, gatherdofnums!, gatherfixedvalues_asvec!, gathervalues_asvec!, gathervalues_asmat!
 import FinEtools.NodalFieldModule: NodalField, nnodes
 import FinEtools.CSysModule: CSys, updatecsmat!
 import FinEtools.FENodeToFEMapModule: FENodeToFEMap
-import ..DeforModelRedModule: nstressstrain, nthermstrain, Blmat!, divmat, vgradmat
+import FinEtoolsDeforLinear.DeforModelRedModule: nstressstrain, nthermstrain, Blmat!, divmat, vgradmat
 import FinEtools.AssemblyModule: AbstractSysvecAssembler, AbstractSysmatAssembler, SysmatAssemblerSparseSymm, startassembly!, assemble!, makematrix!, makevector!, SysvecAssembler
 using FinEtools.MatrixUtilityModule: add_btdb_ut_only!, complete_lt!, add_btv!, loc!, jac!, locjac!, adjugate3!
-import ..FEMMDeforLinearBaseModule: stiffness, nzebcloadsstiffness, mass, thermalstrainloads, inspectintegpoints
+import FinEtoolsDeforLinear.FEMMDeforLinearBaseModule: stiffness, nzebcloadsstiffness, mass, thermalstrainloads, inspectintegpoints
 import FinEtools.FEMMBaseModule: associategeometry!
-import ..MatDeforModule: rotstressvec!
+import FinEtoolsDeforLinear.MatDeforModule: rotstressvec!
 import FinEtools.MatModule: massdensity
 import LinearAlgebra: mul!, Transpose, UpperTriangular, eigvals, det
 At_mul_B!(C, A, B) = mul!(C, Transpose(A), B)

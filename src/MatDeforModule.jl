@@ -6,7 +6,7 @@ Module to support general operations for deformation material models.
 module MatDeforModule
 
 using FinEtools.FTypesModule: FInt, FFlt, FCplxFlt, FFltVec, FIntVec, FFltMat, FIntMat, FMat, FVec, FDataDict
-import ..DeforModelRedModule: DeforModelRed3D, DeforModelRed2DStrain, DeforModelRed2DStress, DeforModelRed2DAxisymm, DeforModelRed1D
+import FinEtoolsDeforLinear.DeforModelRedModule: DeforModelRed3D, DeforModelRed2DStrain, DeforModelRed2DStress, DeforModelRed2DAxisymm, DeforModelRed1D
 import FinEtools.MatModule: AbstractMat
 
 """

@@ -6,9 +6,9 @@ Module for  orthotropic elastic material.
 module MatDeforElastOrthoModule
 
 using FinEtools.FTypesModule: FInt, FFlt, FCplxFlt, FFltVec, FIntVec, FFltMat, FIntMat, FMat, FVec, FDataDict
-import ..DeforModelRedModule: AbstractDeforModelRed, DeforModelRed3D, DeforModelRed2DStrain, DeforModelRed2DStress, DeforModelRed2DAxisymm, DeforModelRed1D, nstressstrain, nthermstrain
-import ..MatDeforModule: AbstractMatDefor, stress6vto3x3t!, stress3vto2x2t!, stress4vto3x3t!, stress4vto3x3t!
-import ..MatDeforLinearElasticModule: AbstractMatDeforLinearElastic
+import FinEtoolsDeforLinear.DeforModelRedModule: AbstractDeforModelRed, DeforModelRed3D, DeforModelRed2DStrain, DeforModelRed2DStress, DeforModelRed2DAxisymm, DeforModelRed1D, nstressstrain, nthermstrain
+import FinEtoolsDeforLinear.MatDeforModule: AbstractMatDefor, stress6vto3x3t!, stress3vto2x2t!, stress4vto3x3t!, stress4vto3x3t!
+import FinEtoolsDeforLinear.MatDeforLinearElasticModule: AbstractMatDeforLinearElastic
 import LinearAlgebra: mul!
 At_mul_B!(C, A, B) = mul!(C, Transpose(A), B)
 A_mul_B!(C, A, B) = mul!(C, A, B)

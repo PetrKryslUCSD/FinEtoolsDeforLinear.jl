@@ -10,9 +10,9 @@ using FinEtools.FTypesModule: FInt, FFlt, FCplxFlt, FFltVec, FIntVec, FFltMat, F
 import FinEtools.FENodeSetModule: FENodeSet
 import FinEtools.FESetModule: AbstractFESet, manifdim
 import FinEtools.IntegDomainModule: IntegDomain
-import ..FEMMDeforLinearBaseModule: AbstractFEMMDeforLinear
-import ..DeforModelRedModule: AbstractDeforModelRed, DeforModelRed2DAxisymm
-import ..MatDeforLinearElasticModule: AbstractMatDeforLinearElastic
+import FinEtoolsDeforLinear.FEMMDeforLinearBaseModule: AbstractFEMMDeforLinear
+import FinEtoolsDeforLinear.DeforModelRedModule: AbstractDeforModelRed, DeforModelRed2DAxisymm
+import FinEtoolsDeforLinear.MatDeforLinearElasticModule: AbstractMatDeforLinearElastic
 import FinEtools.CSysModule: CSys
 
 """
