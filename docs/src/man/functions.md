@@ -7,7 +7,7 @@
 #### Model reduction types
 
 ```@autodocs
-Modules = [FinEtools, FinEtools.DeforModelRedModule]
+Modules = [FinEtools, FinEtoolsDeforLinear.DeforModelRedModule]
 Private = true
 Order = [:function]
 ```
@@ -15,7 +15,7 @@ Order = [:function]
 #### Base functionality
 
 ```@autodocs
-Modules = [FinEtools, FinEtools.FEMMDeforLinearBaseModule, FinEtools.FEMMDeforLinearModule, FinEtools.FEMMDeforWinklerModule, FinEtools.FEMMDeforLinearMSModule, FinEtools.FEMMDeforSurfaceDampingModule, FinEtools.FEMMDeforLinearNICEModule, FinEtools.FEMMDeforLinearESNICEModule]
+Modules = [FinEtools, FinEtoolsDeforLinear.FEMMDeforLinearBaseModule, FinEtoolsDeforLinear.FEMMDeforLinearModule, FinEtoolsDeforLinear.FEMMDeforWinklerModule, FinEtoolsDeforLinear.FEMMDeforLinearMSModule, FinEtoolsDeforLinear.FEMMDeforSurfaceDampingModule, FinEtoolsDeforLinear.FEMMDeforLinearNICEModule, FinEtoolsDeforLinear.FEMMDeforLinearESNICEModule]
 Private = true
 Order = [:function]
 ```
@@ -23,7 +23,7 @@ Order = [:function]
 #### Simple FE models
 
 ```@autodocs
-Modules = [FinEtools, FinEtools.FEMMDeforLinearModule, FinEtools.FEMMDeforWinklerModule,  FinEtools.FEMMDeforSurfaceDampingModule, ]
+Modules = [FinEtools, FinEtoolsDeforLinear.FEMMDeforLinearModule, FinEtoolsDeforLinear.FEMMDeforWinklerModule,  FinEtoolsDeforLinear.FEMMDeforSurfaceDampingModule, ]
 Private = true
 Order = [:function]
 ```
@@ -31,7 +31,7 @@ Order = [:function]
 #### Advanced FE models
 
 ```@autodocs
-Modules = [FinEtools, FinEtools.FEMMDeforLinearMSModule, FinEtools.FEMMDeforLinearNICEModule, FinEtools.FEMMDeforLinearESNICEModule]
+Modules = [FinEtools, FinEtoolsDeforLinear.FEMMDeforLinearMSModule, FinEtoolsDeforLinear.FEMMDeforLinearNICEModule, FinEtoolsDeforLinear.FEMMDeforLinearESNICEModule]
 Private = true
 Order = [:function]
 ```
@@ -41,7 +41,7 @@ Order = [:function]
 ### Linear deformation
 
 ```@autodocs
-Modules = [FinEtools, FinEtools.AlgoDeforLinearModule]
+Modules = [FinEtools, FinEtoolsDeforLinear.AlgoDeforLinearModule]
 Private = true
 Order = [:function]
 ```
@@ -51,7 +51,7 @@ Order = [:function]
 ### Material for deformation, base functionality
 
 ```@autodocs
-Modules = [FinEtools, FinEtools.MatDeforModule]
+Modules = [FinEtools, FinEtoolsDeforLinear.MatDeforModule]
 Private = true
 Order = [:function]
 ```
@@ -59,7 +59,7 @@ Order = [:function]
 ### Material models for elasticity
 
 ```@autodocs
-Modules = [FinEtools, FinEtools.MatDeforLinearElasticModule, FinEtools.MatDeforElastIsoModule, FinEtools.MatDeforElastOrthoModule,]
+Modules = [FinEtools, FinEtoolsDeforLinear.MatDeforLinearElasticModule, FinEtoolsDeforLinear.MatDeforElastIsoModule, FinEtoolsDeforLinear.MatDeforElastOrthoModule,]
 Private = true
 Order = [:function]
 ```
