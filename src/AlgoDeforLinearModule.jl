@@ -43,15 +43,14 @@ mandatory, the  region dictionary  contains values for keys:
 For essential boundary conditions (optional) each dictionary
 would hold
   + `"displacement"` = fixed (prescribed) displacement (scalar),  or
-            a function with signature
-                function w = f(x)
-            If not given, zero displacement assumed.
+            a function with signature function `w = f(x)`.
+            If this value is not given, zero displacement is assumed.
   + `"component"` = which component is prescribed  (1, 2, 3)?
   + `"node_list"` = list of nodes on the boundary to which the condition applies
             (mandatory)
 
 For traction boundary conditions (optional) each dictionary
-would hold
+would hold key-value pairs
   + `"femm"` = finite element model machine (mandatory);
   + `"traction_vector"` = traction vector,  either  a constant numerical
       vector, or  a function to be used to construct a `ForceIntensity`
