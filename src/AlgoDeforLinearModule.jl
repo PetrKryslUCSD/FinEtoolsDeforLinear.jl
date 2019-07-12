@@ -54,8 +54,8 @@ For traction boundary conditions (optional) each dictionary
 would hold
   + `"femm"` = finite element model machine (mandatory);
   + `"traction_vector"` = traction vector,  either  a constant numerical
-  vector, or  a function to be used to construct a `ForceIntensity`
-  object, or it could be the `ForceIntensity` object itself.
+      vector, or  a function to be used to construct a `ForceIntensity`
+      object, or it could be the `ForceIntensity` object itself.
 
 # Output
 `modeldata` = the dictionary on input is augmented with the keys
