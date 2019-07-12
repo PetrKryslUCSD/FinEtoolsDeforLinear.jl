@@ -53,8 +53,9 @@ would hold
 For traction boundary conditions (optional) each dictionary
 would hold
   + `"femm"` = finite element model machine (mandatory);
-  + `"traction_vector"` = traction vector,  either  a constant or  a function
-        Positive  when outgoing.
+  + `"traction_vector"` = traction vector,  either  a constant numerical
+  vector, or  a function to be used to construct a `ForceIntensity`
+  object, or it could be the `ForceIntensity` object itself.
 
 # Output
 `modeldata` = the dictionary on input is augmented with the keys
@@ -178,6 +179,8 @@ function linearstatics(modeldata::FDataDict)
             traction_vector = tractionbc["traction_vector"];
             if (typeof(traction_vector) <: Function)
                 fi = ForceIntensity(FFlt, ndofs(geom), traction_vector);
+            elseif (typeof(traction_vector) <: ForceIntensity)
+                fi = traction_vector
             else
                 fi = ForceIntensity(traction_vector);
             end
