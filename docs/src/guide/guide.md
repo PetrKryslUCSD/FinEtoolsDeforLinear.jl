@@ -10,8 +10,13 @@ problems.
 The package `FinEtoolsDeforLinear` has the following structure:
 
 - `FinEtoolsDeforLinear` is the  top-level module.
-- Linear deformation:  `AlgoDeforLinearModule` (algorithms), `DeforModelRedModule` (model-reduction definitions, 3D, plane strain and stress, and so on),
-`FEMMDeforLinearBaseModule`,  `FEMMDeforLinearModule`, `FEMMDeforLinearMSModule`,  `FEMMDeforWinklerModule` (FEM machines to evaluate the matrix and vector quantities), `MatDeforModule`, `MatDeforElastIsoModule`, `MatDeforElastOrthoModule` (elastic material models).
+- Linear deformation:  `AlgoDeforLinearModule` (algorithms),
+  `DeforModelRedModule` (model-reduction definitions, 3D, plane strain
+  and stress, and so on), `FEMMDeforLinearBaseModule`,
+  `FEMMDeforLinearModule`, `FEMMDeforLinearMSModule`,
+  `FEMMDeforWinklerModule` (FEM machines to evaluate the matrix and
+  vector quantities),  `MatDeforModule`, `MatDeforElastIsoModule`,
+  `MatDeforElastOrthoModule` (elastic material models).
 
 
 ## Linear deformation FEM  machines
