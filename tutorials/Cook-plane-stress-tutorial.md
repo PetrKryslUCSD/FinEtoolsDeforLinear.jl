@@ -15,7 +15,7 @@ With the algorithm modules, the problem can be set up (the materials, boundary c
 using FinEtoolsDeforLinear.AlgoDeforLinearModule
 ```
 
-A few  input parameters are defined: the material parameters.
+A few  input parameters are defined: the material parameters. Note: the units are consistent, but unnamed.
 
 ```julia
 E = 1.0;
@@ -27,7 +27,12 @@ The geometry of the tapered panel.
 ```julia
 width = 48.0; height = 44.0; thickness  = 1.0;
 free_height  = 16.0;
-Mid_edge  = [48.0, 52.0];# Location of tracked  deflection
+```
+
+Location of tracked  deflection is the midpoint of the loaded edge.
+
+```julia
+Mid_edge  = [48.0, 52.0];
 ```
 
 The tapered panel is loaded along the free edge with a unit force, which is here converted to loading per unit area.
@@ -42,14 +47,14 @@ For the above input parameters the converged displacement of the tip  of the tap
 convutip = 23.97;
 ```
 
-The mesh is generated as a rectangular block to begin with, and then the coordinates of the nodes are tweaked into the tapered panel shape. In this case we are using quadratic triangles.
+The mesh is generated as a rectangular block to begin with, and then the coordinates of the nodes are tweaked into the tapered panel shape. In this case we are using quadratic triangles (T6).
 
 ```julia
 n = 10; # number of elements per side
 fens,fes = T6block(width, height, n, n)
 ```
 
-Reshape into a trapezoidal panel
+Reshape the rectangle into a trapezoidal panel:
 
 ```julia
 for i = 1:count(fens)
@@ -57,7 +62,7 @@ for i = 1:count(fens)
 end
 ```
 
-The  boundary conditions  are applied to selected finite element nodes.   The selection is based on the inclusion in a selection box.   The  selected nodes are then used twice,  to fix the degree of freedom  in the direction 1 and  in the direction 2.
+The  boundary conditions  are applied to selected finite element nodes.   The selection is based on the inclusion in a selection "box".
 
 ```julia
 tolerance = minimum([width, height])/n/1000.;#Geometrical tolerance
@@ -69,14 +74,14 @@ Clamped edge of the membrane
 l1 = selectnode(fens; box=[0.,0.,-Inf, Inf], inflate = tolerance);
 ```
 
-The list of nodes  is then used to construct entries  for the essential boundary conditions.  The  data is stored in  dictionaries: `ess1` and `ess2 `.  These dictionaries  are used below to compose the computational model.
+The list of the selected nodes is then used twice,  to fix the degree of freedom  in the direction 1 and  in the direction 2. The essential-boundary condition data is stored in  dictionaries: `ess1` and `ess2 `.  These dictionaries  are used below to compose the computational model.
 
 ```julia
 ess1 = FDataDict("displacement"=>  0.0, "component"=> 1, "node_list"=>l1);
 ess2 = FDataDict("displacement"=>  0.0, "component"=> 2, "node_list"=>l1);
 ```
 
-The traction boundary condition is applied to the finite elements on the boundary of the panel. First we generate the three-node curve elements on the boundary.
+The traction boundary condition is applied to the finite elements on the boundary of the panel. First we generate the three-node "curve" elements on the entire boundary of the panel.
 
 ```julia
 boundaryfes =  meshboundary(fes);
@@ -88,7 +93,7 @@ Then from these finite elements we choose the ones that are inside the box that 
 Toplist  = selectelem(fens, boundaryfes, box= [width, width, -Inf, Inf ], inflate=  tolerance);
 ```
 
-To apply the traction we create a finite element model machine (FEMM). For the evaluation of the traction it is sufficient to create a the base FEMM.  It consists of the geometry data `IntegDomain` (connectivity,  integration rule, evaluation  of the basis functions  and basis function gradients with respect to the parametric coordinates), which in turn is composed of the list of the finite elements and  an appropriate quadrature rule (Gauss rule here).
+To apply the traction we create a finite element model machine (FEMM). For the evaluation of the traction it is sufficient to create a  "base" FEMM.  It consists of the geometry data `IntegDomain` (connectivity,  integration rule, evaluation  of the basis functions  and basis function gradients with respect to the parametric coordinates). This object is composed of the list of the finite elements and  an appropriate quadrature rule (Gauss rule here).
 
 ```julia
 el1femm = FEMMBase(IntegDomain(subset(boundaryfes, Toplist), GaussRule(1, 3), thickness));
@@ -102,7 +107,7 @@ flux1 = FDataDict("traction_vector"=>[0.0,+magn],
     );
 ```
 
-We make the dictionary for the region (the interior of the domain).  The FEMM and the material are needed. The geometry data  now is equipped with the  triangular  three-point rule. Note the model-reduction type which is used to dispatch to appropriate specializations of the material routines and the FEMM which needs to execute different code for different reduced-dimension models.
+We make the dictionary for the region (the interior of the domain).  The FEMM for the evaluation of the integrals over the interior of the domain (that is the stiffness matrix) and the material are needed. The geometry data  now is equipped with the  triangular  three-point rule. Note the model-reduction type which is used to dispatch to appropriate specializations of the material routines and the FEMM which needs to execute different code for different reduced-dimension models. Here the model reduction is "plane stress".
 
 ```julia
 MR = DeforModelRed2DStress
@@ -139,7 +144,7 @@ The complete information returned from the algorithm  is
 @show keys(modeldata)
 ```
 
-Now we can extract the displacement at the mid-edge node and compare to the converged (reference) value.
+Now we can extract the displacement at the mid-edge node and compare to the converged (reference) value. The code below selects the node inside a very small box of the size `tolerance` which presumably contains only a single node, the one at the midpoint of the edge.
 
 ```julia
 nl = selectnode(fens, box=[Mid_edge[1],Mid_edge[1],Mid_edge[2],Mid_edge[2]],
