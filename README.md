@@ -16,7 +16,7 @@ statics and dynamics (modal analysis, steady-state vibration).
 
 ## News
 
-- 06/11/2019: Applications are now separated  out from the `FinEtools` package.
+- 07/18/2019: Several step-by-step tutorials have been added.
 
 [Past news](oldnews.md)
 
