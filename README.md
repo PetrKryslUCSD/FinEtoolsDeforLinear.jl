@@ -16,7 +16,7 @@ statics and dynamics (modal analysis, steady-state vibration).
 
 ## News
 
-- 07/18/2019: Several step-by-step tutorials have been added.
+- 07/27/2019: The interface to stress/strain conversion routines changed to be generic. The intent was to allow for automatic differentiation.
 
 [Past news](oldnews.md)
 
