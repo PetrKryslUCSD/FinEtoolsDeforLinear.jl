@@ -506,9 +506,7 @@ function strain6vdet(::Type{DeforModelRed3D},  Cv::FVec{T}) where {T}
 		Cv[1] * Cv[6]/2 * Cv[6]/2)
 end
 
-end
-
-end
+end # module
 
 # function stressvectorrotation{MR<:DeforModelRed2DStress}(::Type{MR},
 #   Rm::FMat{T})
