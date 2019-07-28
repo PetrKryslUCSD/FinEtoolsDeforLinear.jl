@@ -495,7 +495,8 @@ end
 """
     strain6vdet(::Type{DeforModelRed3D},  Cv::FVec{T}) where {T}
 
-Compute the determinant of the symmetric strain-like square matrix represented as a vector.
+Compute the determinant of a symmetric strain-like square matrix represented
+as a vector.
 """
 function strain6vdet(::Type{DeforModelRed3D},  Cv::FVec{T}) where {T}
 	return (Cv[1] * Cv[2] * Cv[3] + 
@@ -504,6 +505,16 @@ function strain6vdet(::Type{DeforModelRed3D},  Cv::FVec{T}) where {T}
 		Cv[5]/2 * Cv[2] * Cv[5]/2 - 
 		Cv[4]/2 * Cv[4]/2 * Cv[3] - 
 		Cv[1] * Cv[6]/2 * Cv[6]/2)
+end
+
+"""
+    strain6vtr(::Type{DeforModelRed3D},  Cv::FVec{T}) where {T}
+
+Compute the trace of a symmetric strain-like square matrix represented as a
+vector.
+"""
+function strain6vtr(::Type{DeforModelRed3D},  Cv::FVec{T}) where {T}
+	return (Cv[1] + Cv[2] + Cv[3])
 end
 
 end # module
