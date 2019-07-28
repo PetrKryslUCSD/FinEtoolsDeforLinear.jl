@@ -478,8 +478,35 @@ function  rotstressvec!(::Type{DeforModelRed1D},  outstress::FVec{T},  instress:
     return outstress
 end
 
+"""
+    dett(::Type{DeforModelRed3D},  C::FMat{T}) where {T}
 
+Compute the determinant of the general square matrix.
+"""
+function dett(::Type{DeforModelRed3D},  C::FMat{T}) where {T}
+	return (C[1,1] * C[2,2] * C[3,3] + 
+		C[1,2] * C[2,3] * C[3,1] + 
+		C[1,3] * C[2,1] * C[3,2] - 
+		C[1,3] * C[2,2] * C[3,1] - 
+		C[1,2] * C[2,1] * C[3,3] - 
+		C[1,1] * C[2,3] * C[3,2])
+end
 
+"""
+    strain6vdet(::Type{DeforModelRed3D},  Cv::FVec{T}) where {T}
+
+Compute the determinant of the symmetric strain-like square matrix represented as a vector.
+"""
+function strain6vdet(::Type{DeforModelRed3D},  Cv::FVec{T}) where {T}
+	return (Cv[1] * Cv[2] * Cv[3] + 
+		Cv[4]/2 * Cv[6]/2 * Cv[5]/2 + 
+		Cv[5]/2 * Cv[4]/2 * Cv[6]/2 -  
+		Cv[5]/2 * Cv[2] * Cv[5]/2 - 
+		Cv[4]/2 * Cv[4]/2 * Cv[3] - 
+		Cv[1] * Cv[6]/2 * Cv[6]/2)
+end
+
+end
 
 end
 
