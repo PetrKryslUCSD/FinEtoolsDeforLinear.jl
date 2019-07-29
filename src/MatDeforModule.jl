@@ -517,6 +517,33 @@ function strain6vtr(::Type{DeforModelRed3D},  Cv::FVec{T}) where {T}
 	return (Cv[1] + Cv[2] + Cv[3])
 end
 
+"""
+    tens4symmto6x6t!(M::FMat{T}, ST::FMat{T}) where {T}
+
+Convert a symmetric 4th-order tensor to a 6 x 6 matrix.
+
+# Example
+
+J=tens4_ijkl(eye(3),eye(3))
+produces the tracor:
+T=rand(3); 
+sum(diag(T))*eye(3)
+t= tens4_dot_2(J,T)
+M= tens4_symm_to_6(ST)
+"""
+function tens4symmto6x6t!(M::FMat{T}, ST::FMat{T}) where {T}
+	# This corresponds to the arrangement of the components of stress (or
+	# strain) tensor, symmetric, three-dimensional, into a 6-component 
+	# vector.
+	ix=[1 1; 2 2; 3 3; 1 2; 1 3; 2 3];
+	for  j in 1:6
+		for  i in 1:6
+			M[i,j] = ST[ix[i,1],ix[i,2],ix[j,1],ix[j,2]];
+		end
+	end
+	return M
+end
+
 end # module
 
 # function stressvectorrotation{MR<:DeforModelRed2DStress}(::Type{MR},
