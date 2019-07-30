@@ -16,6 +16,8 @@ statics and dynamics (modal analysis, steady-state vibration).
 
 ## News
 
+- 07/30/2019: Support for fourth order tensors added.
+
 - 07/27/2019: The interface to stress/strain conversion routines changed to be generic. The intent was to allow for automatic differentiation.
 
 [Past news](oldnews.md)
