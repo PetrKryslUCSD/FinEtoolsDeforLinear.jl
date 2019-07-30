@@ -531,7 +531,7 @@ sum(diag(T))*eye(3)
 t= tens4_dot_2(J,T)
 M= tens4_symm_to_6(ST)
 """
-function tens4symmto6x6t!(M::FMat{T}, ST::FMat{T}) where {T}
+function tens4symmto6x6t!(M::FMat{T}, ST::Array{T, 4}) where {T}
 	# This corresponds to the arrangement of the components of stress (or
 	# strain) tensor, symmetric, three-dimensional, into a 6-component 
 	# vector.
