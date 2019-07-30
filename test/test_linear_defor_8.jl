@@ -94,3 +94,31 @@ end
 end
 using .mmmtdtens4A1
 mmmtdtens4A1.test()
+
+module mmmtdtens4B1
+using FinEtools
+using FinEtoolsDeforLinear
+using LinearAlgebra
+using Test
+# using BenchmarkTools
+
+function test()
+	delta = (I, J) -> I == J ? 1.0 : 0.0
+	lambda = 3.3
+	mu = 0.156
+
+	t = fill(0.0, 3, 3, 3, 3)
+	delta = (I, J) -> I == J ? 1.0 : 0.0
+	tens4ijkl!(t, delta, delta)
+	S = rand(3, 3)
+	@show tr(S) * I
+	tS = fill(0.0, 3, 3)
+	@show tens4dot2!(tS, t, S)
+
+	# @btime tens4dot2!($tS, $t, $S)
+	return true
+end
+end
+using .mmmtdtens4B1
+mmmtdtens4B1.test()
+
