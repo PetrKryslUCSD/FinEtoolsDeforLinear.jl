@@ -544,6 +544,59 @@ function tens4symmto6x6t!(M::FMat{T}, ST::Array{T, 4}) where {T}
 	return M
 end
 
+
+"""
+    tens4dot2!(R::Array{T, 2}, F::Array{T, 4}, S::Array{T, 2}) where {T}
+
+Compute the dyadic product of a 4th-order and a 2nd-order tensors.
+"""
+function tens4dot2!(R::Array{T, 2}, F::Array{T, 4}, S::Array{T, 2}) where {T}
+	R .= zero(T)
+	for  l in 1:3
+		for  k in 1:3
+			for  j in 1:3
+				for  i in 1:3
+					R[i,j] += F[i,j,k,l]*S[l,k];
+				end
+			end
+		end
+	end
+	return R
+end
+
+"""
+    tens4ijkl!(t::Array{T, 4}, A::FA, B::FB) where {T, FA, FB}
+
+Fill a 4th-order (tracor) tensor as a dyadic product of two 2nd-order 
+tensors.
+
+The `i,j,k,l` component is given as `t[i,j,k,l]=A(i,j)*B(k,l)`.
+
+# Example
+```
+t = fill(0.0, 3, 3, 3, 3)
+delta = (I, J) -> I == J ? 1.0 : 0.0
+tens4ijkl!(t, delta, delta)
+S = rand(3, 3)
+@show tr(S) * I
+tS = fill(0.0, 3, 3)
+@show tens4dot2!(tS, t, S)
+```
+"""
+function tens4ijkl!(t::Array{T, 4}, A::FA, B::FB) where {T, FA, FB}
+	for  l in 1:3
+		for  k in 1:3
+			for  j in 1:3
+				for  i in 1:3
+					t[i,j,k,l] = A(i,j)*B(k,l);
+				end
+			end
+		end
+	end
+	return t
+end
+
+
 end # module
 
 # function stressvectorrotation{MR<:DeforModelRed2DStress}(::Type{MR},
