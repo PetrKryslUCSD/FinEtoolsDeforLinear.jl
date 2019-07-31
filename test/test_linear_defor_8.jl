@@ -286,7 +286,7 @@ function test()
 	S = rand(3, 3)
 	tS = fill(0.0, 3, 3)
 	tens4dot2!(tS, t, S)
-	@show S - tS
+	# @show S - tS
 	@test norm(S - tS) <= 1.0e-12
 	return true
 end
@@ -307,7 +307,7 @@ function test()
 	S = rand(3, 3)
 	tS = fill(0.0, 3, 3)
 	tens4dot2!(tS, t, S)
-	@show S - tS
+	# @show S - tS
 	@test norm(S' - tS) <= 1.0e-12
 	return true
 end
@@ -328,7 +328,7 @@ function test()
 	S = rand(3, 3)
 	tS = fill(0.0, 3, 3)
 	tens4dot2!(tS, t, S)
-	@show tr(S) * I - tS
+	# @show tr(S) * I - tS
 	@test norm(tr(S) * I - tS) <= 1.0e-12
 	return true
 end
@@ -349,7 +349,7 @@ function test()
 	S = rand(3, 3)
 	tS = fill(0.0, 3, 3)
 	tens4dot2!(tS, t, S)
-	@show (S + S')/2 * I - tS
+	# @show (S + S')/2 * I - tS
 	@test norm((S + S')/2 - tS) <= 1.0e-12
 	return true
 end
@@ -370,7 +370,7 @@ function test()
 	S = rand(3, 3)
 	tS = fill(0.0, 3, 3)
 	tens4dot2!(tS, t, S)
-	@show (S - S')/2 * I - tS
+	# @show (S - S')/2 * I - tS
 	@test norm((S - S')/2 - tS) <= 1.0e-12
 	return true
 end
@@ -391,7 +391,7 @@ function test()
 	S = rand(3, 3)
 	tS = fill(0.0, 3, 3)
 	tens4dot2!(tS, t, S)
-	@show tr((S - tr(S)/3*I) ), tr(tS)
+	# @show tr((S - tr(S)/3*I) ), tr(tS)
 	@test norm(tr((S - tr(S)/3*I) ) - tr(tS)) <= 1.0e-12
 	return true
 end
