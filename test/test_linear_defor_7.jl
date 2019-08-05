@@ -177,66 +177,204 @@ function test()
   symmtens(N) = begin t=rand(N, N); t = (t+t')/2.0; end
   t = symmtens(2)
   v = zeros(3)
-  strain2x2tto3v!(v, t)
+  strainttov!(DeforModelRed2DStrain, v, t)
   to = zeros(2, 2)
-  strain3vto2x2t!(to, v)
+  strainvtot!(DeforModelRed2DStrain, to, v)
   @test norm(t-to) < eps(1.0)
 
   t = symmtens(3)
   v = zeros(6)
-  strain3x3tto6v!(v, t)
+  strainttov!(DeforModelRed3D, v, t)
   to = zeros(3, 3)
-  strain6vto3x3t!(to, v)
+  strainvtot!(DeforModelRed3D, to, v)
   @test norm(t-to) < eps(1.0)
 
   t = symmtens(2)
   v = zeros(3)
-  stress2x2to3v!(v, t)
+  stressttov!(DeforModelRed2DStress, v, t)
   to = zeros(2, 2)
-  stress3vto2x2t!(to, v)
+  stressvtot!(DeforModelRed2DStress, to, v)
   @test norm(t-to) < eps(1.0)
 
   v = vec([1. 2. 3.])
   t = zeros(3, 3)
-  stress3vto3x3t!(t, v)
+  stressvtot!(DeforModelRed2DStrain, t, v)
   to = [1. 3. 0; 3. 2. 0; 0 0 0]
   @test norm(t-to) < eps(1.0)
 
   v = vec([1. 2 3 4])
   t = zeros(3, 3)
-  stress4vto3x3t!(t, v)
+  stressvtot!(DeforModelRed2DStrain, t, v)
   to = [1. 3 0; 3 2 0; 0 0 4]
   @test norm(t-to) < eps(1.0)
 
   v = rand(6)
   t = zeros(3, 3)
-  stress6vto3x3t!(t, v)
+  stressvtot!(DeforModelRed3D, t, v)
   vo = zeros(6)
-  stress3x3tto6v!(vo, t)
+  stressttov!(DeforModelRed3D, vo, t)
   @test norm(v-vo) < eps(1.0)
 
-  v = rand(9)
-  t = zeros(3, 3)
-  strain9vto3x3t!(t, v)
-  t = (t + t')/2.0 # symmetrize
-  strain3x3tto9v!(v, t)
-  v6 = zeros(6)
-  strain9vto6v!(v6, v)
-  v9 = zeros(9)
-  strain6vto9v!(v9, v6)
-  @test norm(v-v9) < eps(1.0)
+  # v = rand(9)
+  # t = zeros(3, 3)
+  # strain9vto3x3t!(t, v)
+  # t = (t + t')/2.0 # symmetrize
+  # strain3x3tto9v!(v, t)
+  # v6 = zeros(6)
+  # strain9vto6v!(v6, v)
+  # v9 = zeros(9)
+  # strain6vto9v!(v9, v6)
+  # @test norm(v-v9) < eps(1.0)
 
-  v = vec([1. 2 3 4 4 5 5 6 6])
-  v6 = zeros(6)
-  stress9vto6v!(v6, v)
-  v9 = zeros(9)
-  stress6vto9v!(v9, v6)
-  @test norm(v-v9) < eps(1.0)
+  # v = vec([1. 2 3 4 4 5 5 6 6])
+  # v6 = zeros(6)
+  # stress9vto6v!(v6, v)
+  # v9 = zeros(9)
+  # stress6vto9v!(v9, v6)
+  # @test norm(v-v9) < eps(1.0)
 
 end
 end
 using .mstressconversionm
 mstressconversionm.test()
+
+
+module mmmtdt1
+using FinEtools
+using FinEtoolsDeforLinear
+using LinearAlgebra
+using Test
+function test()
+	MR = DeforModelRed3D
+	symmet(a) = a + transpose(a)
+	
+	a = rand(3, 3)
+	@test abs(det(a) - dett(MR, a)) / abs(det(a)) <= 1.0e-6
+	a = rand(3, 3)
+	@test abs(det(a) - dett(MR, a)) / abs(det(a)) <= 1.0e-6
+	a = rand(3, 3)
+	@test abs(det(a) - dett(MR, a)) / abs(det(a)) <= 1.0e-6
+	a = symmet(rand(3, 3))
+	@test abs(det(a) - dett(MR, a)) / abs(det(a)) <= 1.0e-6
+	a = rand(3, 3)
+	@test abs(det(a) - dett(MR, a)) / abs(det(a)) <= 1.0e-6
+	a = rand(3, 3)
+	@test abs(det(a) - dett(MR, a)) / abs(det(a)) <= 1.0e-6
+	a = rand(3, 3)
+	@test abs(det(a) - dett(MR, a)) / abs(det(a)) <= 1.0e-6
+	a = symmet(rand(3, 3))
+	@test abs(det(a) - dett(MR, a)) / abs(det(a)) <= 1.0e-6
+
+	a = symmet(rand(3, 3))
+	av = fill(zero(eltype(a)), 6)
+	strainttov!(MR, av, a)
+	@test abs(det(a) - strainvdet(MR, av)) / abs(det(a)) <= 1.0e-6
+	a = symmet(rand(3, 3))
+	av = fill(zero(eltype(a)), 6)
+	strainttov!(MR, av, a)
+	@test abs(det(a) - strainvdet(MR, av)) / abs(det(a)) <= 1.0e-6
+	a = symmet(rand(3, 3))
+	av = fill(zero(eltype(a)), 6)
+	strainttov!(MR, av, a)
+	@test abs(det(a) - strainvdet(MR, av)) / abs(det(a)) <= 1.0e-6
+	a = symmet(rand(3, 3))
+	av = fill(zero(eltype(a)), 6)
+	strainttov!(MR, av, a)
+	@test abs(det(a) - strainvdet(MR, av)) / abs(det(a)) <= 1.0e-6
+	a = symmet(rand(3, 3))
+	av = fill(zero(eltype(a)), 6)
+	strainttov!(MR, av, a)
+	@test abs(det(a) - strainvdet(MR, av)) / abs(det(a)) <= 1.0e-6
+	a = symmet(rand(3, 3))
+	av = fill(zero(eltype(a)), 6)
+	strainttov!(MR, av, a)
+	@test abs(det(a) - strainvdet(MR, av)) / abs(det(a)) <= 1.0e-6
+
+	a = symmet(rand(3, 3))
+	av = fill(zero(eltype(a)), 6)
+	strainttov!(MR, av, a)
+	@test abs(tr(a) - strainvtr(MR, av)) / abs(tr(a)) <= 1.0e-6
+	a = symmet(rand(3, 3))
+	av = fill(zero(eltype(a)), 6)
+	strainttov!(MR, av, a)
+	@test abs(tr(a) - strainvtr(MR, av)) / abs(tr(a)) <= 1.0e-6
+	a = symmet(rand(3, 3))
+	av = fill(zero(eltype(a)), 6)
+	strainttov!(MR, av, a)
+	@test abs(tr(a) - strainvtr(MR, av)) / abs(tr(a)) <= 1.0e-6
+end
+end
+using .mmmtdt1
+mmmtdt1.test()
+
+module mmmtdt2
+using FinEtools
+using FinEtoolsDeforLinear
+using LinearAlgebra
+using Test
+function test()
+	MR = DeforModelRed2DStrain
+	symmet(a) = a + transpose(a)
+	
+	a = rand(2, 2)
+	@test abs(det(a) - dett(MR, a)) / abs(det(a)) <= 1.0e-6
+	a = rand(2, 2)
+	@test abs(det(a) - dett(MR, a)) / abs(det(a)) <= 1.0e-6
+	a = rand(2, 2)
+	@test abs(det(a) - dett(MR, a)) / abs(det(a)) <= 1.0e-6
+	a = symmet(rand(2, 2))
+	@test abs(det(a) - dett(MR, a)) / abs(det(a)) <= 1.0e-6
+	a = rand(2, 2)
+	@test abs(det(a) - dett(MR, a)) / abs(det(a)) <= 1.0e-6
+	a = rand(2, 2)
+	@test abs(det(a) - dett(MR, a)) / abs(det(a)) <= 1.0e-6
+	a = rand(2, 2)
+	@test abs(det(a) - dett(MR, a)) / abs(det(a)) <= 1.0e-6
+	a = symmet(rand(2, 2))
+	@test abs(det(a) - dett(MR, a)) / abs(det(a)) <= 1.0e-6
+
+	a = symmet(rand(2, 2))
+	av = fill(zero(eltype(a)), 6)
+	strainttov!(MR, av, a)
+	@test abs(det(a) - strainvdet(MR, av)) / abs(det(a)) <= 1.0e-6
+	a = symmet(rand(2, 2))
+	av = fill(zero(eltype(a)), 6)
+	strainttov!(MR, av, a)
+	@test abs(det(a) - strainvdet(MR, av)) / abs(det(a)) <= 1.0e-6
+	a = symmet(rand(2, 2))
+	av = fill(zero(eltype(a)), 6)
+	strainttov!(MR, av, a)
+	@test abs(det(a) - strainvdet(MR, av)) / abs(det(a)) <= 1.0e-6
+	a = symmet(rand(2, 2))
+	av = fill(zero(eltype(a)), 6)
+	strainttov!(MR, av, a)
+	@test abs(det(a) - strainvdet(MR, av)) / abs(det(a)) <= 1.0e-6
+	a = symmet(rand(2, 2))
+	av = fill(zero(eltype(a)), 6)
+	strainttov!(MR, av, a)
+	@test abs(det(a) - strainvdet(MR, av)) / abs(det(a)) <= 1.0e-6
+	a = symmet(rand(2, 2))
+	av = fill(zero(eltype(a)), 6)
+	strainttov!(MR, av, a)
+	@test abs(det(a) - strainvdet(MR, av)) / abs(det(a)) <= 1.0e-6
+
+	MR = DeforModelRed2DStrain
+	a = symmet(rand(2, 2))
+	av = fill(zero(eltype(a)), 3)
+	strainttov!(MR, av, a)
+	@test abs(tr(a) - strainvtr(MR, av)) / abs(tr(a)) <= 1.0e-6
+	a = symmet(rand(2, 2))
+	av = fill(zero(eltype(a)), 3)
+	strainttov!(MR, av, a)
+	@test abs(tr(a) - strainvtr(MR, av)) / abs(tr(a)) <= 1.0e-6
+	a = symmet(rand(2, 2))
+	av = fill(zero(eltype(a)), 3)
+	strainttov!(MR, av, a)
+	@test abs(tr(a) - strainvtr(MR, av)) / abs(tr(a)) <= 1.0e-6
+end
+end
+using .mmmtdt2
+mmmtdt2.test()
 
 module mmtwistedeexportmm
 using FinEtools

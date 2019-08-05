@@ -26,45 +26,46 @@ function test()
 
 	a = symmet(rand(3, 3))
 	av = fill(zero(eltype(a)), 6)
-	strain3x3tto6v!(av, a)
-	@test abs(det(a) - strain6vdet(MR, av)) / abs(det(a)) <= 1.0e-6
+	strainttov!(MR, av, a)
+	@test abs(det(a) - strainvdet(MR, av)) / abs(det(a)) <= 1.0e-6
 	a = symmet(rand(3, 3))
 	av = fill(zero(eltype(a)), 6)
-	strain3x3tto6v!(av, a)
-	@test abs(det(a) - strain6vdet(MR, av)) / abs(det(a)) <= 1.0e-6
+	strainttov!(MR, av, a)
+	@test abs(det(a) - strainvdet(MR, av)) / abs(det(a)) <= 1.0e-6
 	a = symmet(rand(3, 3))
 	av = fill(zero(eltype(a)), 6)
-	strain3x3tto6v!(av, a)
-	@test abs(det(a) - strain6vdet(MR, av)) / abs(det(a)) <= 1.0e-6
+	strainttov!(MR, av, a)
+	@test abs(det(a) - strainvdet(MR, av)) / abs(det(a)) <= 1.0e-6
 	a = symmet(rand(3, 3))
 	av = fill(zero(eltype(a)), 6)
-	strain3x3tto6v!(av, a)
-	@test abs(det(a) - strain6vdet(MR, av)) / abs(det(a)) <= 1.0e-6
+	strainttov!(MR, av, a)
+	@test abs(det(a) - strainvdet(MR, av)) / abs(det(a)) <= 1.0e-6
 	a = symmet(rand(3, 3))
 	av = fill(zero(eltype(a)), 6)
-	strain3x3tto6v!(av, a)
-	@test abs(det(a) - strain6vdet(MR, av)) / abs(det(a)) <= 1.0e-6
+	strainttov!(MR, av, a)
+	@test abs(det(a) - strainvdet(MR, av)) / abs(det(a)) <= 1.0e-6
 	a = symmet(rand(3, 3))
 	av = fill(zero(eltype(a)), 6)
-	strain3x3tto6v!(av, a)
-	@test abs(det(a) - strain6vdet(MR, av)) / abs(det(a)) <= 1.0e-6
+	strainttov!(MR, av, a)
+	@test abs(det(a) - strainvdet(MR, av)) / abs(det(a)) <= 1.0e-6
 
 	a = symmet(rand(3, 3))
 	av = fill(zero(eltype(a)), 6)
-	strain3x3tto6v!(av, a)
-	@test abs(tr(a) - strain6vtr(MR, av)) / abs(tr(a)) <= 1.0e-6
+	strainttov!(MR, av, a)
+	@test abs(tr(a) - strainvtr(MR, av)) / abs(tr(a)) <= 1.0e-6
 	a = symmet(rand(3, 3))
 	av = fill(zero(eltype(a)), 6)
-	strain3x3tto6v!(av, a)
-	@test abs(tr(a) - strain6vtr(MR, av)) / abs(tr(a)) <= 1.0e-6
+	strainttov!(MR, av, a)
+	@test abs(tr(a) - strainvtr(MR, av)) / abs(tr(a)) <= 1.0e-6
 	a = symmet(rand(3, 3))
 	av = fill(zero(eltype(a)), 6)
-	strain3x3tto6v!(av, a)
-	@test abs(tr(a) - strain6vtr(MR, av)) / abs(tr(a)) <= 1.0e-6
+	strainttov!(MR, av, a)
+	@test abs(tr(a) - strainvtr(MR, av)) / abs(tr(a)) <= 1.0e-6
 end
 end
 using .mmmtdt1
 mmmtdt1.test()
+
 
 module mmmtdtens4A1
 using FinEtools

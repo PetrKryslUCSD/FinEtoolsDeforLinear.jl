@@ -882,10 +882,10 @@ function inspector(idat::MyIData, elnum, conn, xe,  out,  xq)
   end
   Rm=outputRm(xq)
   tm=zeros(FFlt,3,3)
-  stress4vto3x3t!(tm, out);# stress in global XYZ
+  stressvtot!(MR, tm, out);# stress in global XYZ
   tpm = Rm'*tm*Rm;#  stress matrix in cylindrical coordinates
   sp=zeros(FFlt,6)
-  stress3x3tto6v!(sp, tpm);# stress vector in cylindr. coord.
+  stressttov!(MR, sp, tpm);# stress vector in cylindr. coord.
   push!(idat.r,norm(xq))
   push!(idat.s,sp[idat.c])
   return idat

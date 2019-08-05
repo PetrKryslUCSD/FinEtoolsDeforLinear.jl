@@ -23,9 +23,16 @@ export nstressstrain, nthermstrain, stresscomponentmap
 # Exported: strain-displacement matrix and divergence matrix for all model-reduction types
 export Blmat!, divmat, vgradmat
 
-using .MatDeforModule: AbstractMatDefor, strain2x2tto3v!, strain3vto2x2t!, strain3x3tto6v!, strain6vto3x3t!, strain9vto3x3t!, strain3x3tto9v!, strain9vto6v!, strain6vto9v!, stress2x2to3v!,  stress3vto2x2t!, stress3vto3x3t!, stress4vto3x3t!, stress6vto3x3t!, stress3x3tto6v!, stress9vto6v!,  stress6vto9v!, rotstressvec!, dett, strain6vdet, strain6vtr, tens4symmto6x6t!, tens4dot2!, tens4ijkl!, tens4ikjl!, tens4iljk!, tens4identity!, tens4transposor!, tens4tracor!, tens4symmetrizor!, tens4skewor!, tens4deviator!
+using .MatDeforModule: AbstractMatDefor
+# using .MatDeforModule: AbstractMatDefor, strain2x2tto3v!, strain3vto2x2t!, strain3x3tto6v!, strain6vto3x3t!, strain9vto3x3t!, strain3x3tto9v!, strain9vto6v!, strain6vto9v!, stress2x2to3v!,  stress3vto2x2t!, stress3vto3x3t!, stress4vto3x3t!, stress6vto3x3t!, stress3x3tto6v!, stress9vto6v!,  stress6vto9v!
+using .MatDeforModule: rotstressvec!
+using .MatDeforModule: dett, strainvdet, strainvtr, strainttov!, strainvtot!, stressttov!, stressvtot!
+using .MatDeforModule: tens4symmto6x6t!, tens4dot2!, tens4ijkl!, tens4ikjl!, tens4iljk!, tens4identity!, tens4transposor!, tens4tracor!, tens4symmetrizor!, tens4skewor!, tens4deviator!
 # Exported: abstract type for  models of deformation,  conversion methods  for strain and stress, transformations  of strain and stress
-export AbstractMatDefor, strain2x2tto3v!, strain3vto2x2t!, strain3x3tto6v!, strain6vto3x3t!, strain9vto3x3t!, strain3x3tto9v!, strain9vto6v!, strain6vto9v!, stress2x2to3v!,  stress3vto2x2t!, stress3vto3x3t!, stress4vto3x3t!, stress6vto3x3t!, stress3x3tto6v!, stress9vto6v!,  stress6vto9v!, rotstressvec!, dett, strain6vdet, strain6vtr, tens4symmto6x6t!, tens4dot2!, tens4ijkl!, tens4ikjl!, tens4iljk!, tens4identity!, tens4transposor!, tens4tracor!, tens4symmetrizor!, tens4skewor!, tens4deviator!
+export AbstractMatDefor
+export rotstressvec!
+export dett, strainvdet, strainvtr, strainttov!, strainvtot!, stressttov!, stressvtot!
+export tens4symmto6x6t!, tens4dot2!, tens4ijkl!, tens4ikjl!, tens4iljk!, tens4identity!, tens4transposor!, tens4tracor!, tens4symmetrizor!, tens4skewor!, tens4deviator!
 
 using .MatDeforLinearElasticModule: AbstractMatDeforLinearElastic
 # Exported: type of  isotropic elastic material

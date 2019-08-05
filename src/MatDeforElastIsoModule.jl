@@ -2,7 +2,7 @@ module MatDeforElastIsoModule
 
 using FinEtools.FTypesModule: FInt, FFlt, FCplxFlt, FFltVec, FIntVec, FFltMat, FIntMat, FMat, FVec, FDataDict
 import FinEtoolsDeforLinear.DeforModelRedModule: AbstractDeforModelRed, DeforModelRed3D, DeforModelRed2DStrain, DeforModelRed2DStress, DeforModelRed2DAxisymm, DeforModelRed1D, nstressstrain, nthermstrain
-import FinEtoolsDeforLinear.MatDeforModule: AbstractMatDefor, stress6vto3x3t!, stress3vto2x2t!, stress4vto3x3t!, stress4vto3x3t!
+import FinEtoolsDeforLinear.MatDeforModule: AbstractMatDefor, stressvtot!
 import FinEtoolsDeforLinear.MatDeforLinearElasticModule: AbstractMatDeforLinearElastic
 import LinearAlgebra: Transpose, Diagonal, mul!
 At_mul_B!(C, A, B) = mul!(C, Transpose(A), B)
@@ -63,7 +63,7 @@ function MatDeforElastIso(mr::Type{DeforModelRed3D}, mass_density::FFlt, E::FFlt
 			output[1]  =  -sum(stress[1:3])/3.
 		elseif quantity == :princCauchy || quantity == :princcauchy
 			t = zeros(FFlt,3,3)
-			t = stress6vto3x3t!(t,stress);
+			t = stressvtot!(mr, t, stress);
 			ep = eigen(t);
 			(length(output) >= 3) || (output = zeros(3)) # make sure we can store it
 			copyto!(output,  sort(ep.values, rev=true));
@@ -136,7 +136,7 @@ function MatDeforElastIso(mr::Type{DeforModelRed2DStress}, mass_density::FFlt, E
 			output[1] = -sum(stress[1:2])/3.
 		elseif quantity == :princCauchy || quantity == :princcauchy
 			t = zeros(FFlt,2,2)
-			t = stress3vto2x2t!(t,stress);
+			t = stressvtot!(mr, t, stress);
 			ep = eigen(t);
 			(length(output) >= 2) || (output = zeros(2)) # make sure we can store it
 			copyto!(output,  sort(ep.values, rev=true));
@@ -204,7 +204,7 @@ function MatDeforElastIso(mr::Type{DeforModelRed2DStrain}, mass_density::FFlt, E
 			(length(output) >= 3) || (output = zeros(3)) # make sure we can store it
 			t = zeros(FFlt, 3,3)
 			sz = dot(self.D[3, 1:2], strain[1:2]-thstrain[1:2])-self.D[3,3]*thstrain[4];
-			t = stress4vto3x3t!(t, vcat(stress[1:3], [sz]));
+			t = stressvtot!(mr, t, vcat(stress[1:3], [sz]));
 			ep = eigen(t);
 			(length(output) >= 3) || (output = zeros(3)) # make sure we can store it
 			copyto!(output,  sort(ep.values, rev=true));
@@ -264,7 +264,7 @@ function MatDeforElastIso(mr::Type{DeforModelRed2DAxisymm}, mass_density::FFlt, 
 			output[1] = -sum(stress[[1,2,3]])/3.
 		elseif quantity == :princCauchy || quantity == :princcauchy
 			t = zeros(FFlt,3,3)
-			t = stress4vto3x3t!(t, stress[[1,2,4,3]]);
+			t = stressvtot!(mr, t, stress);
 			ep = eigen(t);
 			(length(output) >= 3) || (output = zeros(3)) # make sure we can store it
 			copyto!(output,  sort(ep.values, rev=true));
