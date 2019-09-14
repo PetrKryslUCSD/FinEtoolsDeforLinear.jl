@@ -239,7 +239,7 @@ using .mstressconversionm
 mstressconversionm.test()
 
 
-module mmmtdt1
+module mmmtdt1a
 using FinEtools
 using FinEtoolsDeforLinear
 using LinearAlgebra
@@ -304,8 +304,8 @@ function test()
 	@test abs(tr(a) - strainvtr(MR, av)) / abs(tr(a)) <= 1.0e-6
 end
 end
-using .mmmtdt1
-mmmtdt1.test()
+using .mmmtdt1a
+mmmtdt1a.test()
 
 module mmmtdt2
 using FinEtools
