@@ -116,7 +116,12 @@ Linear deformation 7 |   36     36
 
 ## Examples
 
-
+Begin with
+```
+using Pkg
+Pkg.activate(".")
+Pkg.instantiate()
+```
 There are a number of examples covering statics and dynamics. The examples may
 be executed as described in the  [conceptual guide to
 `FinEtools`](https://petrkryslucsd.github.io/FinEtools.jl/latest).
