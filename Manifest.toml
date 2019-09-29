@@ -82,7 +82,7 @@ version = "0.8.0"
 
 [[FinEtools]]
 deps = ["Arpack", "DelimitedFiles", "LinearAlgebra", "Printf", "Random", "SparseArrays", "Statistics", "StatsBase", "Test", "Unicode"]
-git-tree-sha1 = "7217d1d8b43781a37b94144a5fc1cd159cdf8909"
+git-tree-sha1 = "fd5a9bcfa6fea0b09fea4892086a00bdde0986aa"
 repo-rev = "master"
 repo-url = "https://github.com/PetrKryslUCSD/FinEtools.jl.git"
 uuid = "91bb5406-6c9a-523d-811d-0644c4229550"
