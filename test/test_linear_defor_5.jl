@@ -558,13 +558,13 @@ function test()
     ELASTIC(AE, E, nu)
     SECTION_CONTROLS(AE, "Hourglassctl", "HOURGLASS=ENHANCED")
     STEP_PERTURBATION_STATIC(AE)
-    BOUNDARY(AE, "ASSEM1.INSTNC1.", u.is_fixed, u.fixed_values)
+    BOUNDARY(AE, "ASSEM1.INSTNC1", u.is_fixed, u.fixed_values)
     DLOAD(AE, "ASSEM1.INSTNC1.TractionElements", vec([0.0, 0.0, -qmagn]))
     END_STEP(AE)
     close(AE)
     lines = read(AE.filename)
     @test length(lines) - 10270 == 0
-    try rm(AE.filename) catch end
+    # try rm(AE.filename) catch end
 
 end
 end
