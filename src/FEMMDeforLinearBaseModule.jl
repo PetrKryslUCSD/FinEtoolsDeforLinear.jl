@@ -42,6 +42,7 @@ function _buffers(self::AbstractFEMMDeforLinear, geom::NodalField, u::NodalField
     nstrs = nstressstrain(self.mr);  # number of stresses
     elmatdim = ndn*nne;             # dimension of the element matrix
     # Prepare _buffers
+    ecoords = fill(zero(FFlt), nne, ndofs(geom)); # array of Element coordinates
     elmat = fill(zero(FFlt), elmatdim, elmatdim);      # element matrix -- buffer
     dofnums = zeros(FInt, elmatdim); # degree of freedom array -- buffer
     loc = fill(zero(FFlt), 1, sdim); # quadrature point location -- buffer
@@ -53,7 +54,7 @@ function _buffers(self::AbstractFEMMDeforLinear, geom::NodalField, u::NodalField
     DB = fill(zero(FFlt), nstrs, elmatdim); # strain-displacement matrix -- buffer
     elvecfix = fill(zero(FFlt), elmatdim); # vector of prescribed displ. -- buffer
     elvec = fill(zero(FFlt), elmatdim); # element vector -- buffer
-    return dofnums, loc, J, csmatTJ, gradN, D, B, DB, elmat, elvec, elvecfix
+    return ecoords, dofnums, loc, J, csmatTJ, gradN, D, B, DB, elmat, elvec, elvecfix
 end
 
 """
@@ -68,7 +69,7 @@ This is a general routine for the abstract linear-deformation  FEMM.
 function mass(self::AbstractFEMMDeforLinear,  assembler::A,  geom::NodalField{FFlt}, u::NodalField{T}) where {A<:AbstractSysmatAssembler, T<:Number}
     fes = self.integdomain.fes
     npts,  Ns,  gradNparams,  w,  pc = integrationdata(self.integdomain);
-    dofnums, loc, J, csmatTJ, gradN, D, B, DB, elmat = _buffers(self, geom, u)  # Prepare buffers
+    ecoords, dofnums, loc, J, csmatTJ, gradN, D, B, DB, elmat = _buffers(self, geom, u)  # Prepare buffers
     rho::FFlt = massdensity(self.material); # mass density
     NexpTNexp = FFltMat[];# basis f. matrix -- buffer
     ndn = ndofs(u)
@@ -82,9 +83,10 @@ function mass(self::AbstractFEMMDeforLinear,  assembler::A,  geom::NodalField{FF
     end
     startassembly!(assembler,  size(elmat,1),  size(elmat,2),  count(fes), u.nfreedofs,  u.nfreedofs);
     for i = 1:count(fes) # Loop over elements
+        gathervalues_asmat!(geom, ecoords, fes.conn[i]);
         fill!(elmat,  0.0); # Initialize element matrix
         for j = 1:npts # Loop over quadrature points
-            locjac!(loc, J, geom.values, fes.conn[i], Ns[j], gradNparams[j])
+            locjac!(loc, J, ecoords, Ns[j], gradNparams[j])
             Jac = Jacobianvolume(self.integdomain, J, loc, fes.conn[i], Ns[j]);
             thefactor::FFlt =(rho*Jac*w[j]);
             elmat .+= NexpTNexp[j]*thefactor
@@ -110,13 +112,14 @@ Compute and assemble  stiffness matrix.
 function stiffness(self::AbstractFEMMDeforLinear, assembler::A, geom::NodalField{FFlt}, u::NodalField{T}) where {A<:AbstractSysmatAssembler, T<:Number}
     fes = self.integdomain.fes
     npts,  Ns,  gradNparams,  w,  pc = integrationdata(self.integdomain);
-    dofnums, loc, J, csmatTJ, gradN, D, B, DB, elmat, elvec, elvecfix = _buffers(self, geom, u)
+    ecoords, dofnums, loc, J, csmatTJ, gradN, D, B, DB, elmat, elvec, elvecfix = _buffers(self, geom, u)
     tangentmoduli!(self.material, D, 0.0, 0.0, loc, 0)
     startassembly!(assembler, size(elmat, 1), size(elmat, 2), count(fes), u.nfreedofs, u.nfreedofs);
     for i = 1:count(fes) # Loop over elements
+        gathervalues_asmat!(geom, ecoords, fes.conn[i]);
         fill!(elmat,  0.0); # Initialize element matrix
         for j = 1:npts # Loop over quadrature points
-            locjac!(loc, J, geom.values, fes.conn[i], Ns[j], gradNparams[j])
+            locjac!(loc, J, ecoords, Ns[j], gradNparams[j])
             Jac = Jacobianvolume(self.integdomain, J, loc, fes.conn[i], Ns[j]);
             updatecsmat!(self.mcsys, loc, J, fes.label[i]);
             At_mul_B!(csmatTJ, self.mcsys.csmat, J); # local Jacobian matrix
@@ -146,15 +149,16 @@ Compute load vector for nonzero EBC for fixed displacement.
 function nzebcloadsstiffness(self::AbstractFEMMDeforLinear,  assembler::A, geom::NodalField{FFlt}, u::NodalField{T}) where {A<:AbstractSysvecAssembler, T<:Number}
     fes = self.integdomain.fes
     npts,  Ns,  gradNparams,  w,  pc = integrationdata(self.integdomain);
-    dofnums, loc, J, csmatTJ, gradN, D, B, DB, elmat, elvec, elvecfix = _buffers(self, geom, u)
+    ecoords, dofnums, loc, J, csmatTJ, gradN, D, B, DB, elmat, elvec, elvecfix = _buffers(self, geom, u)
     tangentmoduli!(self.material, D, 0.0, 0.0, loc, 0)
     startassembly!(assembler,  u.nfreedofs);
     for i = 1:count(fes) # Loop over elements
         gatherfixedvalues_asvec!(u, elvecfix, fes.conn[i]);# retrieve element displacement vector
         if norm(elvecfix, Inf) != 0.0   # Is the load nonzero?
+            gathervalues_asmat!(geom, ecoords, fes.conn[i]);
             fill!(elmat,  0.0); # Initialize element matrix
             for j = 1:npts # Loop over quadrature points
-                locjac!(loc, J, geom.values, fes.conn[i], Ns[j], gradNparams[j])
+                locjac!(loc, J, ecoords, Ns[j], gradNparams[j])
                 Jac = Jacobianvolume(self.integdomain, J, loc, fes.conn[i], Ns[j]);
                 updatecsmat!(self.mcsys, loc, J, fes.label[i]);
                 At_mul_B!(csmatTJ, self.mcsys.csmat, J); # local Jacobian matrix
@@ -186,7 +190,7 @@ Compute the thermal-strain load vector.
 function  thermalstrainloads(self::AbstractFEMMDeforLinear, assembler::A, geom::NodalField{FFlt}, u::NodalField{T}, dT::NodalField{FFlt}) where {A<:AbstractSysvecAssembler, T<:Number}
     fes = self.integdomain.fes
     npts,  Ns,  gradNparams,  w,  pc = integrationdata(self.integdomain);
-    dofnums, loc, J, csmatTJ, gradN, D, B, DB, elmat, elvec, elvecfix = _buffers(self, geom, u)
+    ecoords, dofnums, loc, J, csmatTJ, gradN, D, B, DB, elmat, elvec, elvecfix = _buffers(self, geom, u)
     t= 0.0
     dt = 0.0
     DeltaT = fill(zero(FFlt), nodesperelem(fes))
@@ -197,9 +201,10 @@ function  thermalstrainloads(self::AbstractFEMMDeforLinear, assembler::A, geom::
     for i = 1:count(fes) # Loop over elements
         gathervalues_asvec!(dT, DeltaT, fes.conn[i]);# retrieve element temperatures
         if norm(DeltaT, Inf) != 0     # Is the thermal increment nonzero?
+            gathervalues_asmat!(geom, ecoords, fes.conn[i]);
             fill!(elvec,  0.0); # Initialize element matrix
             for j = 1:npts # Loop over quadrature points
-                locjac!(loc, J, geom.values, fes.conn[i], Ns[j], gradNparams[j])
+                locjac!(loc, J, ecoords, Ns[j], gradNparams[j])
                 Jac = Jacobianvolume(self.integdomain, J, loc, fes.conn[i], Ns[j]);
                 updatecsmat!(self.mcsys, loc, J, fes.label[i]);
                 At_mul_B!(csmatTJ,  self.mcsys.csmat,  J); # local Jacobian matrix
@@ -251,7 +256,7 @@ The updated inspector data is returned.
 function inspectintegpoints(self::FEMM, geom::NodalField{FFlt},  u::NodalField{T}, dT::NodalField{FFlt}, felist::FIntVec, inspector::F, idat, quantity=:Cauchy; context...) where {FEMM<:AbstractFEMMDeforLinear, T<:Number, F<:Function}
     fes = self.integdomain.fes
     npts,  Ns,  gradNparams,  w,  pc = integrationdata(self.integdomain);
-    dofnums, loc, J, csmatTJ, gradN, D, B, DB, elmat, elvec, elvecfix = _buffers(self, geom, u)
+    ecoords, dofnums, loc, J, csmatTJ, gradN, D, B, DB, elmat, elvec, elvecfix = _buffers(self, geom, u)
     # Sort out  the output requirements
     outputcsys = self.mcsys; # default: report the stresses in the material coord system
     for apair in pairs(context)
@@ -276,11 +281,11 @@ function inspectintegpoints(self::FEMM, geom::NodalField{FFlt},  u::NodalField{T
     # Loop over  all the elements and all the quadrature points within them
     for ilist = 1:length(felist) # Loop over elements
         i = felist[ilist];
-        gathervalues_asmat!(geom, xe, fes.conn[i]);# retrieve element coords
+        gathervalues_asmat!(geom, ecoords, fes.conn[i]);
         gathervalues_asvec!(u, ue, fes.conn[i]);# retrieve element displacements
         gathervalues_asvec!(dT, dTe, fes.conn[i]);# retrieve element temp. increments
         for j = 1:npts # Loop over quadrature points
-            locjac!(loc, J, geom.values, fes.conn[i], Ns[j], gradNparams[j])
+            locjac!(loc, J, ecoords, Ns[j], gradNparams[j])
             Jac = Jacobianvolume(self.integdomain, J, loc, fes.conn[i], Ns[j]);
             updatecsmat!(self.mcsys, loc, J, fes.label[i]);
             At_mul_B!(csmatTJ,  self.mcsys.csmat,  J); # local Jacobian matrix
@@ -299,7 +304,7 @@ function inspectintegpoints(self::FEMM, geom::NodalField{FFlt},  u::NodalField{T
                 rotstressvec!(self.mr, out, out1, outputcsys.csmat)# To output coord sys
             end
             # Call the inspector
-            idat = inspector(idat, i, fes.conn[i], xe, out, loc);
+            idat = inspector(idat, i, fes.conn[i], ecoords, out, loc);
         end # Loop over quadrature points
     end # Loop over elements
     return idat; # return the updated inspector data
@@ -319,13 +324,14 @@ function _buffers2(self::AbstractFEMMDeforLinear, geom::NodalField, u::NodalFiel
     nstrs = nstressstrain(self.mr);  # number of stresses
     elmatdim = ndn*nne;             # dimension of the element matrix
     # Prepare buffers
+    ecoords = fill(zero(FFlt), nne, ndofs(geom)); # array of Element coordinates
     elmat = fill(zero(FFlt), elmatdim, elmatdim);      # element matrix -- buffer
     dofnums = zeros(FInt, elmatdim); # degree of freedom array -- buffer
     loc = fill(zero(FFlt), 1, sdim); # quadrature point location -- buffer
     J = fill(zero(FFlt), sdim, mdim); # Jacobian matrix -- buffer
     csmatTJ = fill(zero(FFlt), mdim, mdim); # intermediate result -- buffer
     gradN = fill(zero(FFlt), nne, mdim); # intermediate result -- buffer
-   	return dofnums, loc, J, csmatTJ, gradN, elmat
+   	return ecoords, dofnums, loc, J, csmatTJ, gradN, elmat
 end
 
 """
@@ -344,12 +350,13 @@ inefficient.
 function infsup_gh(self::AbstractFEMMDeforLinear, assembler::A, geom::NodalField{FFlt}, u::NodalField{T}) where {A<:AbstractSysmatAssembler, T<:Number}
 	fes = self.integdomain.fes
 	npts,  Ns,  gradNparams,  w,  pc = integrationdata(self.integdomain);
-	dofnums, loc, J, csmatTJ, gradN, elmat = _buffers2(self, geom, u)
+	ecoords, dofnums, loc, J, csmatTJ, gradN, elmat = _buffers2(self, geom, u)
 	startassembly!(assembler, size(elmat, 1), size(elmat, 2), count(fes), u.nfreedofs, u.nfreedofs);
 	for i = 1:count(fes) # Loop over elements
+        gathervalues_asmat!(geom, ecoords, fes.conn[i]);
 	    fill!(elmat,  0.0); # Initialize element matrix
 	    for j = 1:npts # Loop over quadrature points
-	        locjac!(loc, J, geom.values, fes.conn[i], Ns[j], gradNparams[j])
+	        locjac!(loc, J, ecoords, Ns[j], gradNparams[j])
 	        Jac = Jacobianvolume(self.integdomain, J, loc, fes.conn[i], Ns[j]);
 	        updatecsmat!(self.mcsys, loc, J, fes.label[i]);
 	        At_mul_B!(csmatTJ, self.mcsys.csmat, J); # local Jacobian matrix
@@ -377,13 +384,14 @@ function _buffers3(self::AbstractFEMMDeforLinear, geom::NodalField, u::NodalFiel
     nstrs = nstressstrain(self.mr);  # number of stresses
     elmatdim = ndn*nne;             # dimension of the element matrix
     # Prepare buffers
+    ecoords = fill(zero(FFlt), nne, ndofs(geom)); # array of Element coordinates
     elmat = fill(zero(FFlt), elmatdim, elmatdim);      # element matrix -- buffer
     dofnums = zeros(FInt, elmatdim); # degree of freedom array -- buffer
     loc = fill(zero(FFlt), 1, sdim); # quadrature point location -- buffer
     J = fill(zero(FFlt), sdim, mdim); # Jacobian matrix -- buffer
     csmatTJ = fill(zero(FFlt), mdim, mdim); # intermediate result -- buffer
     gradN = fill(zero(FFlt), nne, mdim); # intermediate result -- buffer
-    return dofnums, loc, J, csmatTJ, gradN, elmat
+    return ecoords, dofnums, loc, J, csmatTJ, gradN, elmat
 end
 
 """
@@ -403,12 +411,13 @@ inefficient.
 function infsup_sh(self::AbstractFEMMDeforLinear, assembler::A, geom::NodalField{FFlt}, u::NodalField{T}) where {A<:AbstractSysmatAssembler, T<:Number}
 	fes = self.integdomain.fes
 	npts,  Ns,  gradNparams,  w,  pc = integrationdata(self.integdomain);
-	dofnums, loc, J, csmatTJ, gradN, elmat = _buffers3(self, geom, u)
+	ecoords, dofnums, loc, J, csmatTJ, gradN, elmat = _buffers3(self, geom, u)
 	startassembly!(assembler, size(elmat, 1), size(elmat, 2), count(fes), u.nfreedofs, u.nfreedofs);
 	for i = 1:count(fes) # Loop over elements
+        gathervalues_asmat!(geom, ecoords, fes.conn[i]);
 	    fill!(elmat,  0.0); # Initialize element matrix
 	    for j = 1:npts # Loop over quadrature points
-	        locjac!(loc, J, geom.values, fes.conn[i], Ns[j], gradNparams[j])
+	        locjac!(loc, J, ecoords, Ns[j], gradNparams[j])
 	        Jac = Jacobianvolume(self.integdomain, J, loc, fes.conn[i], Ns[j]);
 	        updatecsmat!(self.mcsys, loc, J, fes.label[i]);
 	        At_mul_B!(csmatTJ, self.mcsys.csmat, J); # local Jacobian matrix

@@ -128,8 +128,7 @@ function _buffers1(self::AbstractFEMMDeforLinearNICE, geom::NodalField, npts::FI
     csmatTJ = fill(zero(FFlt), mdim, mdim); # intermediate result -- buffer
     gradN = fill(zero(FFlt), nne, mdim);
     xl = fill(zero(FFlt), nne, mdim);
-    lconn = collect(1:nne)
-    return loc, J, adjJ, csmatTJ, gradN, xl, lconn
+    return loc, J, adjJ, csmatTJ, gradN, xl
 end
 
 function _buffers2(self::AbstractFEMMDeforLinearNICE, geom::NodalField, u::NodalField, npts::FInt)
@@ -162,7 +161,7 @@ function computenodalbfungrads(self, geom)
 
     fes = self.integdomain.fes
     npts,  Ns,  gradNparams,  w,  pc = integrationdata(self.integdomain);
-    loc, J, adjJ, csmatTJ, gradN, xl, lconn = _buffers1(self, geom, npts)
+    loc, J, adjJ, csmatTJ, gradN, xl = _buffers1(self, geom, npts)
 
     # Get the inverse map from finite element nodes to geometric cells
     fen2fe = FENodeToFEMap(fes.conn, nnodes(geom));
@@ -191,7 +190,7 @@ function computenodalbfungrads(self, geom)
                 for cn = 1:length(kconn)
                     xl[cn, :] = (reshape(geom.values[kconn[cn], :], 1, ndofs(geom)) - c) * self.mcsys.csmat
                 end
-                jac!(J, xl, lconn, gradNparams[pci])
+                jac!(J, xl, gradNparams[pci])
                 At_mul_B!(csmatTJ, self.mcsys.csmat, J); # local Jacobian matrix
                 Jac = Jacobianvolume(self.integdomain, J, c, fes.conn[i], Ns[pci]);
                 Vpatch += Jac * w[pci];
