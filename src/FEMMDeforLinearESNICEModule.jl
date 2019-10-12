@@ -155,8 +155,7 @@ function _buffers1(self::AbstractFEMMDeforLinearESNICE, geom::NodalField)
     csmatTJ = fill(zero(FFlt), mdim, mdim); # intermediate result -- buffer
     gradN = fill(zero(FFlt), nne, mdim);
     xl = fill(zero(FFlt), nne, mdim);
-    lconn = collect(1:nne)
-    return loc, J, adjJ, csmatTJ, gradN, xl, lconn
+    return loc, J, adjJ, csmatTJ, gradN, xl
 end
 
 function _buffers2(self::AbstractFEMMDeforLinearESNICE, geom::NodalField, u::NodalField, npts::FInt)
@@ -168,6 +167,7 @@ function _buffers2(self::AbstractFEMMDeforLinearESNICE, geom::NodalField, u::Nod
     nstrs = nstressstrain(self.mr);  # number of stresses
     elmatdim = ndn*nne;             # dimension of the element matrix
     # Prepare buffers
+    ecoords = fill(zero(FFlt), nne, ndofs(geom)); # array of Element coordinates
     elmat = fill(zero(FFlt), elmatdim, elmatdim);      # element matrix -- buffer
     B = fill(zero(FFlt), nstrs, elmatdim); # strain-displacement matrix -- buffer
     loc = fill(zero(FFlt), 1, sdim); # quadrature point location -- buffer
@@ -176,7 +176,7 @@ function _buffers2(self::AbstractFEMMDeforLinearESNICE, geom::NodalField, u::Nod
     Jac = fill(zero(FFlt), npts);
     D = fill(zero(FFlt), nstrs, nstrs); # material stiffness matrix -- buffer
     Dstab = fill(zero(FFlt), nstrs, nstrs); # material stiffness matrix -- buffer
-    return dofnums, loc, J, csmatTJ, Jac, D, Dstab, elmat, B
+    return ecoords, dofnums, loc, J, csmatTJ, Jac, D, Dstab, elmat, B
 end
 
 function _buffers3(self::AbstractFEMMDeforLinearESNICE, geom::NodalField, u::NodalField)
@@ -213,7 +213,7 @@ function _computenodalbfungrads(self, geom)
 
     fes = self.integdomain.fes
     npts,  Ns,  gradNparams,  w,  pc = integrationdata(self.integdomain);
-    loc, J, adjJ, csmatTJ, gradN, xl, lconn = _buffers1(self, geom)
+    loc, J, adjJ, csmatTJ, gradN, xl = _buffers1(self, geom)
 
     # Get the inverse map from finite element nodes to geometric cells
     fen2fe = FENodeToFEMap(fes.conn, nnodes(geom));
@@ -242,7 +242,7 @@ function _computenodalbfungrads(self, geom)
                 for cn = 1:length(kconn)
                     xl[cn, :] = (reshape(geom.values[kconn[cn], :], 1, ndofs(geom)) - c) * self.mcsys.csmat
                 end
-                jac!(J, xl, lconn, gradNparams[pci])
+                jac!(J, xl, gradNparams[pci])
                 At_mul_B!(csmatTJ, self.mcsys.csmat, J); # local Jacobian matrix
                 Jac = Jacobianvolume(self.integdomain, J, c, fes.conn[i], Ns[pci]);
                 Vpatch += Jac * w[pci];
@@ -360,7 +360,7 @@ Compute and assemble  stiffness matrix.
 function stiffness(self::AbstractFEMMDeforLinearESNICE, assembler::A, geom::NodalField{FFlt}, u::NodalField{T}) where {A<:AbstractSysmatAssembler, T<:Number}
     fes = self.integdomain.fes
     npts,  Ns,  gradNparams,  w,  pc = integrationdata(self.integdomain);
-    dofnums, loc, J, csmatTJ, Jac, D, Dstab = _buffers2(self, geom, u, npts)
+    ecoords, dofnums, loc, J, csmatTJ, Jac, D, Dstab = _buffers2(self, geom, u, npts)
     tangentmoduli!(self.material, D, 0.0, 0.0, loc, 0)
     tangentmoduli!(self.stabilization_material, Dstab, 0.0, 0.0, loc, 0)
     elmatsizeguess = 4*nodesperelem(fes)*ndofs(u)
@@ -386,9 +386,10 @@ function stiffness(self::AbstractFEMMDeforLinearESNICE, assembler::A, geom::Noda
     dofnums, B, DB, elmat, elvec, elvecfix, gradN = _buffers3(self, geom, u)
     # OPTIMIZATION: switch to a single-point quadrature rule here
     for i = 1:count(fes) # Loop over elements
+        gathervalues_asmat!(geom, ecoords, fes.conn[i]);
         fill!(elmat,  0.0); # Initialize element matrix
         for j = 1:npts # Loop over quadrature points
-            locjac!(loc, J, geom.values, fes.conn[i], Ns[j], gradNparams[j])
+            locjac!(loc, J, ecoords, Ns[j], gradNparams[j])
             Jac = Jacobianvolume(self.integdomain, J, loc, fes.conn[i], Ns[j]);
             updatecsmat!(self.mcsys, loc, J, fes.label[i]);
             At_mul_B!(csmatTJ, self.mcsys.csmat, J); # local Jacobian matrix
@@ -452,7 +453,7 @@ The updated inspector data is returned.
 function inspectintegpoints(self::AbstractFEMMDeforLinearESNICE, geom::NodalField{FFlt},  u::NodalField{T}, dT::NodalField{FFlt}, felist::FIntVec, inspector::F,  idat, quantity=:Cauchy; context...) where {T<:Number, F<:Function}
     fes = self.integdomain.fes
     npts,  Ns,  gradNparams,  w,  pc = integrationdata(self.integdomain);
-    dofnums, loc, J, csmatTJ, Jac, D, Dstab = _buffers2(self, geom, u, npts)
+    ecoords, dofnums, loc, J, csmatTJ, Jac, D, Dstab = _buffers2(self, geom, u, npts)
     # Sort out  the output requirements
     outputcsys = self.mcsys; # default: report the stresses in the material coord system
     for apair in pairs(context)
@@ -477,7 +478,7 @@ function inspectintegpoints(self::AbstractFEMMDeforLinearESNICE, geom::NodalFiel
     # Loop over  all the elements and all the quadrature points within them
     for ilist = 1:length(felist) # Loop over elements
     	i = felist[ilist];
-    	gathervalues_asmat!(geom, xe, fes.conn[i]);# retrieve element coords
+    	gathervalues_asmat!(geom, ecoords, fes.conn[i]);# retrieve element coords
     	for nix = fes.conn[i] # For all nodes connected by this element
     		nodalgradN = self.nodalbasisfunctiongrad[nix].gradN
     		patchconn = self.nodalbasisfunctiongrad[nix].patchconn
@@ -517,7 +518,7 @@ function inspectintegpoints(self::AbstractFEMMDeforLinearESNICE, geom::NodalFiel
     		    rotstressvec!(self.mr, out, out1, outputcsys.csmat)# To output coord sys
     		end
     		# Call the inspector
-    		idat = inspector(idat, i, fes.conn[i], xe, out, loc);
+    		idat = inspector(idat, i, fes.conn[i], ecoords, out, loc);
     	end # Loop over nodes
     end # Loop over elements
     return idat

@@ -11,8 +11,8 @@ using FinEtools.FTypesModule: FInt, FFlt, FCplxFlt, FFltVec, FIntVec, FFltMat, F
 import FinEtools.FENodeSetModule: FENodeSet
 import FinEtools.FESetModule: AbstractFESet, nodesperelem, manifdim
 import FinEtools.IntegDomainModule: IntegDomain, integrationdata, Jacobiansurface
-import FinEtools.FieldModule: ndofs, gatherdofnums!
-import FinEtools.NodalFieldModule: NodalField 
+import FinEtools.FieldModule: ndofs, gatherdofnums!, gathervalues_asmat!
+import FinEtools.NodalFieldModule: NodalField
 import FinEtools.FEMMBaseModule: AbstractFEMM
 import FinEtools.AssemblyModule: AbstractSysvecAssembler, AbstractSysmatAssembler, SysmatAssemblerSparseSymm, startassembly!, assemble!, makematrix!
 import FinEtools.MatrixUtilityModule: add_nnt_ut_only!, complete_lt!, locjac!
@@ -54,6 +54,7 @@ function surfacenormalspringstiffness(self::FEMMDeforWinkler, assembler::A,
     # Precompute basis f. values + basis f. gradients wrt parametric coor
     npts, Ns, gradNparams, w, pc = integrationdata(integdomain);
     # Prepare assembler and temporaries
+    ecoords = fill(zero(FFlt), nne, ndofs(geom)); # array of Element coordinates
     Ke = zeros(FFlt,Kedim,Kedim);                # element matrix -- used as a buffer
     dofnums = zeros(FInt, Kedim); # degree of freedom array -- used as a buffer
     loc = zeros(FFlt, 1,sdim); # quadrature point location -- used as a buffer
@@ -61,16 +62,17 @@ function surfacenormalspringstiffness(self::FEMMDeforWinkler, assembler::A,
     Nn = zeros(FFlt, Kedim); # column vector
     startassembly!(assembler, Kedim, Kedim, nfes, u.nfreedofs, u.nfreedofs);
     for i = 1:nfes # Loop over elements
+        gathervalues_asmat!(geom, ecoords, integdomain.fes.conn[i]);
         fill!(Ke, 0.0); # Initialize element matrix
         for j = 1:npts # Loop over quadrature points
-            locjac!(loc, J, geom.values, integdomain.fes.conn[i], Ns[j], gradNparams[j]) 
+            locjac!(loc, J, ecoords, Ns[j], gradNparams[j])
             Jac = Jacobiansurface(integdomain, J, loc, integdomain.fes.conn[i], Ns[j]);
             n = updatenormal!(surfacenormal, loc, J, integdomain.fes.label[i])
             for k= 1:nne
                 for r = 1:sdim
                     Nn[(k-1)*sdim+r] = n[r] * Ns[j][k];
                 end
-            end 
+            end
             add_nnt_ut_only!(Ke, Nn, springconstant*Jac*w[j])
         end # Loop over quadrature points
         complete_lt!(Ke)
