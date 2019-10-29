@@ -11,7 +11,7 @@ using LinearAlgebra: Symmetric, cholesky, eigen
 E = 1.0;
 nu = 0.3
 # julia> rand(8,3) .* 2 .- 1.0           
-perturbation = [         
+xyzperturbation = [         
 0.0767656  -0.983206    -0.14343     
 0.45767     0.981479     0.450997    
 -0.295854    0.542922     0.321333    
@@ -23,10 +23,10 @@ perturbation = [
 # Lambda1 = vec([-1.0 1.0 1.0 -1.0 -1.0 1.0 1.0 -1.0])
 # Lambda2 = vec([-1.0 -1.0 1.0 1.0 -1.0 -1.0 1.0 1.0])
 # Gamma1 = vec([1.0 1.0 -1.0 -1.0 -1.0 -1.0 1.0 1.0])
-# perturbation = zeros((8,3))  
-# perturbation[:, 1] .= Lambda2 ./ 10.0
-# perturbation[:, 2] .= Lambda1 ./ 10.0
-# perturbation[:, 3] .= Gamma1 ./ 20.0
+# xyzperturbation = zeros((8,3))  
+# xyzperturbation[:, 1] .= Lambda2 ./ 10.0
+# xyzperturbation[:, 2] .= Lambda1 ./ 10.0
+# xyzperturbation[:, 3] .= Gamma1 ./ 20.0
 
 mesh() = (FinEtools.FENodeSetModule.FENodeSet([
 	0.0 0.0 0.0; 
@@ -51,7 +51,7 @@ end # single_hex_perfect_cube
 
 function single_hex_full()
    	fens,fes = mesh()
-    fens.xyz +=  perturbation
+    fens.xyz +=  xyzperturbation
     
     MR = DeforModelRed3D
     material = MatDeforElastIso(MR, E, nu)
@@ -81,7 +81,7 @@ end # single_hex_full
 
 function single_hex_underintegrated()
    	fens,fes = mesh()
-    fens.xyz +=  perturbation
+    fens.xyz +=  xyzperturbation
     
     MR = DeforModelRed3D
     material = MatDeforElastIso(MR, E, nu)
@@ -111,7 +111,7 @@ end # single_hex_underintegrated
 
 function single_hex_ms()
    	fens,fes = mesh()
-    fens.xyz +=  perturbation
+    fens.xyz +=  xyzperturbation
     
     MR = DeforModelRed3D
     material = MatDeforElastIso(MR, E, nu)
