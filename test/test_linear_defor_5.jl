@@ -325,7 +325,7 @@ function test()
    # scattersysvec!(u, U[:])
 
     # File = "playground.vtk"
-    # MeshExportModule.vtkexportmesh(File, fens, fes)
+    # MeshExportModule.VTK.vtkexportmesh(File, fens, fes)
     # @async run(`"paraview.exe" $File`)
     # try rm(File) catch end
 
@@ -405,7 +405,7 @@ function test()
     # display(vfld)
 
     File = "Planar_truss.vtk"
-    MeshExportModule.vtkexportmesh(File, fens, fes;
+    MeshExportModule.VTK.vtkexportmesh(File, fens, fes;
     scalars=[("sx", sfld.values), ("vm", vfld.values)])
     # @async run(`"paraview.exe" $File`)
     try rm(File) catch end
@@ -529,7 +529,7 @@ function test()
 
     # File =  "LE10NAFEMS_sigmay.vtk"
     # vtkexportmesh(File, fes.conn, geom.values,
-    #                FinEtools.MeshExportModule.H8; vectors=[("u", u.values)],
+    #                FinEtools.MeshExportModule.VTK.H8; vectors=[("u", u.values)],
     #                scalars=[("sigmay", fld.values)])
     # @async run(`"paraview.exe" $File`)
     # true
@@ -636,7 +636,7 @@ function test()
             @test count(fes) == 144
             # File =  "a.vtk"
             # vtkexportmesh(File, fes.conn, fens.xyz,
-            #     FinEtools.MeshExportModule.H8)
+            #     FinEtools.MeshExportModule.VTK.H8)
             # @async run(`"paraview.exe" $File`)
 
             geom = NodalField(fens.xyz)
@@ -716,7 +716,7 @@ function test()
             # push!(sigyderrs[extrapolation], abs(sigyd/sigma_yD - 1.0))
             # File =  "a.vtk"
             # vtkexportmesh(File, fes.conn, geom.values,
-            # FinEtools.MeshExportModule.H8; vectors=[("u", u.values)],
+            # FinEtools.MeshExportModule.VTK.H8; vectors=[("u", u.values)],
             # scalars=[("sigmax", sigx.values/phun("MEGA*PA")),
             # ("sigmay", sigy.values/phun("MEGA*PA"))])
             # @async run(`"paraview.exe" $File`)
@@ -801,7 +801,7 @@ function test()
             fens,fes = H8toH20(fens,fes)
             # File =  "a.vtk"
             # vtkexportmesh(File, fes.conn, fens.xyz,
-            #     FinEtools.MeshExportModule.H20)
+            #     FinEtools.MeshExportModule.VTK.H20)
             # @async run(`"paraview.cexe" $File`)
 
             # println("My mesh=>$((count(fens), count(fes)))")
@@ -907,7 +907,7 @@ function test()
             # push!(sigyderrs[extrapolation], abs(sigyd/sigma_yD - 1.0))
             File =  "a.vtk"
             vtkexportmesh(File, connasarray(fes), geom.values,
-                FinEtools.MeshExportModule.H20; vectors=[("u", u.values)],
+                FinEtools.MeshExportModule.VTK.H20; vectors=[("u", u.values)],
                 scalars=[("sigmax", sigx.values/phun("MEGA*PA")),
                 ("sigmay", sigy.values/phun("MEGA*PA"))])
             # @async run(`"paraview.exe" $File`)
@@ -1001,7 +1001,7 @@ function test()
 
             # File =  "a.vtk"
             # vtkexportmesh(File, fes.conn, fens.xyz,
-            #     FinEtools.MeshExportModule.H8)
+            #     FinEtools.MeshExportModule.VTK.H8)
             # @async run(`"paraview.exe" $File`)
 
             geom = NodalField(fens.xyz)
@@ -1079,7 +1079,7 @@ function test()
             push!(sigyderrs[extrapolation], abs(sigyA/sigyAtrue - 1.0))
             # File =  "a.vtk"
             # vtkexportmesh(File, fes.conn, geom.values,
-            # FinEtools.MeshExportModule.H8; vectors=[("u", u.values)],
+            # FinEtools.MeshExportModule.VTK.H8; vectors=[("u", u.values)],
             # scalars=[("sigmax", sigx.values/phun("MEGA*PA"))])
             # @async run(`"paraview.exe" $File`)
         end

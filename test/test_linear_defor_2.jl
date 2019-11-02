@@ -105,7 +105,7 @@ function test()
   @test abs(cdis - (-0.13634800328800462)) < 1.0e-5
 
   File =  "NAFEMS-R0031-3-plate.vtk"
-  vtkexportmesh(File, connasarray(fes), geom.values, FinEtools.MeshExportModule.H20;
+  vtkexportmesh(File, connasarray(fes), geom.values, FinEtools.MeshExportModule.VTK.H20;
       scalars = [("Layer", fes.label)], vectors = [("displacement", u.values)])
   # @async run(`"paraview.exe" $File`)
   try  rm(File); catch end

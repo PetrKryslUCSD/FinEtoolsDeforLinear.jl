@@ -738,7 +738,7 @@ function test()
 
     File =  "LE10NAFEMS_MST10_sigmay.vtk"
     vtkexportmesh(File, connasarray(fes), geom.values,
-                   FinEtools.MeshExportModule.T10; vectors=[("u", u.values)],
+                   FinEtools.MeshExportModule.VTK.T10; vectors=[("u", u.values)],
                    scalars=[("sigmay", fld.values)])
     # @async run(`"paraview.exe" $File`)
     try rm(File) catch end
@@ -848,7 +848,7 @@ try rm(AE.filename) catch end
 
     File =  "LE10NAFEMS_MST10_sigmay.vtk"
     vtkexportmesh(File, connasarray(fes), geom.values,
-                   FinEtools.MeshExportModule.T10; vectors=[("u", u.values)],
+                   FinEtools.MeshExportModule.VTK.T10; vectors=[("u", u.values)],
                    scalars=[("sigmay", fld.values)])
     # @async run(`"paraview.exe" $File`)
     try rm(File) catch end

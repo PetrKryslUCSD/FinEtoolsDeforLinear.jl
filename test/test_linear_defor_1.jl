@@ -417,8 +417,8 @@ function test()
   u = NodalField(zeros(size(fens.xyz, 1), 2)) # displacement field
 
   l1 = selectnode(fens; box=[0, 0, -Inf,  Inf],  inflate = tolerance)
-  setebc!(u, l1, 1, val=0.0)
-  setebc!(u, l1, 2, val=0.0)
+  setebc!(u, l1, 1, 0.0)
+  setebc!(u, l1, 2, 0.0)
   applyebc!(u)
   numberdofs!(u)
 
@@ -446,7 +446,7 @@ function test()
 
   # File =  "a.vtk"
   # vtkexportmesh(File,  fes.conn,  geom.values+u.values,
-  # FinEtools.MeshExportModule.T3; vectors=[("u", u.values)])
+  # FinEtools.MeshExportModule.VTK.T3; vectors=[("u", u.values)])
 
   @test abs(theutip[2]-23.8155)/23.8155 < 1.e-3 # FinEALE solution
 end

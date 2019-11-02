@@ -645,7 +645,7 @@ function test()
         end
 
         # File =  "Meyer_Piening_sandwich-r1.vtk"
-        # vtkexportmesh(File, skinregion["femm"].integdomain.fes.conn, fens.xyz, FinEtools.MeshExportModule.H8)
+        # vtkexportmesh(File, skinregion["femm"].integdomain.fes.conn, fens.xyz, FinEtools.MeshExportModule.VTK.VTK.H8)
         # # @async run(`"paraview.exe" $File`)
 
 
