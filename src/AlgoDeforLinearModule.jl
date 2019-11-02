@@ -19,7 +19,7 @@ import FinEtoolsDeforLinear.FEMMDeforLinearMSModule: stiffness, mass, nzebcloads
 import FinEtoolsDeforLinear.DeforModelRedModule: stresscomponentmap
 import FinEtools.ForceIntensityModule: ForceIntensity
 import FinEtools.MeshModificationModule: meshboundary
-import FinEtools.MeshExportModule: vtkexportmesh
+import FinEtools.MeshExportModule.VTK: vtkexportmesh
 import LinearAlgebra: eigen, qr, dot, cholesky
 
 """
