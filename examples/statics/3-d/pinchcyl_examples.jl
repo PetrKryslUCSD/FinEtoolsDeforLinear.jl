@@ -11,7 +11,7 @@ thickness = 3.0;
 uzex = -1.82488e-5; # analytical solution for the vertical deflection under the load
 R = 300;
 L = 600;
-ref = 16
+ref = 48
 tolerance = thickness/1000;
 load = [0; 0; 1.0];
 
@@ -263,6 +263,238 @@ function pinchcyl_h8_export()
 
     true
 end # pinchcyl_h8_export
+
+function pinchcyl_h20r()
+    let (n, nt) = (ref, 4)
+        	fens, fes = H20block(90/360*2*pi, L/2, thickness, n, n, nt)
+        	
+        	for i in 1:count(fens)
+        		a = fens.xyz[i,1]; y = fens.xyz[i,2]; z = fens.xyz[i,3];
+        		fens.xyz[i,:] .= ((R-thickness/2+z)*sin(a), y, (R-thickness/2+z)*cos(a));
+        	end
+
+        	MR = DeforModelRed3D
+        	material = MatDeforElastIso(MR, E, nu)
+        	femm = FEMMDeforLinear(MR, IntegDomain(fes, GaussRule(3, 2)), material)
+
+        	boundaryfes = meshboundary(fes);
+        	topl = selectelem(fens,boundaryfes, box =  [-Inf Inf -Inf Inf thickness thickness], inflate =   tolerance);
+        	botl = selectelem(fens,boundaryfes, box =  [-Inf Inf -Inf Inf 0.0 0.0], inflate =   tolerance);
+        	x0l = selectelem(fens,boundaryfes, box =  [0.0 0.0 -Inf Inf 0.0 thickness], inflate =   tolerance);
+        	y0l = selectelem(fens,boundaryfes, box =  [-Inf Inf 0.0 0.0 0.0 thickness], inflate =   tolerance);
+        	cyll = setdiff(1:count(boundaryfes),topl,botl,x0l,y0l);
+
+        	geom = NodalField(fens.xyz)
+        	u = NodalField(zeros(size(fens.xyz,1), 3)) # displacement field
+        	
+        	y0nl = selectnode(fens, box = [-Inf Inf 0 0 -Inf Inf], inflate = tolerance);
+        	setebc!(u, y0nl, true, [1; 3], 0.0)
+        	yL2nl = selectnode(fens, box = [-Inf Inf L/2 L/2 -Inf Inf], inflate = tolerance);
+        	setebc!(u, yL2nl, true, [2], 0.0)
+        	x0nl = selectnode(fens, box = [0 0 -Inf Inf -Inf Inf], inflate = tolerance);
+        	setebc!(u, x0nl, true, [1], 0.0)
+        	z0nl = selectnode(fens, box = [-Inf Inf -Inf Inf 0 0], inflate = tolerance);
+        	setebc!(u, z0nl, true, [3], 0.0)
+
+        	applyebc!(u)
+        	numberdofs!(u)
+
+        	loadnl = selectnode(fens; box = [0 0 L/2 L/2 -Inf Inf], inflate  =  tolerance)
+        	
+        	nfemm = FEMMBase(IntegDomain(FESetP1(reshape(loadnl, length(loadnl), 1)), PointRule()))
+      		F = distribloads(nfemm, geom, u, ForceIntensity([0; 0; -1.0/4/length(loadnl)]), 3)
+
+      		associategeometry!(femm, geom)
+
+      		K = stiffness(femm, geom, u)
+
+      		scattersysvec!(u, K\F)
+
+      		u0z = mean(u.values[loadnl, 3]);
+      		println("Deflection under the load: $(round((u0z / uzex)* 100000)/100000*100) %")
+      		   
+        	File =  "pinchcyl_h20r_$(n)x$(nt).vtk"
+        	vtkexportmesh(File, fens, fes; vectors = [("u", u.values)])
+        	@async run(`"paraview.exe" $File`)
+
+        end
+
+    true
+end # pinchcyl_h20r
+
+function pinchcyl_h20()
+    let (n, nt) = (ref, 4)
+        	fens, fes = H20block(90/360*2*pi, L/2, thickness, n, n, nt)
+        	
+        	for i in 1:count(fens)
+        		a = fens.xyz[i,1]; y = fens.xyz[i,2]; z = fens.xyz[i,3];
+        		fens.xyz[i,:] .= ((R-thickness/2+z)*sin(a), y, (R-thickness/2+z)*cos(a));
+        	end
+
+        	MR = DeforModelRed3D
+        	material = MatDeforElastIso(MR, E, nu)
+        	femm = FEMMDeforLinear(MR, IntegDomain(fes, GaussRule(3, 3)), material)
+
+        	boundaryfes = meshboundary(fes);
+        	topl = selectelem(fens,boundaryfes, box =  [-Inf Inf -Inf Inf thickness thickness], inflate =   tolerance);
+        	botl = selectelem(fens,boundaryfes, box =  [-Inf Inf -Inf Inf 0.0 0.0], inflate =   tolerance);
+        	x0l = selectelem(fens,boundaryfes, box =  [0.0 0.0 -Inf Inf 0.0 thickness], inflate =   tolerance);
+        	y0l = selectelem(fens,boundaryfes, box =  [-Inf Inf 0.0 0.0 0.0 thickness], inflate =   tolerance);
+        	cyll = setdiff(1:count(boundaryfes),topl,botl,x0l,y0l);
+
+        	geom = NodalField(fens.xyz)
+        	u = NodalField(zeros(size(fens.xyz,1), 3)) # displacement field
+        	
+        	y0nl = selectnode(fens, box = [-Inf Inf 0 0 -Inf Inf], inflate = tolerance);
+        	setebc!(u, y0nl, true, [1; 3], 0.0)
+        	yL2nl = selectnode(fens, box = [-Inf Inf L/2 L/2 -Inf Inf], inflate = tolerance);
+        	setebc!(u, yL2nl, true, [2], 0.0)
+        	x0nl = selectnode(fens, box = [0 0 -Inf Inf -Inf Inf], inflate = tolerance);
+        	setebc!(u, x0nl, true, [1], 0.0)
+        	z0nl = selectnode(fens, box = [-Inf Inf -Inf Inf 0 0], inflate = tolerance);
+        	setebc!(u, z0nl, true, [3], 0.0)
+
+        	applyebc!(u)
+        	numberdofs!(u)
+
+        	loadnl = selectnode(fens; box = [0 0 L/2 L/2 -Inf Inf], inflate  =  tolerance)
+        	
+        	nfemm = FEMMBase(IntegDomain(FESetP1(reshape(loadnl, length(loadnl), 1)), PointRule()))
+      		F = distribloads(nfemm, geom, u, ForceIntensity([0; 0; -1.0/4/length(loadnl)]), 3)
+
+      		associategeometry!(femm, geom)
+
+      		K = stiffness(femm, geom, u)
+
+      		scattersysvec!(u, K\F)
+
+      		u0z = mean(u.values[loadnl, 3]);
+      		println("Deflection under the load: $(round((u0z / uzex)* 100000)/100000*100) %")
+      		   
+        	File =  "pinchcyl_h20_$(n)x$(nt).vtk"
+        	vtkexportmesh(File, fens, fes; vectors = [("u", u.values)])
+        	@async run(`"paraview.exe" $File`)
+
+        end
+
+    true
+end # pinchcyl_h20
+
+function pinchcyl_t10_ms()
+    let (n, nt) = (ref, 4)
+        	fens, fes = T10block(90/360*2*pi, L/2, thickness, n, n, nt)
+        	
+        	for i in 1:count(fens)
+        		a = fens.xyz[i,1]; y = fens.xyz[i,2]; z = fens.xyz[i,3];
+        		fens.xyz[i,:] .= ((R-thickness/2+z)*sin(a), y, (R-thickness/2+z)*cos(a));
+        	end
+
+        	MR = DeforModelRed3D
+        	material = MatDeforElastIso(MR, E, nu)
+        	femm = FEMMDeforLinearMST10(MR, IntegDomain(fes, TetRule(4)), material)
+
+        	boundaryfes = meshboundary(fes);
+        	topl = selectelem(fens,boundaryfes, box =  [-Inf Inf -Inf Inf thickness thickness], inflate =   tolerance);
+        	botl = selectelem(fens,boundaryfes, box =  [-Inf Inf -Inf Inf 0.0 0.0], inflate =   tolerance);
+        	x0l = selectelem(fens,boundaryfes, box =  [0.0 0.0 -Inf Inf 0.0 thickness], inflate =   tolerance);
+        	y0l = selectelem(fens,boundaryfes, box =  [-Inf Inf 0.0 0.0 0.0 thickness], inflate =   tolerance);
+        	cyll = setdiff(1:count(boundaryfes),topl,botl,x0l,y0l);
+
+        	geom = NodalField(fens.xyz)
+        	u = NodalField(zeros(size(fens.xyz,1), 3)) # displacement field
+        	
+        	y0nl = selectnode(fens, box = [-Inf Inf 0 0 -Inf Inf], inflate = tolerance);
+        	setebc!(u, y0nl, true, [1; 3], 0.0)
+        	yL2nl = selectnode(fens, box = [-Inf Inf L/2 L/2 -Inf Inf], inflate = tolerance);
+        	setebc!(u, yL2nl, true, [2], 0.0)
+        	x0nl = selectnode(fens, box = [0 0 -Inf Inf -Inf Inf], inflate = tolerance);
+        	setebc!(u, x0nl, true, [1], 0.0)
+        	z0nl = selectnode(fens, box = [-Inf Inf -Inf Inf 0 0], inflate = tolerance);
+        	setebc!(u, z0nl, true, [3], 0.0)
+
+        	applyebc!(u)
+        	numberdofs!(u)
+
+        	loadnl = selectnode(fens; box = [0 0 L/2 L/2 -Inf Inf], inflate  =  tolerance)
+        	
+        	nfemm = FEMMBase(IntegDomain(FESetP1(reshape(loadnl, length(loadnl), 1)), PointRule()))
+      		F = distribloads(nfemm, geom, u, ForceIntensity([0; 0; -1.0/4/length(loadnl)]), 3)
+
+      		associategeometry!(femm, geom)
+
+      		K = stiffness(femm, geom, u)
+
+      		scattersysvec!(u, K\F)
+
+      		u0z = mean(u.values[loadnl, 3]);
+      		println("Deflection under the load: $(round((u0z / uzex)* 100000)/100000*100) %")
+      		   
+        	File =  "pinchcyl_t10_ms_$(n)x$(nt).vtk"
+        	vtkexportmesh(File, fens, fes; vectors = [("u", u.values)])
+        	@async run(`"paraview.exe" $File`)
+
+        end
+
+    true
+end # pinchcyl_t10_ms
+
+function pinchcyl_t10()
+    let (n, nt) = (ref, 4)
+        	fens, fes = T10block(90/360*2*pi, L/2, thickness, n, n, nt)
+        	
+        	for i in 1:count(fens)
+        		a = fens.xyz[i,1]; y = fens.xyz[i,2]; z = fens.xyz[i,3];
+        		fens.xyz[i,:] .= ((R-thickness/2+z)*sin(a), y, (R-thickness/2+z)*cos(a));
+        	end
+
+        	MR = DeforModelRed3D
+        	material = MatDeforElastIso(MR, E, nu)
+        	femm = FEMMDeforLinear(MR, IntegDomain(fes, TetRule(4)), material)
+
+        	boundaryfes = meshboundary(fes);
+        	topl = selectelem(fens,boundaryfes, box =  [-Inf Inf -Inf Inf thickness thickness], inflate =   tolerance);
+        	botl = selectelem(fens,boundaryfes, box =  [-Inf Inf -Inf Inf 0.0 0.0], inflate =   tolerance);
+        	x0l = selectelem(fens,boundaryfes, box =  [0.0 0.0 -Inf Inf 0.0 thickness], inflate =   tolerance);
+        	y0l = selectelem(fens,boundaryfes, box =  [-Inf Inf 0.0 0.0 0.0 thickness], inflate =   tolerance);
+        	cyll = setdiff(1:count(boundaryfes),topl,botl,x0l,y0l);
+
+        	geom = NodalField(fens.xyz)
+        	u = NodalField(zeros(size(fens.xyz,1), 3)) # displacement field
+        	
+        	y0nl = selectnode(fens, box = [-Inf Inf 0 0 -Inf Inf], inflate = tolerance);
+        	setebc!(u, y0nl, true, [1; 3], 0.0)
+        	yL2nl = selectnode(fens, box = [-Inf Inf L/2 L/2 -Inf Inf], inflate = tolerance);
+        	setebc!(u, yL2nl, true, [2], 0.0)
+        	x0nl = selectnode(fens, box = [0 0 -Inf Inf -Inf Inf], inflate = tolerance);
+        	setebc!(u, x0nl, true, [1], 0.0)
+        	z0nl = selectnode(fens, box = [-Inf Inf -Inf Inf 0 0], inflate = tolerance);
+        	setebc!(u, z0nl, true, [3], 0.0)
+
+        	applyebc!(u)
+        	numberdofs!(u)
+
+        	loadnl = selectnode(fens; box = [0 0 L/2 L/2 -Inf Inf], inflate  =  tolerance)
+        	
+        	nfemm = FEMMBase(IntegDomain(FESetP1(reshape(loadnl, length(loadnl), 1)), PointRule()))
+      		F = distribloads(nfemm, geom, u, ForceIntensity([0; 0; -1.0/4/length(loadnl)]), 3)
+
+      		associategeometry!(femm, geom)
+
+      		K = stiffness(femm, geom, u)
+
+      		scattersysvec!(u, K\F)
+
+      		u0z = mean(u.values[loadnl, 3]);
+      		println("Deflection under the load: $(round((u0z / uzex)* 100000)/100000*100) %")
+      		   
+        	File =  "pinchcyl_t10_$(n)x$(nt).vtk"
+        	vtkexportmesh(File, fens, fes; vectors = [("u", u.values)])
+        	@async run(`"paraview.exe" $File`)
+
+        end
+
+    true
+end # pinchcyl_t10
 
 
 
