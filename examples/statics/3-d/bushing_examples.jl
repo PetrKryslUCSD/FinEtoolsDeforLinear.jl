@@ -14,7 +14,7 @@ ang = 180/180*pi;
 iuz = 0.05
 p = 0.27;
 tolerance = min(L, Re-Ri, ang)/1000;
-nR, nc, nt = 13, 34, 1
+nR, nc, nt = 7, 14, 1
 
 function bushing_h8_full()
 
@@ -298,7 +298,109 @@ function bushing_h8_export()
     true
 end # bushing_h8_export
 
+function bushing_t10_algo_ms()
 
+	fens, fes  = T10block(ang, L, Re-Ri, nc, nt, nR)
+	internal_fenids = selectnode(fens, box = [0 ang 0 L 0 0], inflate = tolerance);
+
+	MR = DeforModelRed3D
+	material = MatDeforElastIso(MR, E, nu)
+	femm = FEMMDeforLinearMST10(MR, IntegDomain(fes, TetRule(4)), material)
+	regions = FDataDict[FDataDict("femm"=>femm)]
+
+	boundaryfes = meshboundary(fes);
+	ibcl = selectelem(fens, boundaryfes, box = [0 ang 0 L 0 0], inflate = tolerance);
+	ebcl = selectelem(fens, boundaryfes, box = [0 ang 0 L Re-Ri Re-Ri], inflate = tolerance);
+	
+	for i in 1:count(fens)
+		a = fens.xyz[i,1]; y = fens.xyz[i,2]; r = fens.xyz[i,3]+Ri;
+		fens.xyz[i,:] .= (r*sin(a), y, r*cos(a));
+	end
+
+	essential_bcs = FDataDict[]
+	x0nl = selectnode(fens, box = [0 0 -Inf Inf -Inf Inf], inflate = tolerance);
+	push!(essential_bcs, FDataDict("displacement"=> 0.0, "component"=> 1, "node_list"=>x0nl))
+
+	y0nl = selectnode(fens, box = [-Inf Inf 0 0 -Inf Inf], inflate = tolerance);
+	push!(essential_bcs, FDataDict("displacement"=> 0.0, "component"=> 2, "node_list"=>y0nl))
+	yLnl = selectnode(fens, box = [-Inf Inf L L -Inf Inf], inflate = tolerance);
+	push!(essential_bcs, FDataDict("displacement"=> 0.0, "component"=> 2, "node_list"=>yLnl))
+
+	enl = connectednodes(subset(boundaryfes, ebcl))
+	push!(essential_bcs, FDataDict("displacement"=> 0.0, "component"=> 1, "node_list"=>enl))
+	push!(essential_bcs, FDataDict("displacement"=> 0.0, "component"=> 2, "node_list"=>enl))
+	push!(essential_bcs, FDataDict("displacement"=> 0.0, "component"=> 3, "node_list"=>enl))
+	inl = connectednodes(subset(boundaryfes, ibcl))
+	push!(essential_bcs, FDataDict("displacement"=> 0.0, "component"=> 1, "node_list"=>inl))
+	push!(essential_bcs, FDataDict("displacement"=> 0.0, "component"=> 2, "node_list"=>inl))
+	push!(essential_bcs, FDataDict("displacement"=> iuz, "component"=> 3, "node_list"=>inl))
+
+	modeldata = FDataDict("fens"=>fens,
+	"regions"=>regions,
+	"essential_bcs"=>essential_bcs
+	)
+	modeldata = AlgoDeforLinearModule.linearstatics(modeldata)
+
+	filebase = "bushing_T10_algo_ms"
+	modeldata["postprocessing"] = FDataDict("file"=>filebase * "-nodal-", "quantity"=>:pressure, "component"=>collect(1:1), "nodevalmethod"=>:averaging, "reportat"=>:extraptrend)
+	modeldata = AlgoDeforLinearModule.exportstress(modeldata)
+	modeldata["postprocessing"] = FDataDict("file"=>filebase * "-elwise-", "quantity"=>:pressure, "component"=>collect(1:1), "nodevalmethod"=>:averaging, "reportat"=>:extraptrend)
+	modeldata = AlgoDeforLinearModule.exportstresselementwise(modeldata)
+
+    true
+end # bushing_t10_algo_ms
+
+function bushing_t10_algo()
+
+	fens, fes  = T10block(ang, L, Re-Ri, nc, nt, nR)
+	internal_fenids = selectnode(fens, box = [0 ang 0 L 0 0], inflate = tolerance);
+
+	MR = DeforModelRed3D
+	material = MatDeforElastIso(MR, E, nu)
+	femm = FEMMDeforLinear(MR, IntegDomain(fes, TetRule(4)), material)
+	regions = FDataDict[FDataDict("femm"=>femm)]
+
+	boundaryfes = meshboundary(fes);
+	ibcl = selectelem(fens, boundaryfes, box = [0 ang 0 L 0 0], inflate = tolerance);
+	ebcl = selectelem(fens, boundaryfes, box = [0 ang 0 L Re-Ri Re-Ri], inflate = tolerance);
+	
+	for i in 1:count(fens)
+		a = fens.xyz[i,1]; y = fens.xyz[i,2]; r = fens.xyz[i,3]+Ri;
+		fens.xyz[i,:] .= (r*sin(a), y, r*cos(a));
+	end
+
+	essential_bcs = FDataDict[]
+	x0nl = selectnode(fens, box = [0 0 -Inf Inf -Inf Inf], inflate = tolerance);
+	push!(essential_bcs, FDataDict("displacement"=> 0.0, "component"=> 1, "node_list"=>x0nl))
+
+	y0nl = selectnode(fens, box = [-Inf Inf 0 0 -Inf Inf], inflate = tolerance);
+	push!(essential_bcs, FDataDict("displacement"=> 0.0, "component"=> 2, "node_list"=>y0nl))
+	yLnl = selectnode(fens, box = [-Inf Inf L L -Inf Inf], inflate = tolerance);
+	push!(essential_bcs, FDataDict("displacement"=> 0.0, "component"=> 2, "node_list"=>yLnl))
+
+	enl = connectednodes(subset(boundaryfes, ebcl))
+	push!(essential_bcs, FDataDict("displacement"=> 0.0, "component"=> 1, "node_list"=>enl))
+	push!(essential_bcs, FDataDict("displacement"=> 0.0, "component"=> 2, "node_list"=>enl))
+	push!(essential_bcs, FDataDict("displacement"=> 0.0, "component"=> 3, "node_list"=>enl))
+	inl = connectednodes(subset(boundaryfes, ibcl))
+	push!(essential_bcs, FDataDict("displacement"=> 0.0, "component"=> 1, "node_list"=>inl))
+	push!(essential_bcs, FDataDict("displacement"=> 0.0, "component"=> 2, "node_list"=>inl))
+	push!(essential_bcs, FDataDict("displacement"=> iuz, "component"=> 3, "node_list"=>inl))
+
+	modeldata = FDataDict("fens"=>fens,
+	"regions"=>regions,
+	"essential_bcs"=>essential_bcs
+	)
+	modeldata = AlgoDeforLinearModule.linearstatics(modeldata)
+
+	filebase = "bushing_T10_algo"
+	modeldata["postprocessing"] = FDataDict("file"=>filebase * "-nodal-", "quantity"=>:pressure, "component"=>collect(1:1), "nodevalmethod"=>:averaging, "reportat"=>:extraptrend)
+	modeldata = AlgoDeforLinearModule.exportstress(modeldata)
+	modeldata["postprocessing"] = FDataDict("file"=>filebase * "-elwise-", "quantity"=>:pressure, "component"=>collect(1:1), "nodevalmethod"=>:averaging, "reportat"=>:extraptrend)
+	modeldata = AlgoDeforLinearModule.exportstresselementwise(modeldata)
+
+    true
+end # bushing_t10_algo_ms
 
 #     true
 # end # twisted_beam_export
@@ -316,6 +418,9 @@ function allrun()
     println("#####################################################")
     println("# bushing_h8u_algo_ms ")
     bushing_h8u_algo_ms()
+    println("#####################################################")
+    println("# bushing_t10_algo_ms")
+    bushing_t10_algo_ms()
     return true
 end # function allrun
 
