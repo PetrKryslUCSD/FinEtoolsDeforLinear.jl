@@ -5,13 +5,13 @@ using FinEtoolsDeforLinear.AlgoDeforLinearModule
 using FinEtools.MeshExportModule
 using Statistics: mean
  
-E = 2*(1+1/2);
-nu = 0.499999999; # This is the correct Poisson ratio
+E = 3.0;
+nu = 0.4999999; # This is the correct Poisson ratio
 Ri = 0.25;
 Re = 1.0;
 L = Ri/2;
 ang = 180/180*pi;
-iuz = 0.05
+iuz = Ri/15
 p = 0.27;
 tolerance = min(L, Re-Ri, ang)/1000;
 nR, nc, nt = 7, 14, 1
