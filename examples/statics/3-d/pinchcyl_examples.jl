@@ -11,7 +11,7 @@ thickness = 3.0;
 uzex = -1.82488e-5; # analytical solution for the vertical deflection under the load
 R = 300;
 L = 600;
-ref = 48
+ref = 32
 tolerance = thickness/1000;
 load = [0; 0; 1.0];
 
@@ -64,9 +64,9 @@ function pinchcyl_h8_full()
   		u0z = mean(u.values[loadnl, 3]);
   		println("Deflection under the load: $(round((u0z / uzex)* 100000)/100000*100) %")
   		   
-    	# File =  "pinchcyl_1_$(nperradius).vtk"
-    	# vtkexportmesh(File, fens, fes; vectors = [("u", u.values)])
-    	# @async run(`"paraview.exe" $File`)
+    	File =  "pinchcyl_h8_full_$(n)x$(nt).vtk"
+    	vtkexportmesh(File, fens, fes; vectors = [("u", u.values)])
+    	@async run(`"paraview.exe" $File`)
 
     end
 
