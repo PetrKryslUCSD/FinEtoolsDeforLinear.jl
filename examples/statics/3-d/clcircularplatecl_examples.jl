@@ -14,7 +14,7 @@ E = 1e7;
 nu = 0.3;
 Magnitude = 10;
 R = 100.0;
-thickness = 0.5;
+thickness = 2.5;
 tolerance = 0.0001*thickness;
 @show analyt_sol = 3*(1-nu^2)*Magnitude*R^2/(4*pi*E*thickness^3);
 
@@ -175,6 +175,7 @@ function clcircularplatecl_h8_ms()
   		F = distribloads(nfemm, geom, u, ForceIntensity([0; 0; Magnitude/4/length(cnl)]), 3)
 
   		associategeometry!(femm, geom)
+  		@show minimum(femm.phis), maximum(femm.phis)
 
   		K = stiffness(femm, geom, u)
 
@@ -191,6 +192,65 @@ function clcircularplatecl_h8_ms()
 
     true
 end # clcircularplatecl_h8_ms
+
+function clcircularplatecl_h8u_ms()
+    nt = 1
+    for nperradius in [2, 4, 8]
+    	nt=nt+1;
+    	fens,fes = T4quartercyln(R, thickness, nperradius, nt)
+    	fens,fes = T4toH8(fens,fes)
+    	
+    	MR = DeforModelRed3D
+    	material = MatDeforElastIso(MR, E, nu)
+    	femm = FEMMDeforLinearMSH8(MR, IntegDomain(fes, GaussRule(3, 2)), material)
+
+    	boundaryfes = meshboundary(fes);
+    	topl = selectelem(fens,boundaryfes, box =  [-Inf Inf -Inf Inf thickness thickness], inflate =   tolerance);
+    	botl = selectelem(fens,boundaryfes, box =  [-Inf Inf -Inf Inf 0.0 0.0], inflate =   tolerance);
+    	x0l = selectelem(fens,boundaryfes, box =  [0.0 0.0 -Inf Inf 0.0 thickness], inflate =   tolerance);
+    	y0l = selectelem(fens,boundaryfes, box =  [-Inf Inf 0.0 0.0 0.0 thickness], inflate =   tolerance);
+    	cyll = setdiff(1:count(boundaryfes),topl,botl,x0l,y0l);
+
+    	geom = NodalField(fens.xyz)
+    	u = NodalField(zeros(size(fens.xyz,1), 3)) # displacement field
+
+    	x0nl = connectednodes(subset(boundaryfes, x0l))
+    	setebc!(u,x0nl,true,1,0.0)
+
+    	y0nl = connectednodes(subset(boundaryfes, y0l))
+    	setebc!(u,y0nl,true,2,0.0)
+
+    	cylnl = connectednodes(subset(boundaryfes, cyll))
+    	setebc!(u,cylnl,true,1,0.0)
+    	setebc!(u,cylnl,true,2,0.0)
+    	setebc!(u,cylnl,true,3,0.0)
+
+    	applyebc!(u)
+    	numberdofs!(u)
+
+    	cnl = selectnode(fens; box = [0 0 0 0 0 thickness], inflate  =  tolerance)
+    	
+    	nfemm = FEMMBase(IntegDomain(FESetP1(reshape(cnl, length(cnl), 1)), PointRule()))
+  		F = distribloads(nfemm, geom, u, ForceIntensity([0; 0; Magnitude/4/length(cnl)]), 3)
+
+  		associategeometry!(femm, geom)
+  		@show minimum(femm.phis), maximum(femm.phis)
+  		
+  		K = stiffness(femm, geom, u)
+
+  		scattersysvec!(u, K\F)
+
+  		u0z = mean(u.values[cnl, 3]);
+  		println("Deflection under the load: $(round((u0z / analyt_sol)* 100000)/100000*100) %")
+  		   
+    	File =  "clcircularplatecl_h8u_ms_$(nperradius).vtk"
+    	vtkexportmesh(File, fens, fes; vectors = [("u", u.values)])
+    	@async run(`"paraview.exe" $File`)
+
+    end
+
+    true
+end # clcircularplatecl_h8u_ms
 
 function clcircularplatecl_h8_export()
     nt = 1
