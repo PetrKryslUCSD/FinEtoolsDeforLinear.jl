@@ -1,3 +1,23 @@
+"""
+    tens4checksymmetry(C4th) 
+
+If the fourth-order tensor of material elasticity has the full set of
+symmetries, return true; otherwise false.
+"""
+function tens4checksymmetry(C4th) 
+	for I in 1:3
+		for J in 1:3
+			for K in 1:3
+				for L in 1:3
+					C4th[I, J, K, L] != C4th[K, L, I, J] && return false
+					C4th[I, J, K, L] != C4th[J, I, K, L] && return false
+					C4th[I, J, K, L] != C4th[I, J, L, K] && return false
+				end
+			end
+		end
+	end
+	return true
+end
 
 """
     tens4symmto6x6t!(M::FMat{T}, ST::FMat{T}) where {T}
@@ -54,7 +74,7 @@ function tens4symm6x6tot!(ST::Array{T, 4}, M::FMat{T}) where {T}
 			end
 		end
 	end
-    return t
+    return ST
 end
 
 """
