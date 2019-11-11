@@ -83,7 +83,7 @@ function test()
 		mu * (delta(I, K) * delta(J, L) + delta(I, L) * delta(J, K))
 	end
 	Cm = fill(0.0, 6, 6)
-	tens4symmto6x6t!(Cm, C)
+	tens4symmtto6x6t!(Cm, C)
 
 	mI = Matrix(Diagonal([1.0, 1.0, 1.0, 0.5, 0.5, 0.5]))
 	m1 = [1.0, 1.0, 1.0, 0.0, 0.0, 0.0];

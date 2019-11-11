@@ -32,7 +32,7 @@ using .MatDeforModule: tens4checksymmetry, tens4symmtto6x6t!, tens4symmt6x6tot!,
 export AbstractMatDefor
 export rotstressvec!
 export dett, strainvdet, strainvtr, strainttov!, strainvtot!, stressttov!, stressvtot!
-export tens4checksymmetry, tens4symmto6x6t!, tens4symmt6x6tot!, tens4dot2!, tens4ijkl!, tens4ikjl!, tens4iljk!, tens4identity!, tens4transposor!, tens4tracor!, tens4symmetrizor!, tens4skewor!, tens4deviator!
+export tens4checksymmetry, tens4symmtto6x6t!, tens4symmt6x6tot!, tens4dot2!, tens4ijkl!, tens4ikjl!, tens4iljk!, tens4identity!, tens4transposor!, tens4tracor!, tens4symmetrizor!, tens4skewor!, tens4deviator!
 
 using .MatDeforLinearElasticModule: AbstractMatDeforLinearElastic
 # Exported: type of  isotropic elastic material

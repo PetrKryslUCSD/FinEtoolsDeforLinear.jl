@@ -1,6 +1,6 @@
 module m4thsymmcheck1
 using FinEtools
-using FinEtoolsDeforLinear: tens4checksymmetry, tens4symm6x6tot!, tens4symmto6x6t!
+using FinEtoolsDeforLinear: tens4checksymmetry, tens4symm6x6tot!, tens4symmtto6x6t!
 using LinearAlgebra
 using Test
 function test()
@@ -10,7 +10,7 @@ function test()
 	t = fill(0.0, 3, 3, 3, 3)
 	tens4symm6x6tot!(t, C)
 	@test tens4checksymmetry(t)
-	tens4symmto6x6t!(C, t)
+	tens4symmtto6x6t!(C, t)
 	@assert norm(C - C') <= eps(1.0)
 	@assert norm(C - Co) <= eps(1.0)
 end
