@@ -20,7 +20,7 @@ function tens4checksymmetry(C4th)
 end
 
 """
-    tens4symmto6x6t!(M::FMat{T}, ST::FMat{T}) where {T}
+    tens4symmtto6x6t!(M::FMat{T}, ST::Array{T, 4}) where {T}
 
 Convert a symmetric 4th-order tensor to a 6 x 6 matrix.
 
@@ -39,7 +39,7 @@ t= tens4_dot_2(J,T)
 M= tens4_symm_to_6(ST)
 ```
 """
-function tens4symmto6x6t!(M::FMat{T}, ST::Array{T, 4}) where {T}
+function tens4symmtto6x6t!(M::FMat{T}, ST::Array{T, 4}) where {T}
 	# This corresponds to the arrangement of the components of stress (or
 	# strain) tensor, symmetric, three-dimensional, into a 6-component 
 	# vector.
@@ -53,7 +53,7 @@ function tens4symmto6x6t!(M::FMat{T}, ST::Array{T, 4}) where {T}
 end
 
 """
-    tens4symm6x6tot!(ST::Array{T, 4}, M::FMat{T}) where {T}
+    tens4symmt6x6tot!(ST::Array{T, 4}, M::FMat{T}) where {T}
 
 Convert a symmetric 6 x 6 matrix to a symmetric 4th-order tensor.
 
@@ -62,7 +62,7 @@ The order corresponds to the arrangement of the components of stress (or
 strain) tensor, symmetric, three-dimensional, into a 6-component 
 vector.
 """
-function tens4symm6x6tot!(ST::Array{T, 4}, M::FMat{T}) where {T}
+function tens4symmt6x6tot!(ST::Array{T, 4}, M::FMat{T}) where {T}
 	ix = [1 4 5; 4 2 6; 5 6 3]
 	n = 3
 	for i in 1:n
