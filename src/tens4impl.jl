@@ -32,6 +32,30 @@ function tens4symmto6x6t!(M::FMat{T}, ST::Array{T, 4}) where {T}
 	return M
 end
 
+"""
+    tens4symm6x6tot!(ST::Array{T, 4}, M::FMat{T}) where {T}
+
+Convert a symmetric 6 x 6 matrix to a symmetric 4th-order tensor.
+
+!!! Note
+The order corresponds to the arrangement of the components of stress (or
+strain) tensor, symmetric, three-dimensional, into a 6-component 
+vector.
+"""
+function tens4symm6x6tot!(ST::Array{T, 4}, M::FMat{T}) where {T}
+	ix = [1 4 5; 4 2 6; 5 6 3]
+	n = 3
+	for i in 1:n
+		for j in 1:n
+			for k in 1:n
+				for l in 1:n
+					ST[i, j, k, l] = M[ix[i, j], ix[k, l]]
+				end
+			end
+		end
+	end
+    return t
+end
 
 """
     tens4dot2!(R::Array{T, 2}, F::Array{T, 4}, S::Array{T, 2}) where {T}
