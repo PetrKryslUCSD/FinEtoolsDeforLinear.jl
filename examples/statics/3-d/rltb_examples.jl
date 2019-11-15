@@ -92,7 +92,7 @@ function rltb_H8_by_hand()
 
     true
 
-end # hughes_cantilever_stresses_MST10
+end # rltb_H8_by_hand
 
 function rltb_H20_by_hand()
     elementtag = "H20"
@@ -162,27 +162,15 @@ function rltb_H20_by_hand()
 
     true
 
-end # hughes_cantilever_stresses_MST10
+end # rltb_H20_by_hand
 
 function allrun()
     println("#####################################################")
-    println("# hughes_cantilever_stresses_MST10 ")
-    hughes_cantilever_stresses_MST10()
+    println("# rltb_H8_by_hand ")
+    rltb_H8_by_hand()
     println("#####################################################")
-    println("# hughes_cantilever_stresses_MST10_incompressible ")
-    hughes_cantilever_stresses_MST10_incompressible()
-    println("#####################################################")
-    println("# hughes_cantilever_stresses_nodal_MST10 ")
-    hughes_cantilever_stresses_nodal_MST10()
-    println("#####################################################")
-    println("# hughes_cantilever_stresses_nodal_T10 ")
-    hughes_cantilever_stresses_nodal_T10()
-    println("#####################################################")
-    println("# hughes_cantilever_stresses_T10 ")
-    hughes_cantilever_stresses_T10()
-    println("#####################################################")
-    println("# hughes_cantilever_stresses_T10_incompressible ")
-    hughes_cantilever_stresses_T10_incompressible()
+    println("# rltb_H20_by_hand ")
+    rltb_H20_by_hand()
     return true
 end # function allrun
 
