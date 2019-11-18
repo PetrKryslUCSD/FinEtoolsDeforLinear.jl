@@ -9,7 +9,7 @@ using LinearAlgebra: Symmetric, cholesky
 # Isotropic material
 E=1000.0;
 nu=0.4999; #Taylor data
-W=2.5;
+W=25.0;
 H=50.0;
 L= 50.0;
 htol = minimum([L,H,W])/1000;
@@ -17,7 +17,7 @@ uzex =-12.6;
 magn = 0.2*uzex/4;
 Force =magn*W*H*2;
 CTE = 0.0
-n = 30 #
+n = 5 #
 
 function getfrcL!(forceout::FFltVec, XYZ::FFltMat, tangents::FFltMat, fe_label::FInt)
     copyto!(forceout, [0.0; 0.0; magn])
