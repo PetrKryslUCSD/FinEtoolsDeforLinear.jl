@@ -62,6 +62,10 @@ using .FEMMDeforLinearMSModule: FEMMDeforLinearMSH8, FEMMDeforLinearMST10, stiff
 # Exported: type for mean-strain solid elements, discretization methods
 export FEMMDeforLinearMSH8, FEMMDeforLinearMST10, stiffness, nzebcloadsstiffness, thermalstrainloads, inspectintegpoints
 
+using .FEMMDeforLinearIMModule: FEMMDeforLinearIMH8, stiffness, nzebcloadsstiffness, thermalstrainloads, inspectintegpoints
+# Exported: type for mean-strain solid elements, discretization methods
+export FEMMDeforLinearIMH8, stiffness, nzebcloadsstiffness, thermalstrainloads, inspectintegpoints
+
 using .FEMMDeforSurfaceDampingModule: FEMMDeforSurfaceDamping, dampingABC
 #Exported: type for surface damping (absorbing boundary conditions)
 export FEMMDeforSurfaceDamping, dampingABC
