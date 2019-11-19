@@ -12,7 +12,7 @@ using PGFPlotsX
 # Isotropic material
 E = 1.0;
 nu = 0.3
-aspect = 100.0
+aspects = [1.0 10.0 100.0 1000.0]
 # julia> rand(8,3) .* 2 .- 1.0           
 # xyzperturbation = [         
 # 0.0767656  -0.983206    -0.14343     
@@ -43,110 +43,159 @@ mesh() = (FinEtools.FENodeSetModule.FENodeSet([
 	]), FinEtools.FESetModule.FESetH8(reshape([1, 2, 3, 4, 5, 6, 7, 8], 1, 8)))
 
 function bend_hex_spectrum_full()
-   	fens,fes = mesh()
-    fens.xyz[:, 1] .*= aspect
-    
-    MR = DeforModelRed3D
-    material = MatDeforElastIso(MR, E, nu)
+	function sim(aspect)
+		fens,fes = mesh()
+		fens.xyz[:, 1] .*= aspect
 
-    geom = NodalField(fens.xyz)
-    u = NodalField(zeros(size(fens.xyz,1), 3)) # displacement field
-	applyebc!(u)
-    numberdofs!(u)
+		MR = DeforModelRed3D
+		material = MatDeforElastIso(MR, E, nu)
 
-    femm = FEMMDeforLinear(MR, IntegDomain(fes, GaussRule(3, 2)), material)
+		geom = NodalField(fens.xyz)
+		u = NodalField(zeros(size(fens.xyz,1), 3)) # displacement field
+		applyebc!(u)
+		numberdofs!(u)
 
-    vol = integratefunction(femm, geom, x -> 1.0, 3)
+		femm = FEMMDeforLinear(MR, IntegDomain(fes, GaussRule(3, 2)), material)
 
-    associategeometry!(femm, geom)
-    K = stiffness(femm, geom, u)
+		vol = integratefunction(femm, geom, x -> 1.0, 3)
 
-    D = eigen(Matrix(K))
-    
-    # File =  "bend_hex_spectrum_full.vtk"
-    # vectors = [("ev_$(idx)_$(round(D.values[idx] * 10000) / 10000)", deepcopy(scattersysvec!(u, D.vectors[:,idx]).values)) for idx in 1:length(D.values)] 
-    # vtkexportmesh(File, fens, fes;  vectors=vectors)
-    # @async run(`"paraview.exe" $File`)
+		associategeometry!(femm, geom)
+		K = stiffness(femm, geom, u)
 
-    savecsv("bend_hex_spectrum_full-aspect=$(aspect).csv", eigenvalues = vec(D.values))
-    # @pgf _a = SemiLogYAxis({
-    #     xlabel = "Mode [ND]",
-    #     ylabel = "Generalized stiffness [N/m]",
-    #     grid="major",
-    #     legend_pos  = "south east",
-    #     title = "Hexahedron spectrum, \\aspect=$(aspect)"
-    # },
-    # Plot({"red", mark="triangle"}, Table([:x => vec(7:size(K, 1)), :y => vec(D.values[7:end])])), LegendEntry("FEA"))
-    # display(_a)
+		D = eigen(Matrix(K))
 
-    true
+		# File =  "bend_hex_spectrum_full.vtk"
+		# vectors = [("ev_$(idx)_$(round(D.values[idx] * 10000) / 10000)", deepcopy(scattersysvec!(u, D.vectors[:,idx]).values)) for idx in 1:length(D.values)] 
+		# vtkexportmesh(File, fens, fes;  vectors=vectors)
+		# @async run(`"paraview.exe" $File`)
 
+		savecsv("bend_hex_spectrum_full-aspect=$(aspect).csv", eigenvalues = vec(D.values))
+		# @pgf _a = SemiLogYAxis({
+		#     xlabel = "Mode [ND]",
+		#     ylabel = "Generalized stiffness [N/m]",
+		#     grid="major",
+		#     legend_pos  = "south east",
+		#     title = "Hexahedron spectrum, \\aspect=$(aspect)"
+		# },
+		# Plot({"red", mark="triangle"}, Table([:x => vec(7:size(K, 1)), :y => vec(D.values[7:end])])), LegendEntry("FEA"))
+		# display(_a)
+
+		true
+	end
+	for aspect in aspects
+		sim(aspect)
+	end
 end # bend_hex_spectrum_full
 
 function bend_hex_spectrum_underintegrated()
-	fens,fes = mesh()
-	fens.xyz[:, 1] .*= aspect
+	function sim(aspect)
+		fens,fes = mesh()
+		fens.xyz[:, 1] .*= aspect
 
-	MR = DeforModelRed3D
-	material = MatDeforElastIso(MR, E, nu)
+		MR = DeforModelRed3D
+		material = MatDeforElastIso(MR, E, nu)
 
-	geom = NodalField(fens.xyz)
-	u = NodalField(zeros(size(fens.xyz,1), 3)) # displacement field
-	applyebc!(u)
-	numberdofs!(u)
+		geom = NodalField(fens.xyz)
+		u = NodalField(zeros(size(fens.xyz,1), 3)) # displacement field
+		applyebc!(u)
+		numberdofs!(u)
 
-	femm = FEMMDeforLinear(MR, IntegDomain(fes, GaussRule(3, 1)), material)
+		femm = FEMMDeforLinear(MR, IntegDomain(fes, GaussRule(3, 1)), material)
 
-	vol = integratefunction(femm, geom, x -> 1.0, 3)
+		vol = integratefunction(femm, geom, x -> 1.0, 3)
 
-	associategeometry!(femm, geom)
-	K = stiffness(femm, geom, u)
+		associategeometry!(femm, geom)
+		K = stiffness(femm, geom, u)
 
-	D = eigen(Matrix(K))
+		D = eigen(Matrix(K))
 
-	# File =  "bend_hex_spectrum_full.vtk"
-	# vectors = [("ev_$(idx)_$(round(D.values[idx] * 10000) / 10000)", deepcopy(scattersysvec!(u, D.vectors[:,idx]).values)) for idx in 1:length(D.values)] 
-	# vtkexportmesh(File, fens, fes;  vectors=vectors)
-	# @async run(`"paraview.exe" $File`)
+		# File =  "bend_hex_spectrum_full.vtk"
+		# vectors = [("ev_$(idx)_$(round(D.values[idx] * 10000) / 10000)", deepcopy(scattersysvec!(u, D.vectors[:,idx]).values)) for idx in 1:length(D.values)] 
+		# vtkexportmesh(File, fens, fes;  vectors=vectors)
+		# @async run(`"paraview.exe" $File`)
 
-	savecsv("bend_hex_spectrum_underintegrated-aspect=$(aspect).csv", eigenvalues = vec(D.values))
-	
-	true
-
+		savecsv("bend_hex_spectrum_underintegrated-aspect=$(aspect).csv", eigenvalues = vec(D.values))
+		
+		true
+	end
+	for aspect in aspects
+		sim(aspect)
+	end
 end # bend_hex_spectrum_underintegrated
 
 function bend_hex_spectrum_ms()
-   	fens,fes = mesh()
-    fens.xyz[:, 1] .*= aspect
-    
-    MR = DeforModelRed3D
-    material = MatDeforElastIso(MR, E, nu)
+	function sim(aspect)
+		fens,fes = mesh()
+		fens.xyz[:, 1] .*= aspect
 
-    geom = NodalField(fens.xyz)
-    u = NodalField(zeros(size(fens.xyz,1), 3)) # displacement field
-	applyebc!(u)
-    numberdofs!(u)
+		MR = DeforModelRed3D
+		material = MatDeforElastIso(MR, E, nu)
 
-    femm = FEMMDeforLinearMSH8(MR, IntegDomain(fes, GaussRule(3, 2)), material)
+		geom = NodalField(fens.xyz)
+		u = NodalField(zeros(size(fens.xyz,1), 3)) # displacement field
+		applyebc!(u)
+		numberdofs!(u)
 
-    vol = integratefunction(femm, geom, x -> 1.0, 3)
+		femm = FEMMDeforLinearMSH8(MR, IntegDomain(fes, GaussRule(3, 2)), material)
 
-    associategeometry!(femm, geom)
-    
-    K = stiffness(femm, geom, u)
+		vol = integratefunction(femm, geom, x -> 1.0, 3)
 
-    D = eigen(Matrix(K))
-    
-    savecsv("bend_hex_spectrum_ms-aspect=$(aspect).csv", eigenvalues = vec(D.values))
-    
-    # File =  "bend_hex_spectrum_ms.vtk"
-    # vectors = [("ev_$(idx)_$(round(D.values[idx] * 10000) / 10000)", deepcopy(scattersysvec!(u, D.vectors[:,idx]).values)) for idx in 1:length(D.values)] 
-    # vtkexportmesh(File, fens, fes;  vectors=vectors)
-    # @async run(`"paraview.exe" $File`)
+		associategeometry!(femm, geom)
 
-    true
+		K = stiffness(femm, geom, u)
 
+		D = eigen(Matrix(K))
+
+		savecsv("bend_hex_spectrum_ms-aspect=$(aspect).csv", eigenvalues = vec(D.values))
+
+		# File =  "bend_hex_spectrum_ms.vtk"
+		# vectors = [("ev_$(idx)_$(round(D.values[idx] * 10000) / 10000)", deepcopy(scattersysvec!(u, D.vectors[:,idx]).values)) for idx in 1:length(D.values)] 
+		# vtkexportmesh(File, fens, fes;  vectors=vectors)
+		# @async run(`"paraview.exe" $File`)
+
+		true
+	end
+	for aspect in aspects
+		sim(aspect)
+	end
 end # bend_hex_spectrum_ms
+
+function bend_hex_spectrum_im()
+	function sim(aspect)
+		fens,fes = mesh()
+		fens.xyz[:, 1] .*= aspect
+
+		MR = DeforModelRed3D
+		material = MatDeforElastIso(MR, E, nu)
+
+		geom = NodalField(fens.xyz)
+		u = NodalField(zeros(size(fens.xyz,1), 3)) # displacement field
+		applyebc!(u)
+		numberdofs!(u)
+
+		femm = FEMMDeforLinearIMH8(MR, IntegDomain(fes, GaussRule(3, 2)), material, 12)
+
+		vol = integratefunction(femm, geom, x -> 1.0, 3)
+
+		associategeometry!(femm, geom)
+
+		K = stiffness(femm, geom, u)
+
+		D = eigen(Matrix(K))
+
+		savecsv("bend_hex_spectrum_im-aspect=$(aspect).csv", eigenvalues = vec(D.values))
+
+		# File =  "bend_hex_spectrum_im.vtk"
+		# vectors = [("ev_$(idx)_$(round(D.values[idx] * 10000) / 10000)", deepcopy(scattersysvec!(u, D.vectors[:,idx]).values)) for idx in 1:length(D.values)] 
+		# vtkexportmesh(File, fens, fes;  vectors=vectors)
+		# @async run(`"paraview.exe" $File`)
+
+		true
+	end
+	for aspect in aspects
+		sim(aspect)
+	end
+end # bend_hex_spectrum_im
 
 function allrun()
 	println("#####################################################")
@@ -158,6 +207,9 @@ function allrun()
     println("#####################################################")
     println("# bend_hex_spectrum_ms ")
     bend_hex_spectrum_ms()
+    println("#####################################################")
+    println("# bend_hex_spectrum_im ")
+    bend_hex_spectrum_im()
     return true
 end # function allrun
 

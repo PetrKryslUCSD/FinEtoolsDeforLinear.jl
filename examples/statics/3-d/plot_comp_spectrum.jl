@@ -7,7 +7,6 @@ loadcsv(n) = (
 	end) 
 table(data) = Table([:x => vec(7:length(data)), :y => vec(data[7:end])])
 addtoitems!(items, n, color, mark, style) = begin
-@show n, color, mark, style
 	t = table(loadcsv(n))
 	options = [color, "only marks", style, "mark=$mark"]
 	_p = Plot(@pgf({options...}), t)
@@ -23,20 +22,20 @@ styles = vec(["solid"
 "densely dotted"
 "dotted"
 "loosely dotted"])
-colors = vec(["red" "green" "blue" "black" "yellow"  "brown"  "teal"  "orange"  "violet"  "cyan" "magenta"  "gray"])
-marks = vec(["*" "square*" "triangle*" "star" "diamond*" "otimes*" "pentagon*" "p" "a"])
+colors = vec(["red" "green" "blue" "magenta" "black" "yellow"  "brown"  "teal"  "orange"  "violet"  "cyan"  "gray"])
+marks = vec(["*" "square*" "triangle*" "star" "pentagon*" "diamond*" "otimes*" "p" "a"])
 
 items = []
 
 
-for (j, basen) in enumerate(["comp_hex_spectrum_full", "comp_hex_spectrum_underintegrated", "comp_hex_spectrum_ms"])
-	for (i, nu) in enumerate([0.3 0.4999 0.499999])
+# ["comp_hex_spectrum_full", "comp_hex_spectrum_underintegrated", "comp_hex_spectrum_ms", "comp_hex_spectrum_im"]
+for (j, basen) in enumerate(["comp_hex_spectrum_full", "comp_hex_spectrum_im"])
+	for (i, nu) in enumerate([0.3 0.49 0.4999 0.499999])
 		tag = "nu=$(nu)"
 		n = "$(basen)-$(tag).csv"
 		addtoitems!(items, n, colors[j], marks[j], styles[i])
 	end
 end
-@show items
 
 @pgf _a = SemiLogYAxis({
 	xlabel = "Mode [ND]",
@@ -46,3 +45,4 @@ end
 	},
 	items...)
 display(_a)
+
