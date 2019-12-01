@@ -46,9 +46,9 @@ using .MatDeforElastOrthoModule: MatDeforElastOrtho
 # Exported: type of orthotropic elastic material
 export MatDeforElastOrtho
 
-using .FEMMDeforLinearBaseModule: AbstractFEMMDeforLinear, stiffness, nzebcloadsstiffness, thermalstrainloads, mass, inspectintegpoints
+using .FEMMDeforLinearBaseModule: AbstractFEMMDeforLinear, stiffness, nzebcloadsstiffness, thermalstrainloads, mass, lumpedmass, inspectintegpoints
 # Exported: abstract type for linear information, discretization methods for the abstract type
-export AbstractFEMMDeforLinear, stiffness, nzebcloadsstiffness, thermalstrainloads, mass, inspectintegpoints
+export AbstractFEMMDeforLinear, stiffness, nzebcloadsstiffness, thermalstrainloads, mass, lumpedmass, inspectintegpoints
 
 using .FEMMDeforLinearModule: FEMMDeforLinear
 # Exported: type for linear deformation

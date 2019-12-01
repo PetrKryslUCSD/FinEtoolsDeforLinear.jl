@@ -103,6 +103,63 @@ function mass(self::AbstractFEMMDeforLinear,  geom::NodalField{FFlt},  u::NodalF
 end
 
 """
+    lumpedmass(self::AbstractFEMMDeforLinear,  assembler::A,
+      geom::NodalField{FFlt},
+      u::NodalField{T}) where {A<:AbstractSysmatAssembler, T<:Number}
+
+Compute the lumped mass matrix
+
+This is a general routine for the abstract linear-deformation  FEMM.
+
+Reference: A note on mass lumping and related processes in the finite element method
+E. Hinton  T. Rock  O. C. Zienkiewicz
+First published: January/March 1976, https://doi.org/10.1002/eqe.4290040305
+"""
+function lumpedmass(self::AbstractFEMMDeforLinear,  assembler::A,  geom::NodalField{FFlt}, u::NodalField{T}) where {A<:AbstractSysmatAssembler, T<:Number}
+    fes = self.integdomain.fes
+    npts,  Ns,  gradNparams,  w,  pc = integrationdata(self.integdomain);
+    ecoords, dofnums, loc, J, csmatTJ, gradN, D, B, DB, elmat = _buffers(self, geom, u)  # Prepare buffers
+    rho::FFlt = massdensity(self.material); # mass density
+    NexpTNexp = FFltMat[];# basis f. matrix -- buffer
+    ndn = ndofs(u)
+    Indn = [i==j ? one(FFlt) : zero(FFlt) for i=1:ndn, j=1:ndn] # "identity"
+    for j = 1:npts # This quantity is the same for all quadrature points
+        Nexp = fill(zero(FFlt), ndn, size(elmat,1))
+        for l1 = 1:nodesperelem(fes)
+            Nexp[1:ndn, (l1-1)*ndn+1:(l1)*ndn] = Indn * Ns[j][l1];
+        end
+        push!(NexpTNexp, Nexp'*Nexp);
+    end
+    startassembly!(assembler,  size(elmat,1),  size(elmat,2),  count(fes), u.nfreedofs,  u.nfreedofs);
+    for i = 1:count(fes) # Loop over elements
+        gathervalues_asmat!(geom, ecoords, fes.conn[i]);
+        fill!(elmat,  0.0); # Initialize element matrix
+        for j = 1:npts # Loop over quadrature points
+            locjac!(loc, J, ecoords, Ns[j], gradNparams[j])
+            Jac = Jacobianvolume(self.integdomain, J, loc, fes.conn[i], Ns[j]);
+            thefactor::FFlt =(rho*Jac*w[j]);
+            elmat .+= NexpTNexp[j]*thefactor
+        end # Loop over quadrature points
+        # Hinton,
+        em2 = sum(sum(elmat, dims = 1));                # All elements
+        dem2 = sum(elmat[i, i] for i in 1:size(elmat, 1)); # diagonal elements
+        n = size(elmat,1)
+        scaling = em2 / dem2
+        for i in 1:n, j in 1:n
+            elmat[i, j] = (i == j ? elmat[i, j] *= scaling : 0.0)
+        end
+        gatherdofnums!(u,  dofnums,  fes.conn[i]);# retrieve degrees of freedom
+        assemble!(assembler,  elmat,  dofnums,  dofnums);# assemble symmetric matrix
+    end # Loop over elements
+    return makematrix!(assembler);
+end
+
+function lumpedmass(self::AbstractFEMMDeforLinear,  geom::NodalField{FFlt},  u::NodalField{T}) where {T<:Number}
+    assembler = SysmatAssemblerSparseSymm();
+    return lumpedmass(self, assembler, geom, u);
+end
+
+"""
     stiffness(self::AbstractFEMMDeforLinear, assembler::A,
           geom::NodalField{FFlt},
           u::NodalField{T}) where {A<:AbstractSysmatAssembler, T<:Number}
