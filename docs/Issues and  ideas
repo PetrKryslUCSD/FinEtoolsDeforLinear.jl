@@ -5,3 +5,5 @@ Issues and ideas:
 using FinEtoolsDeforLinear
 using DocumenterTools
 Travis.genkeys(user="PetrKryslUCSD", repo="https://github.com/PetrKryslUCSD/FinEtoolsDeforLinear.jl")
+
+– Get rid of lumpedmass(): It is already implemented with an HRZ assembler.

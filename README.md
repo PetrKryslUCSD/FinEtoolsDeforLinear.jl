@@ -16,6 +16,7 @@ statics and dynamics (modal analysis, steady-state vibration).
 
 ## News
 
+- 12/03/2019: Implemented the lumped mass matrix based on the Hinton et al. approach.
 - 10/12/2019: Correct a design flaw in the matrix utilities module.
 
 [Past news](oldnews.md)
