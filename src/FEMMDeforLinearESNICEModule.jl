@@ -168,14 +168,15 @@ function _buffers2(self::AbstractFEMMDeforLinearESNICE, geom::NodalField, u::Nod
     elmatdim = ndn*nne;             # dimension of the element matrix
     # Prepare buffers
     ecoords = fill(zero(FFlt), nne, ndofs(geom)); # array of Element coordinates
-    elmat = fill(zero(FFlt), elmatdim, elmatdim);      # element matrix -- buffer
-    B = fill(zero(FFlt), nstrs, elmatdim); # strain-displacement matrix -- buffer
+    dofnums = zeros(FInt, elmatdim); # degree of freedom array -- buffer
     loc = fill(zero(FFlt), 1, sdim); # quadrature point location -- buffer
     J = fill(zero(FFlt), sdim, mdim); # Jacobian matrix -- buffer
     csmatTJ = fill(zero(FFlt), mdim, mdim); # intermediate result -- buffer
     Jac = fill(zero(FFlt), npts);
     D = fill(zero(FFlt), nstrs, nstrs); # material stiffness matrix -- buffer
     Dstab = fill(zero(FFlt), nstrs, nstrs); # material stiffness matrix -- buffer
+    elmat = fill(zero(FFlt), elmatdim, elmatdim);      # element matrix -- buffer
+    B = fill(zero(FFlt), nstrs, elmatdim); # strain-displacement matrix -- buffer
     return ecoords, dofnums, loc, J, csmatTJ, Jac, D, Dstab, elmat, B
 end
 
@@ -350,6 +351,7 @@ function associategeometry!(self::F,  geom::NodalField{FFlt}) where {F<:FEMMDefo
     # Now calculate the nodal basis function gradients
     return _computenodalbfungrads(self, geom)
 end
+
 """
     stiffness(self::AbstractFEMMDeforLinearESNICE, assembler::A,
       geom::NodalField{FFlt},
