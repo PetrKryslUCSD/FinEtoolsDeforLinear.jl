@@ -16,7 +16,7 @@ import FinEtools.AssemblyModule: AbstractSysvecAssembler, AbstractSysmatAssemble
 import FinEtools.FEMMBaseModule: AbstractFEMM, inspectintegpoints
 import FinEtools.CSysModule: CSys, updatecsmat!
 import FinEtoolsDeforLinear.DeforModelRedModule: nstressstrain, nthermstrain, Blmat!, divmat, vgradmat
-import FinEtools.MatrixUtilityModule: add_btdb_ut_only!, complete_lt!, add_btv!, locjac!, add_nnt_ut_only!
+import FinEtools.MatrixUtilityModule: add_btdb_ut_only!, complete_lt!, locjac!, add_nnt_ut_only!
 import FinEtoolsDeforLinear.MatDeforModule: rotstressvec!
 import FinEtools.MatModule: massdensity
 import FinEtoolsDeforLinear.MatDeforLinearElasticModule: tangentmoduli!, update!, thermalstrain!
@@ -269,7 +269,7 @@ function  thermalstrainloads(self::AbstractFEMMDeforLinear, assembler::A, geom::
                 Blmat!(self.mr, B, Ns[j], gradN, loc, self.mcsys.csmat);# strains in mater cs, displ in global cs
                 thermalstrain!(self.material, thstrain, dot(vec(Ns[j]), DeltaT))
                 thstress = update!(self.material, thstress, thstress, strain, thstrain, t, dt, loc, fes.label[i], :nothing)
-                add_btv!(elvec, B, thstress, (-1)*(Jac*w[j]))
+                add_btsigma!(elvec, B, (-1)*(Jac*w[j]), thstress)
             end
             gatherdofnums!(u, dofnums, fes.conn[i]); # retrieve degrees of freedom
             assemble!(assembler,  elvec,  dofnums); # assemble element load vector
