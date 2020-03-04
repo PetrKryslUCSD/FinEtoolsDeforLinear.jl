@@ -96,18 +96,18 @@ uuid = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 
 [[Literate]]
 deps = ["Base64", "JSON", "REPL"]
-git-tree-sha1 = "1237e824184149798082d89a60805a67b577bc75"
+git-tree-sha1 = "82a49cc6c1a38980c537edef7f9998a1843b441d"
 uuid = "98b081ad-f1c9-55d3-8b20-4c87d4299306"
-version = "2.2.1"
+version = "2.3.0"
 
 [[Logging]]
 uuid = "56ddb016-857b-54e1-b83d-db4d58db5568"
 
 [[LoopVectorization]]
 deps = ["LinearAlgebra", "Parameters", "SIMDPirates", "SLEEFPirates", "VectorizationBase"]
-git-tree-sha1 = "479f860e2bea0022ccc1da213096de35481fc77f"
+git-tree-sha1 = "36fd25edb8edc82c5d9513ef6384880956f4e487"
 uuid = "bdcacae8-1622-11e9-2a5c-532679323890"
-version = "0.6.16"
+version = "0.6.20"
 
 [[MacroTools]]
 deps = ["DataStructures", "Markdown", "Random"]
@@ -130,9 +130,9 @@ uuid = "a63ad114-7e13-5084-954f-fe012c677804"
 
 [[OpenBLAS_jll]]
 deps = ["Libdl", "Pkg"]
-git-tree-sha1 = "e2551d7c25d52f35b76d86a50917a3ba8988f519"
+git-tree-sha1 = "adc45e596df7007d48bf6829efb1dc64fdec3ddc"
 uuid = "4536629a-c528-5b80-bd46-f80d51c5b363"
-version = "0.3.7+5"
+version = "0.3.7+6"
 
 [[OrderedCollections]]
 deps = ["Random", "Serialization", "Test"]
@@ -154,9 +154,9 @@ version = "0.12.0"
 
 [[Parsers]]
 deps = ["Dates", "Test"]
-git-tree-sha1 = "d112c19ccca00924d5d3a38b11ae2b4b268dda39"
+git-tree-sha1 = "0c16b3179190d3046c073440d94172cfc3bb0553"
 uuid = "69de0a69-1ddd-5017-9359-2bf0b02dc9f0"
-version = "0.3.11"
+version = "0.3.12"
 
 [[Pkg]]
 deps = ["Dates", "LibGit2", "Libdl", "Logging", "Markdown", "Printf", "REPL", "Random", "SHA", "UUIDs"]
@@ -185,15 +185,15 @@ uuid = "ea8e919c-243c-51af-8825-aaa63cd721ce"
 
 [[SIMDPirates]]
 deps = ["VectorizationBase"]
-git-tree-sha1 = "839625f8699855a7d5ca96be25bc24d71c5c00ff"
+git-tree-sha1 = "34dff4f4715f871e71b38f31397d96e62621f14d"
 uuid = "21efa798-c60a-11e8-04d3-e1a92915a26a"
-version = "0.6.0"
+version = "0.6.5"
 
 [[SLEEFPirates]]
 deps = ["Libdl", "SIMDPirates", "VectorizationBase"]
-git-tree-sha1 = "62368836fef70b461ac005ed0112315222eab5b5"
+git-tree-sha1 = "66014d5d3f77753a70b706aeaede1ad70a942915"
 uuid = "476501e8-09a2-5ece-8869-fb82de89a1fa"
-version = "0.4.0"
+version = "0.4.1"
 
 [[Serialization]]
 uuid = "9e88b42a-f829-5b0c-bbe9-9e923198166b"
@@ -234,6 +234,6 @@ uuid = "4ec0a83e-493e-50e2-b9ac-8f72acf5a8f5"
 
 [[VectorizationBase]]
 deps = ["CpuId", "LinearAlgebra"]
-git-tree-sha1 = "9410db46eeb38d9fb108fae9758713cfafc4cb91"
+git-tree-sha1 = "006d7b7f276db8d728f8bfd70ebf2efd132f9548"
 uuid = "3d5dd08c-fd9d-11e8-17fa-ed2836048c2f"
-version = "0.6.1"
+version = "0.7.0"
