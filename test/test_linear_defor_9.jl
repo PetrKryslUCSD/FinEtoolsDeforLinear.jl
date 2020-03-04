@@ -57,7 +57,7 @@ function test()
     @test abs(fs[7]-0.26259869196259) < 1.0e-5
 
     femm = FEMMDeforLinear(MR, IntegDomain(fes, GaussRule(3,3)), material)
-    M = lumpedmass(femm, geom, u)
+    M = mass(femm, SysmatAssemblerSparseHRZLumpingSymm(), geom, u)
     d,v,nev,nconv = eigs(K+OmegaShift*M, M; nev=neigvs, which=:SM)
     d = d .- OmegaShift;
     fs = real(sqrt.(complex(d)))/(2*pi)
