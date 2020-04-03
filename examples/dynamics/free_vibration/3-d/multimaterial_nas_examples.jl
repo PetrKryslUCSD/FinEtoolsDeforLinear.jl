@@ -1,5 +1,6 @@
 module multimaterial_nas_examples
 using FinEtools
+using FinEtools.MeshExportModule: MESH
 using FinEtoolsDeforLinear.AlgoDeforLinearModule
 using FinEtoolsDeforLinear
 using LinearAlgebra
@@ -62,6 +63,12 @@ function multimaterial_nas()
         vtkexportmesh(File, fens, allfes; vectors=[("mode$mode", u.values)])
         @async run(`"paraview.exe" $File`)
     end
+
+    # Extract the boundary
+    bfes = meshboundary(allfes)
+    bconn = connasarray(bfes)
+
+    MESH.write_MESH("multimaterial_nas.mesh", fens, bfes) 
 
     true
 
