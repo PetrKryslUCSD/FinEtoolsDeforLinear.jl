@@ -366,7 +366,7 @@ function stiffness(self::AbstractFEMMDeforLinearESNICE, assembler::A, geom::Noda
     tangentmoduli!(self.material, D, 0.0, 0.0, loc, 0)
     tangentmoduli!(self.stabilization_material, Dstab, 0.0, 0.0, loc, 0)
     elmatsizeguess = 4*nodesperelem(fes)*ndofs(u)
-    startassembly!(assembler, elmatsizeguess, elmatsizeguess, nnodes(u) + count(fes), u.nfreedofs, u.nfreedofs);
+    startassembly!(assembler, elmatsizeguess, elmatsizeguess, nnodes(u), u.nfreedofs, u.nfreedofs);
     for nix = 1:length(self.nodalbasisfunctiongrad)
         gradN = self.nodalbasisfunctiongrad[nix].gradN
         patchconn = self.nodalbasisfunctiongrad[nix].patchconn
@@ -385,8 +385,10 @@ function stiffness(self::AbstractFEMMDeforLinearESNICE, assembler::A, geom::Noda
         gatherdofnums!(u, dofnums, patchconn); # retrieve degrees of freedom
         assemble!(assembler, elmat, dofnums, dofnums); # assemble symmetric matrix
     end # Loop over elements
+    Kn = makematrix!(assembler);
     dofnums, B, DB, elmat, elvec, elvecfix, gradN = _buffers3(self, geom, u)
     # OPTIMIZATION: switch to a single-point quadrature rule here
+    startassembly!(assembler, nodesperelem(fes)*ndofs(u), nodesperelem(fes)*ndofs(u), count(fes), u.nfreedofs, u.nfreedofs);
     for i = 1:count(fes) # Loop over elements
         gathervalues_asmat!(geom, ecoords, fes.conn[i]);
         fill!(elmat,  0.0); # Initialize element matrix
@@ -403,7 +405,7 @@ function stiffness(self::AbstractFEMMDeforLinearESNICE, assembler::A, geom::Noda
         gatherdofnums!(u, dofnums, fes.conn[i]); # retrieve degrees of freedom
         assemble!(assembler, elmat, dofnums, dofnums); # assemble symmetric matrix
     end # Loop over elements
-    return makematrix!(assembler);
+    return makematrix!(assembler) + Kn;
 end
 
 function stiffness(self::AbstractFEMMDeforLinearESNICE, geom::NodalField{FFlt},  u::NodalField{T}) where {T<:Number}
