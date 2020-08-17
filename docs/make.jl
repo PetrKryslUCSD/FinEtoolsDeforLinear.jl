@@ -7,12 +7,13 @@ makedocs(
 	authors = "Petr Krysl",
 	sitename = "FinEtoolsDeforLinear.jl",
 	pages = Any[
-	"Home" => "index.md",
-	"Guide" => "guide/guide.md",
-	"Types and Functions" => Any[
-		"man/types.md",
-		"man/functions.md"]
-		]
+		"Home" => "index.md",
+		"Tutorials" => "tutorials/tutorials.md",
+		"How to guide" => "guide/guide.md",
+		"Types and Functions" => Any[
+			"man/types.md",
+			"man/functions.md"]
+			]
 	)
 
 deploydocs(

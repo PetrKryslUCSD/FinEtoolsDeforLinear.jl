@@ -16,6 +16,7 @@ statics and dynamics (modal analysis, steady-state vibration).
 
 ## News
 
+- 08/17/2020: Added tutorials to the documentation.
 - 04/02/2020: The examples still need to be updated, some don't work, sorry.
 - 01/23/2020: Dependencies have been updated to work with Julia 1.3.1.
 

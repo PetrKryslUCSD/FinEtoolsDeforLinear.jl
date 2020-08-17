@@ -214,5 +214,7 @@ vtkexportmesh(File, connasarray(fes), geom.values, FinEtools.MeshExportModule.H2
 
 Note that the  VTK file will contain element labels (which can help us distinguish between the layers) as scalar field, and the displacements as a vector field.
 
+---
+
 *This page was generated using [Literate.jl](https://github.com/fredrikekre/Literate.jl).*
 

@@ -12,18 +12,10 @@ Private = true
 Order = [:function]
 ```
 
-#### Base functionality: Interior
+#### Base functionality
 
 ```@autodocs
-Modules = [FinEtools, FinEtoolsDeforLinear.FEMMDeforLinearBaseModule, FinEtoolsDeforLinear.FEMMDeforLinearModule]
-Private = true
-Order = [:function]
-```
-
-#### Base functionality: Boundary
-
-```@autodocs
-Modules = [FinEtools, FinEtoolsDeforLinear.FEMMDeforWinklerModule, FinEtoolsDeforLinear.FEMMDeforSurfaceDampingModule]
+Modules = [FinEtools, FinEtoolsDeforLinear.FEMMDeforLinearBaseModule, FinEtoolsDeforLinear.FEMMDeforLinearModule, FinEtoolsDeforLinear.FEMMDeforWinklerModule, FinEtoolsDeforLinear.FEMMDeforLinearMSModule, FinEtoolsDeforLinear.FEMMDeforSurfaceDampingModule, FinEtoolsDeforLinear.FEMMDeforLinearNICEModule, FinEtoolsDeforLinear.FEMMDeforLinearESNICEModule]
 Private = true
 Order = [:function]
 ```

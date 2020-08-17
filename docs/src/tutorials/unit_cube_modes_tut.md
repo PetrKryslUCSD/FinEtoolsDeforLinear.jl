@@ -138,5 +138,7 @@ abaqus viewer database=unit_cube_modes_h20.odb
 Don't forget to compare the computed frequencies and the mode shapes.  For instance, the first six frequencies should be nearly 0, and the seventh frequency should be approximately  0.262 Hz. There may be  very minor differences due to the fact that  the
 FinEtools formulation is purely displacement-based, whereas the Abaqus model is hybrid (displacement plus pressure).
 
+---
+
 *This page was generated using [Literate.jl](https://github.com/fredrikekre/Literate.jl).*
 
