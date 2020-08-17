@@ -143,7 +143,7 @@ function _buffers2(self::AbstractFEMMDeforLinearNICE, geom::NodalField, u::Nodal
     csmatTJ = fill(zero(FFlt), mdim, mdim); # intermediate result -- buffer
     Jac = fill(zero(FFlt), npts);
     D = fill(zero(FFlt), nstrs, nstrs); # material stiffness matrix -- buffer
-    return dofnums, loc, J, csmatTJ, Jac, D
+    return loc, J, csmatTJ, Jac, D
 end
 
 function patchconn(fes, gl, thisnn)
@@ -248,7 +248,7 @@ Compute and assemble  stiffness matrix.
 function stiffness(self::AbstractFEMMDeforLinearNICE, assembler::A, geom::NodalField{FFlt}, u::NodalField{T}) where {A<:AbstractSysmatAssembler, T<:Number}
     fes = self.integdomain.fes
     npts,  Ns,  gradNparams,  w,  pc = integrationdata(self.integdomain);
-    dofnums, loc, J, csmatTJ, Jac, D = _buffers2(self, geom, u, npts)
+    loc, J, csmatTJ, Jac, D = _buffers2(self, geom, u, npts)
     tangentmoduli!(self.material, D, 0.0, 0.0, loc, 0)
     Dmod = sort(eigvals(D))
     stabDmod = mean(Dmod[1:2], dims=1)
