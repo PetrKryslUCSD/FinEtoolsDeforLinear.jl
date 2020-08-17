@@ -1,10 +1,6 @@
 [![Project Status: Active – The project has reached a stable, usable state and is being actively developed.](http://www.repostatus.org/badges/latest/active.svg)](http://www.repostatus.org/#active)
 [![Build Status](https://travis-ci.com/PetrKryslUCSD/FinEtoolsDeforLinear.jl.svg?branch=master)](https://travis-ci.com/PetrKryslUCSD/FinEtoolsDeforLinear.jl)
-
-[![][docs-latest-img]][docs-latest-url]
-
-[docs-latest-img]: https://img.shields.io/badge/docs-latest-blue.svg
-[docs-latest-url]: http://petrkryslucsd.github.io/FinEtoolsDeforLinear.jl/latest/
+[![Latest documentation](https://img.shields.io/badge/docs-latest-blue.svg)](https://petrkryslucsd.github.io/FinEtoolsDeforLinear.jl/dev)
 
 # FinEtoolsDeforLinear: Linear stress analysis application
 
