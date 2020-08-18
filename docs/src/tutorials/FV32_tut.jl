@@ -33,7 +33,7 @@
 ##
 # ## Definitions
 
-# Bringing the required support from the basic linear algebra, eigenvalue
+# Bring in the required support from the basic linear algebra, eigenvalue
 # solvers, and the finite element tools.
 using LinearAlgebra
 using Arpack
@@ -50,16 +50,19 @@ L = 10*phun("M");
 W0 = 5*phun("M");
 WL = 1*phun("M");
 H = 0.05*phun("M");
-# The mesh would correspond to the plane-stress quadratic serendipity
-# quadrilateral (CPS8R) used in the Abaqus benchmark. However, we simulate the
-# plane-stress conditions with a three-dimensional mesh that is constrained
-# along one plane of nodes to effect the constrained motion only in the plane
-# of the trapezoidal membrane. No bending out of plane!
+
+# We shall generate a three-dimensional mesh. It should have 1 element through
+# the thickness, and 8 and 4 elements in the plane of the membrane.
 nL, nW, nH = 8, 4, 1;# How many element edges per side?
-neigvs = 20                   # how many eigenvalues
 # The reference frequencies are obtained from [1].
 Reffs = [44.623 130.03  162.70  246.05  379.90  391.44]
 
+# The three-dimensional mesh of 20 node serendipity hexahedral should correspond
+# to the plane-stress quadratic serendipity quadrilateral (CPS8R) used in the
+# Abaqus benchmark. We simulate the plane-stress conditions with a
+# three-dimensional mesh that is constrained along one plane of nodes to effect
+# the constrained motion only in the plane of the trapezoidal membrane. No
+# bending out of plane!
 # First we generate mesh of a rectangular block.
 fens,fes = H20block(1.0, 2.0, 1.0, nL, nW, nH)
 # Now distort the rectangular block into the tapered plate. 
@@ -88,43 +91,66 @@ material = MatDeforElastIso(MR, rho, E, nu, 0.0)
 region1 = FDataDict("femm"=>FEMMDeforLinear(MR, IntegDomain(fes, GaussRule(3,2)), material), "femm_mass"=>FEMMDeforLinear(MR, IntegDomain(fes, GaussRule(3,3)), material))
     
 # Select nodes that will be clamped.
-@show nl1 = selectnode(fens; plane=[1.0 0.0 0.0 0.0], thickness=H/1.0e4)
+nl1 = selectnode(fens; plane=[1.0 0.0 0.0 0.0], thickness=H/1.0e4)
 ebc1 = FDataDict("node_list"=>nl1, "component"=>1, "displacement"=>0.0)
 ebc2 = FDataDict("node_list"=>nl1, "component"=>2, "displacement"=>0.0)
 ebc3 = FDataDict("node_list"=>nl1, "component"=>3, "displacement"=>0.0)
 
 # Export  a VTK file to visualize the selected points. Choose the
-# representation "Points", and select color and size approximately 4.
+# representation "Points", and select color and size approximately 4. These
+# notes should correspond to the clamped base of the membrane.
 File =  "FV32-nl1.vtk"
 vtkexportmesh(File, fens, FESetP1(reshape(nl1, length(nl1), 1)))
 
-
-@show nl4 = selectnode(fens; plane=[0.0 0.0 1.0 0.0], thickness=H/1.0e4)
+# Select all nodes on the plane Z = 0. This will be prevented from moving in the
+# Z direction.
+nl4 = selectnode(fens; plane=[0.0 0.0 1.0 0.0], thickness=H/1.0e4)
 ebc4 = FDataDict("node_list"=>nl4, "component"=>3, "displacement"=>0.0)
 
 # Export  a VTK file to visualize the selected points. Choose the
-# representation "Points", and select color and size approximately 4.
+# representation "Points", and select color and size approximately 4. These
+# points all should be on the bottom face of the three-dimensional domain.
 File =  "FV32-nl4.vtk"
 vtkexportmesh(File, fens, FESetP1(reshape(nl4, length(nl4), 1)))
 
-# Make model data
+# Make model data: the nodes, the regions, the boundary conditions, and the
+# number of eigenvalues are set. Note that the number of eigenvalues needs to
+# be set to 6+N,  where 6 is the number of rigid body modes, and N is the
+# number of deformation frequencies we are interested in.
+neigvs = 10                  # how many eigenvalues
 modeldata =  FDataDict("fens"=> fens, "regions"=>  [region1], "essential_bcs"=>[ebc1 ebc2 ebc3 ebc4], "neigvs"=>neigvs)
     
-# Solve using an algorithm: the modal solver. The solver will increment the
+# Solve using an algorithm: the modal solver. The solver will supplement the
 # model data with the geometry and displacement fields, and the solution
-# (eigenvalues, eigenvectors)
+# (eigenvalues, eigenvectors), and the data upon return can be extracted from
+# the dictionary.
 modeldata = AlgoDeforLinearModule.modal(modeldata)
 
+# Here we extract the angular velocities corresponding to the natural frequencies.
 fs = modeldata["omega"]/(2*pi)
 println("Eigenvalues: $fs [Hz]")
 println("Percentage frequency errors: $((vec(fs[1:6]) - vec(Reffs))./vec(Reffs)*100)")
 
-# CPS8R   44.629 (0.02)   130.11 (0.06)   162.70 (0.00)   246.42 (0.15)   381.32 (0.37)   391.51 (0.02)
+# The problem was solved for instance with Abaqus, using plane stress eight node
+# elements. The results were:
 
+# | Element | Frequencies (relative errors) |
+# | ------- | ---------------------------- |
+# | CPS8R  | 44.629 (0.02)   130.11 (0.06)   162.70 (0.00)   246.42 (0.15)   381.32 (0.37)   391.51 (0.02) |
 
+# Compared these numbers with those computed by our three-dimensional model.
+
+# The mode shapes may be visualized with `paraview`. Here is for instance mode
+# 8:
 # ![](FV32-mode-8.png)
-modeldata["postprocessing"] = FDataDict("file"=>"FV32-modes", "mode"=>1:10)
+
+# The algorithm to export the mode shapes expects some input. We shall specify
+# the filename and the numbers of most export.
+modeldata["postprocessing"] = FDataDict("file"=>"FV32-modes", "mode"=>1:neigvs)
 modeldata = AlgoDeforLinearModule.exportmode(modeldata)
+# The algorithm attaches a little bit to the name of the exported file. If
+# `paraview.exe` is installed, the command below should bring up the
+# postprocessing file.
 @async run(`"paraview.exe" $(modeldata["postprocessing"]["file"]*"1.vtk")`)
 
 true
