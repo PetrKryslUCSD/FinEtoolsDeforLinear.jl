@@ -145,7 +145,7 @@ println("Percentage frequency errors: $((vec(fs[1:6]) - vec(Reffs))./vec(Reffs)*
 # ![](FV32-mode-8.png)
 
 # The algorithm to export the mode shapes expects some input. We shall specify
-# the filename and the numbers of most export.
+# the filename and the numbers of modes to export.
 modeldata["postprocessing"] = FDataDict("file"=>"FV32-modes", "mode"=>1:neigvs)
 modeldata = AlgoDeforLinearModule.exportmode(modeldata)
 # The algorithm attaches a little bit to the name of the exported file. If
