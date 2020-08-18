@@ -157,7 +157,7 @@ midpoint = selectnode(fens, box=[L/2 L/2 L/2 L/2 0 0], inflate=tolerance);
 midpointdof = u.dofnums[midpoint, 3]
 
 ##
-# ## Plotting the results
+# ## Plot the results
 
 using PlotlyJS
 

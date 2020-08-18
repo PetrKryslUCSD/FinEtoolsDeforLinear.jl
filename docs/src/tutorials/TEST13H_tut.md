@@ -238,7 +238,7 @@ midpointdof = u.dofnums[midpoint, 3]
 #
 ```
 
-## Plotting the results
+## Plot the results
 
 ```julia
 using PlotlyJS
