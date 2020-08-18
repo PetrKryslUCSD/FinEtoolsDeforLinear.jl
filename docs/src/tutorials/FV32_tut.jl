@@ -153,5 +153,17 @@ modeldata = AlgoDeforLinearModule.exportmode(modeldata)
 # postprocessing file.
 @async run(`"paraview.exe" $(modeldata["postprocessing"]["file"]*"1.vtk")`)
 
+# To animate the mode shape in `Paraview` do the following:
+# - Apply the filter "Warp by vector".
+# - Turn on the "Animation view".
+# - Add the mode shape data set ("WarpByVector1") by clicking the "+".
+# - Double-click the line with the data set. The "Animation Keyframes" dialog
+#   will come up. Double-click "Ramp" interpolation, and change it
+#   to "Sinusoid". Set the frequency to 1.0. Change the "Value" from 0 to 100.
+# - In the animation view, set the mode to "Real-time", and the duration to 4.0
+#   seconds.
+# - Click on the "Play" button. If you wish, click on the "Loop" button.
+
+
 true
 
