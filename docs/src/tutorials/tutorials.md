@@ -6,6 +6,7 @@
 - [Composite benchmark R0031-3](R0031-3-Composite-benchmark_tut.md)
 - [Twisted beam, export to Abaqus](twisted_beam-export-to-abaqus_tut.md)
 - [Cube of nearly incompressible material, vibration](unit_cube_modes_tut.md)
+- [13H benchmark, forced vibration](TEST13H_tut.md)
 
 
 

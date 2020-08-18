@@ -1,3 +1,30 @@
+# Moving sphere in an infinite fluid
+
+## Description
+
+A rigid sphere in an infinite volume of fluid accelerates alternately in the
+positive and negative x-direction, generating positive pressure ahead of it,
+negative pressure behind. Time-dependent simulation. Described in [1].
+
+## References
+
+[1] Krysl P, Hawkins AD, Schilt C, Cranford TW (2012): Angular Oscillation of
+Solid Scatterers in Response to Progressive Planar Acoustic Waves: Do Fish
+Otoliths Rock?. PLOS ONE 7(8): e42591. https://doi.org/10.1371/journal.pone.0042591
+
+![](sphere_dipole.png)
+
+## Goals
+
+- Show how to generate hexahedral mesh, mirroring and merging together parts.
+- Execute transient simulation by the trapezoidal-rule time stepping of [1].
+
+```julia
+#
+```
+
+## Definitions
+
 # Vibration example  solved with FinEtools and Abaqus
 
 In this example we solve for the free-vibration modes of unit cube  of almost incompressible material.
