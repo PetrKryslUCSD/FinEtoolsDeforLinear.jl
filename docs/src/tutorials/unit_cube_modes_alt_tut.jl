@@ -21,8 +21,8 @@
 
 # ## Goals
 
-# - Show how to generate hexahedral mesh, mirroring and merging together parts.
-# - Export the model to Abaqus.
+# - Set up a simulation loop that will run all the models and collect data.
+# - Present the computed spectrum curves.
 
 ##
 # ## Definitions
@@ -39,12 +39,14 @@ using FinEtools.MeshExportModule
 # The eigenvalue problem is solved with the Lanczos algorithm from this package.
 using Arpack
 
+using SymRCM
+
 # The material properties and dimensions are defined with physical units.
 E = 1*phun("PA");
 nu = 0.499;
 rho = 1*phun("KG/M^3");
 a = 1*phun("M"); # length of the side of the cube
-N = 2*2*2*4
+N = 8
 neigvs = 20 # how many eigenvalues
 OmegaShift = (0.01*2*pi)^2; # The frequency with which to shift
 
@@ -55,21 +57,27 @@ material = MatDeforElastIso(MR, rho, E, nu, 0.0);
 
 # 
 models = [
-    ("H20", H20block, GaussRule(3,2), FEMMDeforLinear), 
-    ("ESNICEH8", H8block, NodalTensorProductRule(3), FEMMDeforLinearESNICEH8), 
-    ("ESNICET4", T4block, NodalSimplexRule(3), FEMMDeforLinearESNICET4), 
-    ("MSH8", H8block, NodalTensorProductRule(3), FEMMDeforLinearMSH8), 
-    ("MST10", T10block, TetRule(4), FEMMDeforLinearMST10), 
+    ("H20", H20block, GaussRule(3,2), FEMMDeforLinear, 1), 
+    ("ESNICEH8", H8block, NodalTensorProductRule(3), FEMMDeforLinearESNICEH8, 2), 
+    ("ESNICET4", T4block, NodalSimplexRule(3), FEMMDeforLinearESNICET4, 2), 
+    ("MSH8", H8block, NodalTensorProductRule(3), FEMMDeforLinearMSH8, 2), 
+    ("MST10", T10block, TetRule(4), FEMMDeforLinearMST10, 1), 
 ]
 
+# Run  the simulation loop over all the models.
 results = let
     results = []
     for m in models
-        fens, fes  = m[2](a, a, a, N, N, N);
-
+        fens, fes  = m[2](a, a, a, m[5]*N, m[5]*N, m[5]*N);
+        @show count(fens)
         geom = NodalField(fens.xyz)
         u = NodalField(zeros(size(fens.xyz,1),3))
-        numberdofs!(u);
+        numbering = let
+            C = connectionmatrix(FEMMBase(IntegDomain(fes, m[3])), count(fens))
+            numbering = symrcm(C)
+        end
+        numberdofs!(u, numbering);
+        println("nfreedofs = $(u.nfreedofs)")
 
         femm = m[4](MR, IntegDomain(fes, m[3]), material);
         femm = associategeometry!(femm, geom)
@@ -77,7 +85,6 @@ results = let
         M = mass(femm, geom, u);
 
         evals, evecs, nconv = eigs(K+OmegaShift*M, M; nev=neigvs, which=:SM)
-
         @show nconv == neigvs
         evals = evals .- OmegaShift;
         fs = real(sqrt.(complex(evals)))/(2*pi)
@@ -87,6 +94,15 @@ results = let
     results # return it
 end
 
+
+using PlotlyJS
+
+# Make sure we can edit the chart if we needed to.
+options = Dict(
+        :showSendToCloud=>true, 
+        :plotlyServerURL=>"https://chart-studio.plotly.com"
+        )
+# Create the layout.
 layout = Layout(;width=650, height=500, xaxis=attr(title="Mode number [ND]", type = "linear"), yaxis=attr(title="Frequency [Hz]", type = "linear"), title = "Natural frequencies")
 # Create the graphs:
 plots = [scatter(;x=vec(1:length(r[2])), y=vec(r[2]), mode="markers", name = r[1][1]) for r in results]

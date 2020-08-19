@@ -199,7 +199,7 @@ The mode shapes may be visualized with `paraview`. Here is for instance mode
 ![](FV32-mode-8.png)
 
 The algorithm to export the mode shapes expects some input. We shall specify
-the filename and the numbers of most export.
+the filename and the numbers of modes to export.
 
 ```julia
 modeldata["postprocessing"] = FDataDict("file"=>"FV32-modes", "mode"=>1:neigvs)
