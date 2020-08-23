@@ -564,7 +564,7 @@ function test()
     close(AE)
     lines = read(AE.filename)
     @test length(lines) - 10270 == 0
-    # try rm(AE.filename) catch end
+    try rm(AE.filename) catch end
 
 end
 end
