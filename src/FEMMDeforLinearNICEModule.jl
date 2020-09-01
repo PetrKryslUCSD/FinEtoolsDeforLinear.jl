@@ -12,6 +12,8 @@ integration, International Journal for Numerical Methods in Engineering,
 """
 module FEMMDeforLinearNICEModule
 
+__precompile__(true)
+
 using FinEtools.FTypesModule: FInt, FFlt, FCplxFlt, FFltVec, FIntVec, FFltMat, FIntMat, FMat, FVec, FDataDict
 import FinEtools.FENodeSetModule: FENodeSet
 import FinEtools.FESetModule: AbstractFESet, FESetH8, FESetT4, manifdim, nodesperelem, gradN!

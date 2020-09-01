@@ -7,6 +7,8 @@ system vectors for linear deformation models with distributed-spring supports
 """
 module FEMMDeforWinklerModule
 
+__precompile__(true)
+
 using FinEtools.FTypesModule: FInt, FFlt, FCplxFlt, FFltVec, FIntVec, FFltMat, FIntMat, FMat, FVec, FDataDict
 import FinEtools.FENodeSetModule: FENodeSet
 import FinEtools.FESetModule: AbstractFESet, nodesperelem, manifdim

@@ -7,6 +7,8 @@ of inviscid fluid next to the surface.
 """
 module FEMMDeforSurfaceDampingModule
 
+__precompile__(true)
+
 using FinEtools.FTypesModule: FInt, FFlt, FCplxFlt, FFltVec, FIntVec, FFltMat, FIntMat, FMat, FVec, FDataDict
 import FinEtools.FENodeSetModule: FENodeSet
 import FinEtools.FESetModule: AbstractFESet, nodesperelem, manifdim

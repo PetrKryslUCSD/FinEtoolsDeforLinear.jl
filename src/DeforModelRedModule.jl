@@ -5,6 +5,8 @@ Module for  model reduction in models of deformation.
 """
 module DeforModelRedModule
 
+__precompile__(true)
+
 using FinEtools.FTypesModule: FInt, FFlt, FCplxFlt, FFltVec, FIntVec, FFltMat, FIntMat, FMat, FVec, FDataDict
 
 """

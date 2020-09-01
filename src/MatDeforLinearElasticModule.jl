@@ -1,5 +1,7 @@
 module MatDeforLinearElasticModule
 
+__precompile__(true)
+
 using FinEtools.FTypesModule: FInt, FFlt, FCplxFlt, FFltVec, FIntVec, FFltMat, FIntMat, FMat, FVec, FDataDict
 import FinEtoolsDeforLinear.DeforModelRedModule: AbstractDeforModelRed
 import FinEtoolsDeforLinear.MatDeforModule: AbstractMatDefor
