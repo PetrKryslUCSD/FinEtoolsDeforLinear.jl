@@ -8,3 +8,5 @@
 *.CSV
 *.sublime-workspace
 docs/build/
+*.pdf
+*.enl
