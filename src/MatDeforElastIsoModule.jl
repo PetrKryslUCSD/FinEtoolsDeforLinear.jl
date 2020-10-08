@@ -69,6 +69,13 @@ function MatDeforElastIso(mr::Type{DeforModelRed3D}, mass_density::FFlt, E::FFlt
 			ep = eigen(t);
 			(length(output) >= 3) || (output = zeros(3)) # make sure we can store it
 			copyto!(output,  sort(ep.values, rev=true));
+		elseif quantity == :maxshear 
+			t = zeros(FFlt,3,3)
+			t = stressvtot!(mr, t, stress);
+			ep = eigen(t);
+			(length(output) >= 1) || (output = zeros(1)) # make sure we can store it
+			s = sort(ep.values, rev=true)
+			copyto!(output, s[1] - s[3]);
 		elseif quantity==:vonMises || quantity==:vonmises || quantity==:von_mises || quantity==:vm
 			s1=stress[1]; s2=stress[2]; s3=stress[3];
 			s4=stress[4]; s5=stress[5]; s6=stress[6];
@@ -142,6 +149,13 @@ function MatDeforElastIso(mr::Type{DeforModelRed2DStress}, mass_density::FFlt, E
 			ep = eigen(t);
 			(length(output) >= 2) || (output = zeros(2)) # make sure we can store it
 			copyto!(output,  sort(ep.values, rev=true));
+		elseif quantity == :maxshear 
+			t = zeros(FFlt,2,2)
+			t = stressvtot!(mr, t, stress);
+			ep = eigen(t);
+			(length(output) >= 1) || (output = zeros(1)) # make sure we can store it
+			s = sort(ep.values, rev=true)
+			copyto!(output, s[1] - s[2]);
 		elseif quantity==:vonMises || quantity==:vonmises || quantity==:von_mises || quantity==:vm
 			s1=stress[1]; s2=stress[2]; s3=0.0;
 			s4=stress[3]; s5=0.0; s6=0.0;
@@ -210,6 +224,15 @@ function MatDeforElastIso(mr::Type{DeforModelRed2DStrain}, mass_density::FFlt, E
 			ep = eigen(t);
 			(length(output) >= 3) || (output = zeros(3)) # make sure we can store it
 			copyto!(output,  sort(ep.values, rev=true));
+		elseif quantity == :maxshear 
+			(length(output) >= 3) || (output = zeros(3)) # make sure we can store it
+			t = zeros(FFlt, 3,3)
+			sz = dot(self.D[3, 1:2], strain[1:2]-thstrain[1:2])-self.D[3,3]*thstrain[4];
+			t = stressvtot!(mr, t, vcat(stress[1:3], [sz]));
+			ep = eigen(t);
+			(length(output) >= 1) || (output = zeros(1)) # make sure we can store it
+			s = sort(ep.values, rev=true)
+			copyto!(output, s[1] - s[3]);
 		elseif quantity==:vonMises || quantity==:vonmises || quantity==:von_mises || quantity==:vm
 			(length(output) >= 1) || (output = zeros(1)) # make sure we can store it
 			sz = dot(self.D[3, 1:2], strain[1:2]-thstrain[1:2])-self.D[3,3]*thstrain[4];
@@ -270,6 +293,13 @@ function MatDeforElastIso(mr::Type{DeforModelRed2DAxisymm}, mass_density::FFlt, 
 			ep = eigen(t);
 			(length(output) >= 3) || (output = zeros(3)) # make sure we can store it
 			copyto!(output,  sort(ep.values, rev=true));
+		elseif quantity == :maxshear 
+			t = zeros(FFlt,3,3)
+			t = stressvtot!(mr, t, stress);
+			ep = eigen(t);
+			(length(output) >= 1) || (output = zeros(1)) # make sure we can store it
+			s = sort(ep.values, rev=true)
+			copyto!(output, s[1] - s[3]);
 		elseif quantity==:vonMises || quantity==:vonmises || quantity==:von_mises || quantity==:vm
 			s1=stress[1]; s2=stress[2]; s3=stress[3];
 			s4=stress[4]; s5=0.0; s6=0.0;
