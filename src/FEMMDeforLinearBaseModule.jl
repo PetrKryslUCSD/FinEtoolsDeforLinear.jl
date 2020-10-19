@@ -90,7 +90,7 @@ function mass(self::AbstractFEMMDeforLinear,  assembler::A,  geom::NodalField{FF
         for j = 1:npts # Loop over quadrature points
             locjac!(loc, J, ecoords, Ns[j], gradNparams[j])
             Jac = Jacobianvolume(self.integdomain, J, loc, fes.conn[i], Ns[j]);
-            thefactor::FFlt =(rho*Jac*w[j]);
+            thefactor::FFlt = (rho*Jac*w[j]);
             elmat .+= NexpTNexp[j]*thefactor
         end # Loop over quadrature points
         gatherdofnums!(u,  dofnums,  fes.conn[i]);# retrieve degrees of freedom

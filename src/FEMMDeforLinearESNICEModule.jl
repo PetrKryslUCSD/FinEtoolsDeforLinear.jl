@@ -297,7 +297,14 @@ function associategeometry!(self::F,  geom::NodalField{FFlt}; stabilization_para
     for i = 1:count(fes) # Loop over elements
         ar1, ar2, ar3, ar4, V = _tetaspectratiovol(geom.values[collect(fes.conn[i]), :])
         evols[i] = V;
-        self.ephis[i] = (1.0 / (b * min(ar1, ar2, ar3, ar4) ^a) + 1.0) ^(-1)
+        # If the aspect ratios are not reasonable, such as when the element is a
+        # sliver or inverted, we turn off the stabilization for the element
+        # by setting its stabilization factor to zero.
+        if min(ar1, ar2, ar3, ar4) <= 0
+            self.ephis[i] = 0.0
+        else
+            self.ephis[i] = (1.0 / (b * min(ar1, ar2, ar3, ar4) ^a) + 1.0) ^(-1)
+        end
         # Accumulate: the stabilization factor at the node is the weighted mean of the stabilization factors of the elements at that node
         for k = 1:nodesperelem(fes)
             nvols[fes.conn[i][k]] += evols[i]
@@ -397,11 +404,16 @@ function stiffness(self::AbstractFEMMDeforLinearESNICE, assembler::A, geom::Noda
         for j = 1:npts # Loop over quadrature points
             locjac!(loc, J, ecoords, Ns[j], gradNparams[j])
             Jac = Jacobianvolume(self.integdomain, J, loc, fes.conn[i], Ns[j]);
-            updatecsmat!(self.mcsys, loc, J, fes.label[i]);
-            At_mul_B!(csmatTJ, self.mcsys.csmat, J); # local Jacobian matrix
-            gradN!(fes, gradN, gradNparams[j], csmatTJ);
-            Blmat!(self.mr, B, Ns[j], gradN, loc, self.mcsys.csmat);
-            add_btdb_ut_only!(elmat, B, self.ephis[i]*Jac*w[j], Dstab, DB)
+            # Do the  following only if the element is well shaped and the
+            # stabilization factor is positive; if the element is so distorted
+            # that its Jacobian is non-positive, skip the following step.
+            if self.ephis[i] > 0 
+                updatecsmat!(self.mcsys, loc, J, fes.label[i]);
+                At_mul_B!(csmatTJ, self.mcsys.csmat, J); # local Jacobian matrix
+                gradN!(fes, gradN, gradNparams[j], csmatTJ);
+                Blmat!(self.mr, B, Ns[j], gradN, loc, self.mcsys.csmat);
+                add_btdb_ut_only!(elmat, B, self.ephis[i]*Jac*w[j], Dstab, DB)
+            end
         end # Loop over quadrature points
         complete_lt!(elmat)
         gatherdofnums!(u, dofnums, fes.conn[i]); # retrieve degrees of freedom
