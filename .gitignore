@@ -10,3 +10,4 @@
 docs/build/
 *.pdf
 *.enl
+test/playground.jl
