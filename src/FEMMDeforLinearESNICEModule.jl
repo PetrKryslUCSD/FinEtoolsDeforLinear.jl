@@ -104,7 +104,8 @@ end
 """
     FEMMDeforLinearESNICEH8{MR<:AbstractDeforModelRed, S<:FESetH8, F<:Function, M<:AbstractMatDeforLinearElastic} <: AbstractFEMMDeforLinearESNICE
 
-FEMM type for Nodally Integrated Continuum Elements (NICE) based on the 8-node hexahedron.
+FEMM type for Nodally Integrated Continuum Elements (NICE) based on the 8-node
+hexahedron.
 """
 mutable struct FEMMDeforLinearESNICEH8{MR<:AbstractDeforModelRed, S<:FESetH8, F<:Function, M<:AbstractMatDeforLinearElastic} <: AbstractFEMMDeforLinearESNICE
     mr::Type{MR}
