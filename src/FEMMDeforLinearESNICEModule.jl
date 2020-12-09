@@ -274,10 +274,19 @@ function _tetaspectratiovol(X)
     A2 = norm(cross(edge2, edge3))
     A3 = norm(cross(edge3, edge1))
     A4 = norm(cross(edge4, edge6))
-    h1, h2, h3, h4 = V/A1, V/A2, V/A3, V/A4
+    #h1, h2, h3, h4 = V/A1, V/A2, V/A3, V/A4
     L1, L2, L3, L4, L5, L6 = norm(edge1), norm(edge2), norm(edge3), norm(edge4), norm(edge5), norm(edge6)
+    # the heights and the edge lengths will now be used to derive a composite
+    # index: aspect ratio index. If this cannot be computed without generating
+    # not-a-number or infinity, this number is assumed to be better represented
+    # with 1.0 (perfect ratio), so that the element shape is then governed by
+    # the other aspect ratio values.
     f = maximum
-    return h1/f([L1, L2, L4]), h2/f([L3, L2, L5]), h3/f([L1, L3, L6]), h4/f([L6, L5, L4]), V/6
+    f([L1, L2, L4]) != 0.0 && A1 != 0.0 ? ar1 = V/A1/f([L1, L2, L4]) : ar1 = 1.0
+    f([L3, L2, L5]) != 0.0 && A2 != 0.0 ? ar2 = V/A2/f([L3, L2, L5]) : ar2 = 1.0
+    f([L1, L3, L6]) != 0.0 && A3 != 0.0 ? ar3 = V/A3/f([L1, L3, L6]) : ar3 = 1.0
+    f([L6, L5, L4]) != 0.0 && A4 != 0.0 ? ar4 = V/A4/f([L6, L5, L4]) : ar4 = 1.0
+    return ar1, ar2, ar3, ar4, V/6
 end
 
 """
@@ -305,16 +314,21 @@ function associategeometry!(self::F,  geom::NodalField{FFlt}; stabilization_para
         else
             self.ephis[i] = (1.0 / (b * min(ar1, ar2, ar3, ar4) ^a) + 1.0) ^(-1)
         end
-        # Accumulate: the stabilization factor at the node is the weighted mean of the stabilization factors of the elements at that node
+        # Accumulate: the stabilization factor at the node is the weighted mean
+        # of the stabilization factors of the elements at that node
         for k = 1:nodesperelem(fes)
             nvols[fes.conn[i][k]] += evols[i]
             self.nphis[fes.conn[i][k]] += self.ephis[i] * evols[i]
         end
     end # Loop over elements
+    @assert any(isnan.(self.ephis)) == false
     # Now scale the values at the nodes with the nodal volumes
     for k = 1:length(nvols)
-        self.nphis[k] /= nvols[k]
+        if nvols[k] != 0.0
+            self.nphis[k] /= nvols[k]
+        end
     end
+    @assert any(isnan.(self.nphis)) == false
     # Now calculate the nodal basis function gradients
     return _computenodalbfungrads(self, geom)
 end
@@ -407,7 +421,7 @@ function stiffness(self::AbstractFEMMDeforLinearESNICE, assembler::A, geom::Noda
             # Do the  following only if the element is well shaped and the
             # stabilization factor is positive; if the element is so distorted
             # that its Jacobian is non-positive, skip the following step.
-            if self.ephis[i] > 0 
+            if self.ephis[i] > 0  && Jac != 0.0
                 updatecsmat!(self.mcsys, loc, J, fes.label[i]);
                 At_mul_B!(csmatTJ, self.mcsys.csmat, J); # local Jacobian matrix
                 gradN!(fes, gradN, gradNparams[j], csmatTJ);
