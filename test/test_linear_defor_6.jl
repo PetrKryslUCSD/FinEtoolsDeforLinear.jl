@@ -1155,9 +1155,10 @@ function test()
     # vtkexportmesh(File, fens, fes; scalars=[("maxshear", fld.values)], vectors=[("u", u.values)])
     # @async run(`"paraview.exe" $File`)
     
-
 end
-
+end
+using .mmLE1NAFEMSsstressx1
+mmLE1NAFEMSsstressx1.test()
 
 module mholestr1
 using FinEtools
