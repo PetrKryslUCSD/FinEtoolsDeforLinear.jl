@@ -1367,7 +1367,7 @@ function test()
     # @test norm(maximum(fld.values) - 8.190847372888073e7)/8.190847372888073e7 <= 1.0e-4
     File =  "mholestr3-s1.vtk"
     vtkexportmesh(File, fens, fes; scalars=[("sigma_1", fld.values)], vectors=[("u", u.values)])
-    @async run(`"paraview.exe" $File`)
+    #@async run(`"paraview.exe" $File`)
     fld= fieldfromintegpoints(femm, geom, u, :maxshear, 1)
     @test norm(maximum(fld.values) - 5.921999943843146)/5.921999943843146 <= 1.0e-4
     # File =  "mholestr3-maxshear.vtk"
