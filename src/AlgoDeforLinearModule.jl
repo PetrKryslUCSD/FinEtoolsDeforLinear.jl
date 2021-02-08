@@ -713,27 +713,29 @@ function modal(modeldata::FDataDict)
     # [W,Omega]= eigs(@(bv)mAt\(mA\bv), u.nfreedofs, M, neigvs, 'SM', evopts);
     #          [W,Omega]= eigen(full(K+omega_shift*M), full(M));
 
-    d,v,nev,nconv = eigs(K+omega_shift*M, M; nev=neigvs, which=:SM)
+    d, v, nconv = eigs(K+omega_shift*M, M; nev=neigvs, which=:SM)
+    #    Subtract the mass-shifting Angular frequency
     broadcast!(+, d, d, -omega_shift);
 
     modeldata["raw_eigenvalues"] = d;
-    #    Subtract the mass-shifting Angular frequency
+    # Better make sure the eigenvalues make sense: they should be all real.
     if any(imag(d) .!= 0.0)
-        d=real(d);
+        d = real.(d);
     end
     if any(real(d) .< 0.0)
         d = abs.(d);
     end
+    d = real.(d)
     #    Sort  the angular frequencies by magnitude.  Make sure all
     #    imaginary parts of the eigenvalues are removed.
-    ix =sortperm(d);
+    ix = sortperm(d);
 
     # Update the model data: store geometry
     modeldata["geom"] = geom;
     # Store the displacement field
     modeldata["u"] = u;
     # Number of computed eigenvectors
-    modeldata["neigvs"] = nev;
+    modeldata["neigvs"] = length(d);
     #  Computed eigenvectors: we are ignoring the imaginary part here
     #  because the modal analysis is presumed to have been performed for
     #  an undamped structure

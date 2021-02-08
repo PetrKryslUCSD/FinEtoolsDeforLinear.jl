@@ -1024,7 +1024,7 @@ function test()
     modeldata = FinEtoolsDeforLinear.AlgoDeforLinearModule.modal(modeldata)
 
     fs = modeldata["omega"]/(2*pi)
-    # println("Eigenvalues: $fs [Hz]")
+     #println("Eigenvalues: $fs [Hz]")
     # println("Percentage frequency errors: $((vec(fs[1:6]) - vec(Reffs))./vec(Reffs)*100)")
     @test norm((vec(fs[1:6]) - vec(Reffs))./vec(Reffs)*100 - [0.0162775, 0.0623384, 0.00799148, 0.151669, 0.376663, 0.0191388]) < 1.0e-6
 
