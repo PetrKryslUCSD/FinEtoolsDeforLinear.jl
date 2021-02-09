@@ -54,13 +54,13 @@ jobs:
           version: '^1.6.0-0'
       - run: |
           julia --project=docs -e '
-                    import Pkg; 
-                    Pkg.develop(path=pwd())
-                    Pkg.activate(".") 
-                    Pkg.instantiate() 
-                    Pkg.add("Documenter")
-                    using Documenter
-                    include("docs/make.jl")' 
+            import Pkg; 
+            Pkg.develop(path=pwd())
+            Pkg.activate(".") 
+            Pkg.instantiate() 
+            Pkg.add("Documenter")
+            using Documenter
+            include("docs/make.jl")' 
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DOCUMENTER_KEY: ${{ secrets.DOCUMENTER_KEY }}
