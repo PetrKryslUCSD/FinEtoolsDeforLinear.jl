@@ -20,8 +20,21 @@ abstract type AbstractDeforModelRed end;
 
 Model reduction for 1-D models.
 """
-struct DeforModelRed1D <: AbstractDeforModelRed
+struct DeforModelRed1DStrain <: AbstractDeforModelRed
 end
+"""
+    DeforModelRed1D <: AbstractDeforModelRed
+
+Model reduction for 1-D models.
+"""
+struct DeforModelRed1DStress <: AbstractDeforModelRed
+end
+"""
+    DeforModelRed1D
+
+This is alias for `DeforModelRed1DStress`.
+"""
+DeforModelRed1D = DeforModelRed1DStress
 """
     DeforModelRed2DStrain <: AbstractDeforModelRed
 

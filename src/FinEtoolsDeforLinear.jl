@@ -15,9 +15,9 @@ include("allmodules.jl")
 ###########################################################################
 # Linear deformation functionality
 ###########################################################################
-using .DeforModelRedModule: AbstractDeforModelRed, DeforModelRed1D, DeforModelRed2DStrain,    DeforModelRed2DStress, DeforModelRed2DAxisymm, DeforModelRed3D, nstressstrain, nthermstrain, stresscomponentmap, Blmat!, divmat, vgradmat
+using .DeforModelRedModule: AbstractDeforModelRed, DeforModelRed1D, DeforModelRed1DStress, DeforModelRed1DStrain, DeforModelRed2DStrain, DeforModelRed2DStress, DeforModelRed2DAxisymm, DeforModelRed3D, nstressstrain, nthermstrain, stresscomponentmap, Blmat!, divmat, vgradmat
 # Exported: types  for model reduction in stress analysis
-export AbstractDeforModelRed, DeforModelRed1D, DeforModelRed2DStrain,    DeforModelRed2DStress, DeforModelRed2DAxisymm, DeforModelRed3D
+export AbstractDeforModelRed, DeforModelRed1D, DeforModelRed1DStress, DeforModelRed1DStrain, DeforModelRed2DStrain, DeforModelRed2DStress, DeforModelRed2DAxisymm, DeforModelRed3D
 # Exported: num stresses/strains,  number of thermal strains, and map of  the numbering of stress components
 export nstressstrain, nthermstrain, stresscomponentmap
 # Exported: strain-displacement matrix and divergence matrix for all model-reduction types
