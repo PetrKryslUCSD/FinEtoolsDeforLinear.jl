@@ -184,7 +184,7 @@ function stubby_corbel_H8_big(n = 30)
     # stressfields = ElementalField[modeldata["postprocessing"]["exported"][1]["field"]]
 
     true
-end # stubby_corbel_H8_by_hand
+end # stubby_corbel_H8_big
 
 function allrun()
     println("#####################################################")
