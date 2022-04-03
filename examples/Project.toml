@@ -1,0 +1,8 @@
+[deps]
+FinEtools = "91bb5406-6c9a-523d-811d-0644c4229550"
+FinEtoolsDeforLinear = "e9187c00-8bdd-11e9-1e70-7ba8303116a2"
+Infiltrator = "5903a43b-9cc3-4c30-8d17-598619ec4e9b"
+Revise = "295af30f-e4ad-537b-8983-00126c2a3abe"
+SIAMFANLEquations = "084e46ad-d928-497d-ad5e-07fa361a48c4"
+SymRCM = "286e6d88-80af-4590-acc9-0001b223b9bd"
+UnicodePlots = "b8865327-cd53-5732-bb35-84acbb429228"

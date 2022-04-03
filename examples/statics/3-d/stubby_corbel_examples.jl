@@ -4,10 +4,15 @@ using FinEtools.AlgoBaseModule: evalconvergencestudy
 using FinEtoolsDeforLinear
 using FinEtoolsDeforLinear.AlgoDeforLinearModule: linearstatics, exportstresselementwise, exportstress
 using Statistics: mean
-using LinearAlgebra: Symmetric, cholesky
+using LinearAlgebra: Symmetric, cholesky, ldlt, lu, norm
 using SparseArrays
+using SuiteSparse
 using Printf
 using SymRCM
+using UnicodePlots
+using Infiltrator
+using SIAMFANLEquations
+using Random
 
 # Isotropic material
 E=1000.0;
@@ -16,8 +21,8 @@ W=25.0;
 H=50.0;
 L= 50.0;
 htol = minimum([L,H,W])/1000;
-uzex =-12.6;
-magn = 0.2*uzex/4;
+uzex =-0.16;
+magn = 0.2*(-12.6)/4;
 Force =magn*W*H*2;
 CTE = 0.0
 n = 5 #
@@ -157,22 +162,37 @@ function stubby_corbel_H8_big(n = 30)
     remfremem = fremem - Base.Sys.free_memory()
     @printf "After stiffness, free memory decrease = %.1f [MB]\n" round(remfremem/1024^2, digits = 1)
     println("Stiffness: number of non zeros = $(nnz(K)) [ND]")
+    display(spy(K, canvas = DotCanvas))
 
-    @time K = cholesky(Symmetric(K))
-    remfremem = fremem - Base.Sys.free_memory()
-    @printf "After cholesky, free memory decrease = %.1f [MB]\n" round(remfremem/1024^2, digits = 1)
-    @time U = K\(F2)
-    remfremem = fremem - Base.Sys.free_memory()
-    @printf "After solution, free memory decrease = %.1f [MB]\n" round(remfremem/1024^2, digits = 1)
+    if true
+    # @show methods(SuiteSparse.CHOLMOD.ldlt, (typeof(K), ))
+        # @time K = SuiteSparse.CHOLMOD.ldlt(K)
+        @time K = SuiteSparse.CHOLMOD.cholesky(K)
+    # @time K = SparseArrays.ldlt(K)
+    # @time K = cholesky(K)
+    # @infiltrate 
+        remfremem = fremem - Base.Sys.free_memory()
+        @printf "After factorization, free memory decrease = %.1f [MB]\n" round(remfremem/1024^2, digits = 1)
+        @time U = K\(F2)
+        remfremem = fremem - Base.Sys.free_memory()
+        @printf "After solution, free memory decrease = %.1f [MB]\n" round(remfremem/1024^2, digits = 1)
+    else
+        result = SIAMFANLEquations.kl_gmres(zeros(size(F2)), F2, (x, pdata) -> K*x, zeros(length(F2), 150), 0.001; lmaxit = 3000)
+        @show result.reshist[end]
+        U = result.sol
+        @show norm(F2 - K*U, Inf) / norm(F2, Inf) 
+    end
     scattersysvec!(u,U[:])
+
+
     # @show length(U)
     Tipl = selectnode(fens, box=[0 W L L 0 H], inflate=htol)
     utip = mean(u.values[Tipl, 3], dims=1)
-    # println("Deflection: $(utip), compared to $(uzex)")
+    println("Deflection: $(utip), compared to $(uzex)")
 
-    # File =  "stubby_corbel_H8_by_hand.vtk"
-    # vtkexportmesh(File, fens, fes;  vectors=[("u", u.values)])
-    # @async run(`"paraview.exe" $File`)
+    File =  "stubby_corbel_H8_big.vtk"
+    vtkexportmesh(File, fens, fes;  vectors=[("u", u.values)])
+    @async run(`"paraview.exe" $File`)
 
     # modeldata["postprocessing"] = FDataDict("file"=>"hughes_cantilever_stresses_$(elementtag)", "outputcsys"=>CSys(3, 3, updatecs!), "quantity"=>:Cauchy, "component"=>[5])
     # modeldata = exportstresselementwise(modeldata)
@@ -193,6 +213,11 @@ function allrun()
     return true
 end # function allrun
 
-end # module stubby_corbel_examples
 
-    stubby_corbel_examples.stubby_corbel_H8_big()
+@info "All examples may be executed with "
+println("using .$(@__MODULE__); $(@__MODULE__).allrun()")
+
+
+end # module stubby_corbel_examples
+nothing
+    
