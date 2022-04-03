@@ -14,6 +14,7 @@ statics and dynamics (modal analysis, steady-state vibration).
 
 ## News
 
+- 04/03/2022: Examples now have their own project environment.
 - 02/08/2021: Updated dependencies for Julia 1.6 and FinEtools 5.0.
 - 08/23/2020: Added a separate tutorial package, [FinEtoolsDeforLinearTutorials.jl](https://petrkryslucsd.github.io/FinEtoolsDeforLinearTutorials.jl)).
 - 08/17/2020: Added tutorials to the documentation.
@@ -117,7 +118,8 @@ Linear deformation 7 |   36     36
 
 ## Examples
 
-Begin with
+Begin with changing your working directory to the `examples` folder. Activate
+and instantiate the examples environment.
 ```
 using Pkg
 Pkg.activate(".")
