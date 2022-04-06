@@ -12,7 +12,6 @@ using Printf
 using SymRCM
 using UnicodePlots
 using Infiltrator
-using SimpleDirectSolvers
 using Random
 using ILUZero
 
@@ -179,32 +178,15 @@ function stubby_corbel_H8_big(n = 10, solver = :suitesparse)
         @time U = K\(F2)
         remfremem = fremem - Base.Sys.free_memory()
         @printf "After solution, free memory decrease = %.1f [MB]\n" round(remfremem/1024^2, digits = 1)
-    elseif solver == :simpledirectsolvers
-        I, J, V = findnz(K)    
-        I = Int32.(I)
-        J = Int32.(J)
-        V = Float32.(V)
-        M = size(K, 1) 
-        K = nothing
-        GC.gc()
-        sky = SimpleDirectSolvers.SkylineMatrix(I, J, V, M)
-        I = nothing; J = nothing; V = nothing
-        GC.gc()
-        @time SimpleDirectSolvers.cholesky_factorize!(sky)
-        @time U = SimpleDirectSolvers.cholesky_solve(sky, F2)
-        @printf "After solution, free memory decrease = %.1f [MB]\n" round(remfremem/1024^2, digits = 1)
     else
         n = size(K, 1)
-            # Kdiaginv = [1.0/K[i, i] for i in 1:n]
-            # opM = LinearOperator(Float64, n, n, false, false, (y, v) -> (y .= v .*Kdiaginv; y))
         # @time factor = ilu(K, τ = 0.1)
         factor = ilu0(K)
         opM = LinearOperator(Float64, n, n, false, false, (y, v) -> ldiv!(y, factor, v))
-        @time (x, stats) = Krylov.cg(K, F2;
+        @time (U, stats) = Krylov.cg(K, F2;
                         M=opM, 
                         itmax=Int(round(n/2)), 
                         verbose=1)
-        U = x
     end
     scattersysvec!(u,U[:])
 
