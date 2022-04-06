@@ -1,8 +1,11 @@
 [deps]
 FinEtools = "91bb5406-6c9a-523d-811d-0644c4229550"
 FinEtoolsDeforLinear = "e9187c00-8bdd-11e9-1e70-7ba8303116a2"
+ILUZero = "88f59080-6952-5380-9ea5-54057fb9a43f"
+IncompleteLU = "40713840-3770-5561-ab4c-a76e7d0d7895"
 Infiltrator = "5903a43b-9cc3-4c30-8d17-598619ec4e9b"
+Krylov = "ba0b0d4f-ebba-5204-a429-3ac8c609bfb7"
+LinearOperators = "5c8ed15e-5a4c-59e4-a42b-c7e8811fb125"
 Revise = "295af30f-e4ad-537b-8983-00126c2a3abe"
-SIAMFANLEquations = "084e46ad-d928-497d-ad5e-07fa361a48c4"
 SymRCM = "286e6d88-80af-4590-acc9-0001b223b9bd"
 UnicodePlots = "b8865327-cd53-5732-bb35-84acbb429228"
