@@ -4,19 +4,21 @@ using FinEtools.AlgoBaseModule: evalconvergencestudy
 using FinEtoolsDeforLinear
 using FinEtoolsDeforLinear.AlgoDeforLinearModule: linearstatics, exportstresselementwise, exportstress
 using Statistics: mean
-using LinearAlgebra: Symmetric, cholesky, ldlt, lu, norm
+using LinearAlgebra
+using Krylov, LinearOperators, IncompleteLU
 using SparseArrays
 using SuiteSparse
 using Printf
 using SymRCM
 using UnicodePlots
 using Infiltrator
-using SIAMFANLEquations
+using SimpleDirectSolvers
 using Random
+using ILUZero
 
 # Isotropic material
 E=1000.0;
-nu=0.4999; #Taylor data
+nu=0.4; #Taylor data
 W=25.0;
 H=50.0;
 L= 50.0;
@@ -100,7 +102,7 @@ function stubby_corbel_H8_by_hand()
     true
 end # stubby_corbel_H8_by_hand
 
-function stubby_corbel_H8_big(n = 30)
+function stubby_corbel_H8_big(n = 10, solver = :suitesparse)
     elementtag = "H8"
     println("""
     Stubby corbel example. Element: $(elementtag)
@@ -162,9 +164,10 @@ function stubby_corbel_H8_big(n = 30)
     remfremem = fremem - Base.Sys.free_memory()
     @printf "After stiffness, free memory decrease = %.1f [MB]\n" round(remfremem/1024^2, digits = 1)
     println("Stiffness: number of non zeros = $(nnz(K)) [ND]")
+    println("Sparsity = $(nnz(K)/size(K, 1)/size(K, 2)) [ND]")
     display(spy(K, canvas = DotCanvas))
 
-    if true
+    if solver == :suitesparse
     # @show methods(SuiteSparse.CHOLMOD.ldlt, (typeof(K), ))
         # @time K = SuiteSparse.CHOLMOD.ldlt(K)
         @time K = SuiteSparse.CHOLMOD.cholesky(K)
@@ -176,11 +179,32 @@ function stubby_corbel_H8_big(n = 30)
         @time U = K\(F2)
         remfremem = fremem - Base.Sys.free_memory()
         @printf "After solution, free memory decrease = %.1f [MB]\n" round(remfremem/1024^2, digits = 1)
+    elseif solver == :simpledirectsolvers
+        I, J, V = findnz(K)    
+        I = Int32.(I)
+        J = Int32.(J)
+        V = Float32.(V)
+        M = size(K, 1) 
+        K = nothing
+        GC.gc()
+        sky = SimpleDirectSolvers.SkylineMatrix(I, J, V, M)
+        I = nothing; J = nothing; V = nothing
+        GC.gc()
+        @time SimpleDirectSolvers.cholesky_factorize!(sky)
+        @time U = SimpleDirectSolvers.cholesky_solve(sky, F2)
+        @printf "After solution, free memory decrease = %.1f [MB]\n" round(remfremem/1024^2, digits = 1)
     else
-        result = SIAMFANLEquations.kl_gmres(zeros(size(F2)), F2, (x, pdata) -> K*x, zeros(length(F2), 150), 0.001; lmaxit = 3000)
-        @show result.reshist[end]
-        U = result.sol
-        @show norm(F2 - K*U, Inf) / norm(F2, Inf) 
+        n = size(K, 1)
+            # Kdiaginv = [1.0/K[i, i] for i in 1:n]
+            # opM = LinearOperator(Float64, n, n, false, false, (y, v) -> (y .= v .*Kdiaginv; y))
+        # @time factor = ilu(K, τ = 0.1)
+        factor = ilu0(K)
+        opM = LinearOperator(Float64, n, n, false, false, (y, v) -> ldiv!(y, factor, v))
+        @time (x, stats) = Krylov.cg(K, F2;
+                        M=opM, 
+                        itmax=Int(round(n/2)), 
+                        verbose=1)
+        U = x
     end
     scattersysvec!(u,U[:])
 
