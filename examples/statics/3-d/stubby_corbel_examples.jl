@@ -168,7 +168,8 @@ function stubby_corbel_H8_big(n = 10, solver = :suitesparse)
     else
         n = size(K, 1)
         mKd = mean(diag(K))
-        @time factor = ilu(K, τ = mKd / 1000000.0)
+        # @time factor = ilu(K, τ = mKd / 1000.0) # This may work for compressible materials
+        @time factor = ilu(K, τ = mKd / 1000000.0) # This may work for incompressible materials
         # factor = ilu0(K)
         @show nnz(factor) / nnz(K)
         opM = LinearOperator(Float64, n, n, false, false, (y, v) -> ldiv!(y, factor, v))
