@@ -17,7 +17,7 @@ using ILUZero
 
 # Isotropic material
 E=1000.0;
-nu=0.4; #Taylor data
+nu=0.4999; #Taylor data
 W=25.0;
 H=50.0;
 L= 50.0;
@@ -107,13 +107,8 @@ function stubby_corbel_H8_big(n = 10, solver = :suitesparse)
     Stubby corbel example. Element: $(elementtag)
     """)
 
-    fremem = Base.Sys.free_memory()
-    @printf "Initial free memory = %.1f [MB]\n" round(fremem/1024^2, digits = 1)
-
     fens,fes = H8block(W, L, H, n, 2*n, 2*n)
     println("Number of elements: $(count(fes))")
-    remfremem = fremem - Base.Sys.free_memory()
-    @printf "After mesh, free memory decrease = %.1f [MB]\n" round(remfremem/1024^2, digits = 1)
     bfes = meshboundary(fes)
     # end cross-section surface  for the shear loading
     sectionL = selectelem(fens, bfes; facing=true, direction = [0.0 +1.0 0.0])
@@ -157,11 +152,7 @@ function stubby_corbel_H8_big(n = 10, solver = :suitesparse)
     el2femm = FEMMBase(IntegDomain(subset(bfes, sectionL), GaussRule(2, 2)))
     F2 = distribloads(el2femm, geom, u, fi, 2);
     associategeometry!(femm, geom)
-    remfremem = fremem - Base.Sys.free_memory()
-    @printf "Before stiffness, free memory decrease = %.1f [MB]\n" round(remfremem/1024^2, digits = 1)
     K = stiffness(femm, geom, u)
-    remfremem = fremem - Base.Sys.free_memory()
-    @printf "After stiffness, free memory decrease = %.1f [MB]\n" round(remfremem/1024^2, digits = 1)
     println("Stiffness: number of non zeros = $(nnz(K)) [ND]")
     println("Sparsity = $(nnz(K)/size(K, 1)/size(K, 2)) [ND]")
     display(spy(K, canvas = DotCanvas))
@@ -173,15 +164,13 @@ function stubby_corbel_H8_big(n = 10, solver = :suitesparse)
     # @time K = SparseArrays.ldlt(K)
     # @time K = cholesky(K)
     # @infiltrate 
-        remfremem = fremem - Base.Sys.free_memory()
-        @printf "After factorization, free memory decrease = %.1f [MB]\n" round(remfremem/1024^2, digits = 1)
         @time U = K\(F2)
-        remfremem = fremem - Base.Sys.free_memory()
-        @printf "After solution, free memory decrease = %.1f [MB]\n" round(remfremem/1024^2, digits = 1)
     else
         n = size(K, 1)
-        # @time factor = ilu(K, τ = 0.1)
-        factor = ilu0(K)
+        mKd = mean(diag(K))
+        @time factor = ilu(K, τ = mKd / 1000000.0)
+        # factor = ilu0(K)
+        @show nnz(factor) / nnz(K)
         opM = LinearOperator(Float64, n, n, false, false, (y, v) -> ldiv!(y, factor, v))
         @time (U, stats) = Krylov.cg(K, F2;
                         M=opM, 
