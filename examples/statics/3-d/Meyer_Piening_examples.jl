@@ -3,6 +3,7 @@ using FinEtools
 using FinEtoolsDeforLinear
 using FinEtoolsDeforLinear.AlgoDeforLinearModule
 using FinEtools.MeshUtilModule
+
 function Meyer_Piening_sandwich()
     println("""
     Meyer-Piening sandwich plate
@@ -1788,4 +1789,10 @@ function allrun()
     return true
 end # function allrun
 
-end # module Meyer_Piening_examples
+@info "All examples may be executed with "
+println("using .$(@__MODULE__); $(@__MODULE__).allrun()")
+
+
+end # module 
+nothing
+    
