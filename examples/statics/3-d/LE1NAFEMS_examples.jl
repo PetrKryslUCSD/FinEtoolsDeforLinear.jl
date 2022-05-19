@@ -157,8 +157,7 @@ function LE1NAFEMS_MSH8()
     println("$(n), $(fld.values[nl,1][1]/phun("MPa"))")
 
     File =  "a.vtk"
-    vtkexportmesh(File, fes.conn, geom.values,
-    FinEtools.MeshExportModule.H8; vectors=[("u", u.values)],
+    vtkexportmesh(File, fes.conn, geom.values, FinEtools.MeshExportModule.VTK.H8; vectors=[("u", u.values)],
     scalars=[("sigmay", fld.values)])
     @async run(`"paraview.exe" $File`)
     true
@@ -341,8 +340,7 @@ function LE1NAFEMS_MSH8_export()
     println("$(n), $(fld.values[nl,1][1]/phun("MPa"))")
 
     File =  "a.vtk"
-    vtkexportmesh(File, fes.conn, geom.values,
-    FinEtools.MeshExportModule.H8; vectors=[("u", u.values)],
+    vtkexportmesh(File, fes.conn, geom.values, FinEtools.MeshExportModule.VTK.H8; vectors=[("u", u.values)],
     scalars=[("sigmay", fld.values)])
     @async run(`"paraview.exe" $File`)
     true
@@ -531,8 +529,7 @@ function LE1NAFEMS_MST10_one()
             push!(nnodes, count(fens))
             push!(sigyderrs[extrapolation], abs(sigyd/sigma_yD - 1.0))
             File =  "LE1NAFEMS_MST10_a.vtk"
-            vtkexportmesh(File, fes.conn, geom.values,
-            FinEtools.MeshExportModule.T10; vectors=[("u", u.values)],
+            vtkexportmesh(File, fes.conn, geom.values, FinEtools.MeshExportModule.VTK.T10; vectors=[("u", u.values)],
             scalars=[("sigmay", fld.values)])
             @async run(`"paraview.exe" $File`)
         end
@@ -917,4 +914,10 @@ function allrun()
     return true
 end # function allrun
 
-end # module LE1NAFEMS_examples
+@info "All examples may be executed with "
+println("using .$(@__MODULE__); $(@__MODULE__).allrun()")
+
+
+end # module 
+nothing
+    

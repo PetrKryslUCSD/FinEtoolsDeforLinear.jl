@@ -1,7 +1,8 @@
 module NAFEMS_examples
 using FinEtools
 using FinEtools
-using FinEtools.AlgoDeforLinearModule: ssit
+using FinEtoolsDeforLinear
+using FinEtoolsDeforLinear.AlgoDeforLinearModule
 using LinearAlgebra
 using Arpack
 
@@ -61,14 +62,14 @@ function NAFEMS_FV32_algo()
     "neigvs"=>neigvs)
     
     # Solve
-    modeldata = FinEtools.AlgoDeforLinearModule.modal(modeldata)
+    modeldata = AlgoDeforLinearModule.modal(modeldata)
     
     fs = modeldata["omega"]/(2*pi)
     println("Eigenvalues: $fs [Hz]")
     println("Percentage frequency errors: $((vec(fs[1:6]) - vec(Reffs))./vec(Reffs)*100)")
     
     modeldata["postprocessing"] = FDataDict("file"=>"FV32-modes", "mode"=>1:10)
-    modeldata=FinEtools.AlgoDeforLinearModule.exportmode(modeldata)
+    modeldata = AlgoDeforLinearModule.exportmode(modeldata)
     @async run(`"paraview.exe" $(modeldata["postprocessing"]["file"]*"1.vtk")`)
     
     true
@@ -139,7 +140,7 @@ function NAFEMS_TEST13H_vib()
     
     if true
         t0 = time()
-        d,v,nev,nconv = eigs(K+OmegaShift*M, M; nev=neigvs, which=:SM)
+        d,v,nev,nconv = eigs(K+OmegaShift*M, M; nev=neigvs, which=:SM, explicittransform=:none)
         d = d .- OmegaShift;
         fs = real(sqrt.(complex(d)))/(2*pi)
         println("Reference Eigenvalues: $fs [Hz]")
@@ -159,4 +160,11 @@ function allrun()
     return true
 end # function allrun
 
-end # module NAFEMS_examples
+@info "All examples may be executed with "
+println("using .$(@__MODULE__); $(@__MODULE__).allrun()")
+
+
+end # module 
+nothing
+    
+
