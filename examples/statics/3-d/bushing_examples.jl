@@ -46,10 +46,10 @@ function bushing_h8_full()
 	setebc!(u, yLnl, true, 2, 0.0)
 
 	enl = connectednodes(subset(boundaryfes, ebcl))
-	setebc!(u, enl, true, [1; 2; 3]; val = 0.0)
+	setebc!(u, enl, true, [1; 2; 3], 0.0)
 	inl = connectednodes(subset(boundaryfes, ibcl))
-	setebc!(u, inl, true, [1; 2]; val = 0.0)
-	setebc!(u, inl, true, [3]; val = iuz)
+	setebc!(u, inl, true, [1; 2], 0.0)
+	setebc!(u, inl, true, [3], iuz)
 
 	applyebc!(u)
 	numberdofs!(u)
@@ -424,4 +424,10 @@ function allrun()
     return true
 end # function allrun
 
-end # module bushing_examples
+@info "All examples may be executed with "
+println("using .$(@__MODULE__); $(@__MODULE__).allrun()")
+
+
+end # module 
+nothing
+    
