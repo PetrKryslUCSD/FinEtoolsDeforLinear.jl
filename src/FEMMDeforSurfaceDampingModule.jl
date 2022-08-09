@@ -13,7 +13,7 @@ using FinEtools.FTypesModule: FInt, FFlt, FCplxFlt, FFltVec, FIntVec, FFltMat, F
 import FinEtools.FENodeSetModule: FENodeSet
 import FinEtools.FESetModule: AbstractFESet, nodesperelem, manifdim
 import FinEtools.IntegDomainModule: IntegDomain, integrationdata, Jacobiansurface
-import FinEtools.FieldModule: ndofs, gatherdofnums!
+import FinEtools.FieldModule: ndofs, gatherdofnums!, gathervalues_asmat!
 import FinEtools.NodalFieldModule: NodalField 
 import FinEtools.FEMMBaseModule: AbstractFEMM
 import FinEtools.AssemblyModule: AbstractSysvecAssembler, AbstractSysmatAssembler, SysmatAssemblerSparseSymm, startassembly!, assemble!, makematrix!
@@ -52,15 +52,17 @@ function dampingABC(self::FEMMDeforSurfaceDamping, assembler::A,
     npts, Ns, gradNparams, w, pc  =  integrationdata(self.integdomain);
     loc = zeros(FFlt, 1, sdim); # quadrature point coordinate -- used as a buffer
     J = zeros(FFlt, sdim, mdim); # Jacobian matrix -- used as a buffer
+    ecoords = zeros(FFlt, nne, sdim)
     Ce = zeros(T2, Cedim, Cedim); # element damping matrix -- used as a buffer
     Nn = zeros(FFlt, Cedim); # column vector
     dofnums = zeros(FInt, Cedim); # degree of freedom array -- used as a buffer
     # Prepare assembler and temporaries
     startassembly!(assembler, Cedim, Cedim, nfes, u.nfreedofs, u.nfreedofs);
     for i = 1:nfes # loop over finite elements
+        gathervalues_asmat!(geom, ecoords, fes.conn[i]);
         fill!(Ce, 0.0); # Initialize element damping matrix
         for j = 1:npts # loop over quadrature points
-            locjac!(loc, J, geom.values, fes.conn[i], Ns[j], gradNparams[j])
+            locjac!(loc, J, ecoords, Ns[j], gradNparams[j])
             Jac = Jacobiansurface(self.integdomain, J, loc, fes.conn[i], Ns[j]);
             n = updatenormal!(surfacenormal, loc, J, self.integdomain.fes.label[i]);
             for k = 1:nne
