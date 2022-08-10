@@ -1,6 +1,9 @@
 module alum_cyl_mode_examples
 using FinEtools
 using FinEtools.MeshExportModule
+using FinEtoolsDeforLinear
+using FinEtoolsDeforLinear.AlgoDeforLinearModule: ssit
+using LinearAlgebra
 using Arpack
 
 # Mesh alum_cyl.inp
@@ -58,7 +61,7 @@ function alum_cyl_mode_nice_t4()
     stabfact = 0.0062
     
     MR = DeforModelRed3D
-    output = import_ABAQUS("alum_cyl.inp")
+    output = import_ABAQUS(joinpath(@__DIR__, "alum_cyl.inp"))
     fens, fes = output["fens"], output["fesets"][1]
     fens.xyz .*= phun("mm") # The input is provided in SI(mm) units
     fens, fes = T10toT4(fens, fes)
@@ -93,7 +96,7 @@ function alum_cyl_mode_esnice_t4()
     OmegaShift = (10.0*2*pi)^2;
     
     MR = DeforModelRed3D
-    output = import_ABAQUS("alum_cyl.inp")
+    output = import_ABAQUS(joinpath(@__DIR__, "alum_cyl.inp"))
     fens, fes = output["fens"], output["fesets"][1]
     fens.xyz .*= phun("mm") # The input is provided in SI(mm) units
     fens, fes = T10toT4(fens, fes)
@@ -303,4 +306,9 @@ function allrun()
     return true
 end # function allrun
 
-end # module alum_cyl_mode_examples
+@info "All examples may be executed with "
+println("using .$(@__MODULE__); $(@__MODULE__).allrun()")
+
+
+end # module 
+nothing
