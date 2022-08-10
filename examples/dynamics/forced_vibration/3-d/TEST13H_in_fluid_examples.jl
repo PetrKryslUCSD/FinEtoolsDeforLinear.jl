@@ -1,4 +1,4 @@
-module TEST13H_examples
+module TEST13H_in_fluid_examples
 using FinEtools
 using FinEtoolsDeforLinear
 using FinEtoolsDeforLinear.AlgoDeforLinearModule: ssit
@@ -23,11 +23,14 @@ function TEST13H_hva()
     # The nonzero benchmark frequencies are (in hertz): 2.377, 5.961, 5.961,
     # 9.483, 12.133, 12.133, 15.468, 15.468 [Hz].
     
-    println("""
-    Homogeneous square plate, simply-supported on the circumference from
-    the test 13 from NAFEMS “Selected Benchmarks for Forced Vibration,” R0016, March 1993.
-    The nonzero benchmark frequencies are (in hertz): 2.377, 5.961, 5.961,
-    9.483, 12.133, 12.133, 15.468, 15.468 [Hz].
+    println(""" Homogeneous square plate, simply-supported on the circumference,
+    from the test 13 from NAFEMS “Selected Benchmarks for Forced Vibration,”
+    R0016, March 1993. The nonzero benchmark frequencies are (in hertz): 2.377,
+    5.961, 5.961, 9.483, 12.133, 12.133, 15.468, 15.468 [Hz].
+
+    This problem is extended by including fluid-induced damping by the
+    surrounding air using a matrix expressing the ABC with dampers along the
+    boundary.
     """)
     
     # t0 = time()
@@ -43,6 +46,8 @@ function TEST13H_hva()
     # neigvs = 11;
     # OmegaShift = (2*pi*0.5) ^ 2; # to resolve rigid body modes
     frequencies = vcat(linearspace(0.0,2.377,20), linearspace(2.377,15.0,70))
+    rho_fluid = 1.3*phun("kg*m^3")
+    c_fluid = 341*phun("m/s")
     
     # Compute the parameters of Rayleigh damping. For the two selected
     # frequencies we have the relationship between the damping ratio and
@@ -82,6 +87,10 @@ function TEST13H_hva()
     femm = FEMMDeforLinear(MR, IntegDomain(fes, GaussRule(3,3)), material)
     M = mass(femm, geom, u)
     C = Rayleigh_mass*M + Rayleigh_stiffness*K
+    bfes = meshboundary(fes)
+    sfemm = FEMMDeforSurfaceDamping(IntegDomain(bfes, GaussRule(2, 3)))
+    impedance = rho_fluid * c_fluid
+    D = dampingABC(sfemm, geom, u, impedance, SurfaceNormal(3))
     
     # if true
     #     t0 = time()
@@ -106,7 +115,7 @@ function TEST13H_hva()
     for k = 1:length(frequencies)
         frequency = frequencies[k];
         omega = 2*pi*frequency;
-        U1[:, k] = (-omega^2*M + 1im*omega*C + K)\F;
+        U1[:, k] = (-omega^2*M + 1im*omega*(C+D) + K)\F;
     end
     
     midpoint = selectnode(fens, box=[L/2 L/2 L/2 L/2 0 0], inflate=tolerance);
