@@ -1,6 +1,8 @@
 module unit_cube_mode_examples
 using FinEtools
 using FinEtools.MeshExportModule
+using FinEtoolsDeforLinear
+using FinEtoolsDeforLinear.AlgoDeforLinearModule
 using LinearAlgebra
 using Arpack
 
@@ -87,14 +89,14 @@ function unit_cube_modes_algo()
     "omega_shift"=>omega_shift, "neigvs"=>neigvs)
     
     # Solve
-    modeldata = FinEtools.AlgoDeforLinearModule.modal(modeldata)
+    modeldata = AlgoDeforLinearModule.modal(modeldata)
     
     fs = modeldata["omega"]/(2*pi)
     println("Eigenvalues: $fs [Hz]")
     
     modeldata["postprocessing"] = FDataDict("file"=>"unit_cube_mode",
     "mode"=>10)
-    modeldata=FinEtools.AlgoDeforLinearModule.exportmode(modeldata)
+    modeldata=AlgoDeforLinearModule.exportmode(modeldata)
     @async run(`"paraview.exe" $(modeldata["postprocessing"]["file"]*"1.vtk")`)
     
     true
@@ -213,14 +215,14 @@ function unit_cube_modes_msh8_algo()
     "omega_shift"=>omega_shift, "neigvs"=>neigvs)
     
     # Solve
-    modeldata = FinEtools.AlgoDeforLinearModule.modal(modeldata)
+    modeldata = AlgoDeforLinearModule.modal(modeldata)
     
     fs = modeldata["omega"]/(2*pi)
     println("Eigenvalues: $fs [Hz]")
     
     modeldata["postprocessing"] = FDataDict("file"=>"unit_cube_mode",
     "mode"=>10)
-    modeldata=FinEtools.AlgoDeforLinearModule.exportmode(modeldata)
+    modeldata=AlgoDeforLinearModule.exportmode(modeldata)
     @async run(`"paraview.exe" $(modeldata["postprocessing"]["file"]*"1.vtk")`)
     
     true
@@ -243,4 +245,9 @@ function allrun()
     return true
 end # function allrun
 
-end # module unit_cube_mode_examples
+@info "All examples may be executed with "
+println("using .$(@__MODULE__); $(@__MODULE__).allrun()")
+
+
+end # module 
+nothing
