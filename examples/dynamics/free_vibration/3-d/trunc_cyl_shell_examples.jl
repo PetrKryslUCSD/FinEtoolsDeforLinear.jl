@@ -1,6 +1,7 @@
 module trunc_cyl_shell_examples
 using FinEtools
-using FinEtools.AlgoDeforLinearModule
+using FinEtoolsDeforLinear
+using FinEtoolsDeforLinear.AlgoDeforLinearModule
 using LinearAlgebra
 using Arpack
 
@@ -113,7 +114,7 @@ function trunc_cyl_shell_nas()
     neigvs = 20;
 
     MR = DeforModelRed3D
-    output = import_NASTRAN("trunc_cyl_shell_2.nas")
+    output = import_NASTRAN(joinpath(@__DIR__, "trunc_cyl_shell_2.nas"))
     fens, fes = output["fens"], output["fesets"][1]
 
     geom = NodalField(fens.xyz)
@@ -160,4 +161,9 @@ function allrun()
     return true
 end # function allrun
 
-end # module trunc_cyl_shell_examples
+@info "All examples may be executed with "
+println("using .$(@__MODULE__); $(@__MODULE__).allrun()")
+
+
+end # module 
+nothing
