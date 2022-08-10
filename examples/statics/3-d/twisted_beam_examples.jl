@@ -3,19 +3,21 @@ using FinEtools
 using FinEtoolsDeforLinear
 using FinEtoolsDeforLinear.AlgoDeforLinearModule
 using FinEtools.MeshExportModule
+using Statistics
+
+# The initially twisted cantilever beam is one of the standard test problems
+# for verifying the finite-element accuracy [1]. The beam is clamped
+# at one end and loaded either with unit in-plane or unit out-of-plane
+# force at the other. The centroidal axis of the beam s straight at the
+# undeformed  configuration, while its cross-sections are twisted about the
+# centroidal axis from 0 at the clamped end to pi/2 at the free end.
+
+# Reference:
+# Zupan D, Saje M (2004) On "A proposed standard set of problems to test
+# finite element accuracy": the twisted beam. Finite Elements in Analysis
+# and Design 40: 1445-1451.
 
 function twisted_beam_algo()
-    println("""    The initially twisted cantilever beam is one of the standard test problems for verifying the finite-element accuracy [1]. The beam is clamped at one end and loaded either with unit in-plane or
-    unit out-of-plane force at the other. The centroidal axis of the beam is
-    straight at the undeformed  configuration, while its cross-sections are
-    twisted about the centroidal axis from 0 at the clamped end to pi/2 at
-    the free end.
-
-    Reference:
-    Zupan D, Saje M (2004) On "A proposed standard set of problems to test
-    finite element accuracy": the twisted beam. Finite Elements in Analysis
-    and Design 40: 1445-1451.
-    """)
     E = 0.29e8;
     nu = 0.22;
     W = 1.1;
@@ -68,7 +70,7 @@ function twisted_beam_algo()
 
     # Extract the solution
     nl = selectnode(fens, box = [L L -100*W 100*W -100*W 100*W],inflate = tolerance);
-    theutip = mean(u.values[nl,:],1)
+    theutip = mean(u.values[nl,:],dims=1)
     println("displacement  = $(theutip[dir]) as compared to converged $uex")
     println("normalized displacement  = $(theutip[dir]/uex*100) %")
 
@@ -109,16 +111,6 @@ end # twisted_beam_algo
 
 
 function twisted_beam_algo_stress()
-    println("""The initially twisted cantilever beam is one of the standard test problems for verifying the finite-element accuracy [1]. The beam is clamped at one end and loaded either with unit in-plane or unit ut-of-plane force at the other. The centroidal axis of the beam is
-    straight at the undeformed  configuration, while its cross-sections are
-    twisted about the centroidal axis from 0 at the clamped end to pi/2 at
-    the free end.
-
-    Reference:
-    Zupan D, Saje M (2004) On "A proposed standard set of problems to test
-    finite element accuracy": the twisted beam. Finite Elements in Analysis
-    and Design 40: 1445-1451.
-    """)
     E = 0.29e8;
     nu = 0.22;
     W = 1.1;
@@ -171,7 +163,7 @@ function twisted_beam_algo_stress()
 
     # Extract the solution
     nl = selectnode(fens, box = [L L -100*W 100*W -100*W 100*W],inflate = tolerance);
-    theutip = mean(u.values[nl,:],1)
+    theutip = mean(u.values[nl,:],dims=1)
     println("displacement  = $(theutip[dir]) as compared to converged $uex")
     println("normalized displacement  = $(theutip[dir]/uex*100) %")
 
@@ -233,12 +225,6 @@ end # twisted_beam_algo_stress
 
 
 function twisted_beam_export()
-    println("""
-    Refer to twisted_beam.jl.
-
-    This example EXPORTS the model to Abaqus. Import the .inp file
-    into Abaqus and run the job.
-    """)
     E = 0.29e8;
     nu = 0.22;
     W = 1.1;
@@ -292,9 +278,9 @@ function twisted_beam_export()
     ASSEMBLY(AE, "ASSEM1");
     INSTANCE(AE, "INSTNC1", "PART1");
     NODE(AE, fens.xyz);
-    ELEMENT(AE, "c3d8rh", "AllElements", 1, region1["femm"].integdata.fes.conn)
+    ELEMENT(AE, "c3d8rh", "AllElements", 1, region1["femm"].integdomain.fes.conn)
     ELEMENT(AE, "SFM3D4", "TractionElements",
-    1+count(region1["femm"].integdata.fes), flux1["femm"].integdata.fes.conn)
+    1+count(region1["femm"].integdomain.fes), flux1["femm"].integdomain.fes.conn)
     NSET_NSET(AE, "l1", l1)
     ORIENTATION(AE, "GlobalOrientation", vec([1. 0 0]), vec([0 1. 0]));
     SOLID_SECTION(AE, "elasticity", "GlobalOrientation", "AllElements", "Hourglassctl");
@@ -371,9 +357,9 @@ function twisted_beam_export_nb()
     ASSEMBLY(AE, "ASSEM1");
     INSTANCE(AE, "INSTNC1", "PART1");
     NODE(AE, fens.xyz);
-    ELEMENT(AE, "c3d8rh", "AllElements", 1, region1["femm"].integdata.fes.conn)
+    ELEMENT(AE, "c3d8rh", "AllElements", 1, region1["femm"].integdomain.fes.conn)
     ELEMENT(AE, "SFM3D4", "TractionElements",
-    1+count(region1["femm"].integdata.fes), flux1["femm"].integdata.fes.conn)
+    1+count(region1["femm"].integdomain.fes), flux1["femm"].integdomain.fes.conn)
     NSET_NSET(AE, "l1", l1)
     ORIENTATION(AE, "GlobalOrientation", vec([1. 0 0]), vec([0 1. 0]));
     SOLID_SECTION(AE, "elasticity", "GlobalOrientation", "AllElements", "Hourglassctl");
@@ -394,29 +380,24 @@ function twisted_beam_export_nb()
 end # twisted_beam_export_nb
 
 
-function twisted_beam_msh8()
-    println("""
-    The initially twisted cantilever beam is one of the standard test    problems for verifying the finite-element accuracy [1]. The beam is        clamped at one end and loaded either with unit in-plane or        unit out-of-plane force at the other. The centroidal axis of the beam is        straight at the undeformed  configuration, while its cross-sections are        twisted about the centroidal axis from 0 at the clamped end to pi/2 at        the free end.
-
-    Reference:
-    Zupan D, Saje M (2004) On "A proposed standard set of problems to test
-    finite element accuracy": the twisted beam. Finite Elements in Analysis
-    and Design 40: 1445-1451.
-    """)
+function twisted_beam_msh8(dir = 2, ref = 7)
     E = 0.29e8;
     nu = 0.22;
     W = 1.1;
     L = 12.;
-    t =  0.32;
-    nl = 2; nt = 1; nw = 1; ref = 7;
+    t =  0.0032;
+    nl = 12; nt = 1; nw = 1; 
     p =   1/W/t;
-    #  Loading in the Z direction
-    loadv = [0;0;p]; dir = 3; uex = 0.005424534868469; # Harder: 5.424e-3;
-    #   Loading in the Y direction
-    #loadv = [0;p;0]; dir = 2; uex = 0.001753248285256; # Harder: 1.754e-3;
+    if dir == 3
+        #  Loading in the Z direction
+        loadv = [0;0;p]; uex = 0.005424534868469; # Harder: 5.424e-3;
+    else
+        #   Loading in the Y direction
+        loadv = [0;p;0]; uex = 0.001753248285256; # Harder: 1.754e-3;
+    end
     tolerance  = t/1000;
 
-    fens,fes  = H8block(L,W,t, nl*ref,nw*ref,nt*ref)
+    fens,fes  = H8block(L,W,t, nl*ref, nw*ref, nt*ref)
 
     # Reshape into a twisted beam shape
     for i = 1:count(fens)
@@ -455,7 +436,7 @@ function twisted_beam_msh8()
 
     # Extract the solution
     nl = selectnode(fens, box = [L L -100*W 100*W -100*W 100*W],inflate = tolerance);
-    theutip = mean(u.values[nl,:],1)
+    theutip = mean(u.values[nl,:],dims=1)
     println("displacement  = $(theutip[dir]) as compared to converged $uex")
 
     # Write out mesh with displacements
@@ -498,15 +479,7 @@ end # twisted_beam_msh8
 
 function twisted_beam_msh8_algo_stress()
     println("""
-    The initially twisted cantilever beam is one of the standard test    problems for verifying the finite-element accuracy [1]. The beam is        clamped at one end and loaded either with unit in-plane or        unit out-of-plane force at the other. The centroidal axis of the beam s
-    straight at the undeformed  configuration, while its cross-sections are
-    twisted about the centroidal axis from 0 at the clamped end to pi/2 at
-    the free end.
-
-    Reference:
-    Zupan D, Saje M (2004) On "A proposed standard set of problems to test
-    finite element accuracy": the twisted beam. Finite Elements in Analysis
-    and Design 40: 1445-1451.
+    
     """)
     E = 0.29e8;
     nu = 0.22;
@@ -559,7 +532,7 @@ function twisted_beam_msh8_algo_stress()
 
     # Extract the solution
     nl = selectnode(fens, box = [L L -100*W 100*W -100*W 100*W],inflate = tolerance);
-    theutip = mean(u.values[nl,:],1)
+    theutip = mean(u.values[nl,:],dims=1)
     println("displacement  = $(theutip[dir]) as compared to converged $uex")
     println("normalized displacement  = $(theutip[dir]/uex*100) %")
 
@@ -641,4 +614,10 @@ function allrun()
     return true
 end # function allrun
 
-end # module twisted_beam_examples
+@info "All examples may be executed with "
+println("using .$(@__MODULE__); $(@__MODULE__).allrun()")
+
+
+end # module stubby_corbel_examples
+nothing
+    
