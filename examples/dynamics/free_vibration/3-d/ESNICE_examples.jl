@@ -3,6 +3,7 @@ using Statistics
 using FinEtools
 using FinEtools.MeshImportModule
 using FinEtools.MeshExportModule
+using FinEtoolsDeforLinear
 using LinearAlgebra: dot
 using Arpack
 using LinearAlgebra
@@ -56,12 +57,12 @@ function ESNICE_energies()
         APE = 2 * E * I * mag^2 / L
         push!(APEs, APE)
 
-        ars = []
-        for i = 1:count(fes)
-            res  = FinEtools.FEMMDeforLinearESNICEModule.aspectratio(geom.values[collect(fes.conn[i]), :])
-            ar = sort([res[1], res[2], res[3], res[4]])
-            push!(ars, mean([ar[2:3]...]))
-        end
+        # ars = []
+        # for i = 1:count(fes)
+        #     res  = FinEtoolsDeforLinear.FEMMDeforLinearESNICEModule.aspectratio(geom.values[collect(fes.conn[i]), :])
+        #     ar = sort([res[1], res[2], res[3], res[4]])
+        #     push!(ars, mean([ar[2:3]...]))
+        # end
         # @show h/L, ars
         # push!(rs, minimum(ars))
         push!(rs, h/L)
@@ -106,7 +107,7 @@ function ESNICE_vibration()
     OmegaShift = (10.0*2*pi)^2;
 
     MR = DeforModelRed3D
-    output = import_ABAQUS("alum_cyl.inp")
+    output = import_ABAQUS(joinpath(@__DIR__, "alum_cyl.inp"))
     fens, fes = output["fens"], output["fesets"][1]
     fens.xyz .*= phun("mm") # The input is provided in SI(mm) units
     fens, fes = T10toT4(fens, fes)
@@ -132,7 +133,7 @@ function ESNICE_vibration()
     display(a)
     K  = stiffness(femm, geom, u)
     M = mass(femm, geom, u)
-    d,v,nev,nconv = eigs(K+OmegaShift*M, M; nev=neigvs, which=:SM)
+    d,v,nconv = eigs(K+OmegaShift*M, M; nev=neigvs, which=:SM, explicittransform=:none)
     d = d .- OmegaShift;
     fs = real(sqrt.(complex(d)))/(2*pi)
     println("Eigenvalues: $fs [Hz]")
@@ -143,7 +144,7 @@ function ESNICE_vibration()
         push!(vectors, ("Mode_$i", deepcopy(u.values)))
     end
     File  =   "alum_cyl_mode_shapes.vtk"
-    vtkexportmesh(File, connasarray(fes), fens.xyz, FinEtools.MeshExportModule.T4; vectors = vectors)
+    vtkexportmesh(File, connasarray(fes), fens.xyz, FinEtools.MeshExportModule.VTK.T4; vectors = vectors)
     @async run(`"paraview.exe" $File`)
 
 
@@ -160,4 +161,10 @@ function allrun()
     return true
 end # function allrun
 
-end # module LE11NAFEMS_examples
+@info "All examples may be executed with "
+println("using .$(@__MODULE__); $(@__MODULE__).allrun()")
+
+
+end # module 
+nothing
+    
