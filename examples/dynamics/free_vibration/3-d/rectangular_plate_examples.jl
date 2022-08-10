@@ -3,6 +3,8 @@ using Statistics
 using FinEtools
 using FinEtools.MeshImportModule
 using FinEtools.MeshExportModule
+using FinEtoolsDeforLinear
+using FinEtoolsDeforLinear.AlgoDeforLinearModule: ssit
 using LinearAlgebra: dot
 using Arpack
 using LinearAlgebra
@@ -59,7 +61,7 @@ function rectangular_plate_esnice()
         push!(vectors, ("Mode_$i", deepcopy(u.values)))
     end
     File  =   "rectangular_plate_esnice.vtk"
-    vtkexportmesh(File, connasarray(fes), fens.xyz, FinEtools.MeshExportModule.T4; vectors = vectors)
+    vtkexportmesh(File, connasarray(fes), fens.xyz, FinEtools.MeshExportModule.VTK.T4; vectors = vectors)
     @async run(`"paraview.exe" $File`)
 
 
@@ -73,4 +75,9 @@ function allrun()
     return true
 end # function allrun
 
-end # module LE11NAFEMS_examples
+@info "All examples may be executed with "
+println("using .$(@__MODULE__); $(@__MODULE__).allrun()")
+
+
+end # module 
+nothing
