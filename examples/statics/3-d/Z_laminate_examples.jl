@@ -2,6 +2,8 @@ module Z_laminate_examples
 using FinEtools
 using FinEtoolsDeforLinear
 using FinEtoolsDeforLinear.AlgoDeforLinearModule
+using Statistics
+
 function Z_laminate_u_ss()
     println("""
     % Three-dimensional Elasticity Solution for Uniformly Loaded Cross-ply
@@ -37,8 +39,8 @@ function Z_laminate_u_ss()
     # Generate mesh
     na = 10 # number of elements along the side of the plate
     nb = 30 # number of elements along the side of the plate
-    xs = collect(linspace(0.0, a, na+1))
-    ys = collect(linspace(0.0, b, nb+1))
+    xs = collect(linearspace(0.0, a, na+1))
+    ys = collect(linearspace(0.0, b, nb+1))
     ts = h/nLayers*ones(nLayers);# layer thicknesses
     nts= 3*ones(Int, nLayers);# number of elements per layer
     fens,fes = H8layeredplatex(xs, ys, ts, nts)
@@ -52,7 +54,7 @@ function Z_laminate_u_ss()
     0.0, 0.0, 0.0)
 
     function updatecs!(csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, fe_label::FInt)
-        rotmat3!(csmatout, angles[fe_label]/180.*pi* [0.;0.;1.]);
+        rotmat3!(csmatout, angles[fe_label]/180 .* pi .* [0.;0.;1.]);
     end
 
     gr = GaussRule(3, 3)
@@ -93,7 +95,7 @@ function Z_laminate_u_ss()
     println("Normalized Center deflection: $(cdis/wc_analytical)")
 
     File =  "Z_laminate_u_ss.vtk"
-    vtkexportmesh(File, fes.conn, geom.values, FinEtools.MeshExportModule.H20;
+    vtkexportmesh(File, fes.conn, geom.values, FinEtools.MeshExportModule.VTK.H20;
     scalars = [("Layer", fes.label)], vectors = [("displacement", u.values)])
     @async run(`"paraview.exe" $File`)
 
@@ -109,4 +111,9 @@ function allrun()
     return true
 end # function allrun
 
-end # module Z_laminate_examples
+@info "All examples may be executed with "
+println("using .$(@__MODULE__); $(@__MODULE__).allrun()")
+
+
+end # module 
+nothing
