@@ -1,6 +1,8 @@
 module unit_cube_tet_examples
 using FinEtools
 using FinEtools.MeshExportModule
+using FinEtoolsDeforLinear
+using FinEtoolsDeforLinear.AlgoDeforLinearModule
 using LinearAlgebra
 using Arpack
 
@@ -58,4 +60,9 @@ function allrun()
     return true
 end # function allrun
 
-end # module unit_cube_tet_examples
+@info "All examples may be executed with "
+println("using .$(@__MODULE__); $(@__MODULE__).allrun()")
+
+
+end # module 
+nothing
