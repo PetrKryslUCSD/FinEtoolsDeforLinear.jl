@@ -21,7 +21,7 @@ function multimaterial_nas()
 
     # No need to change anything below this line ##########
     MR = DeforModelRed3D
-    output = import_NASTRAN("twoblocks.nas")
+    output = import_NASTRAN(joinpath(@__DIR__, "twoblocks.nas"))
     fens, fesets, pids = output["fens"], output["fesets"], output["property_ids"] 
 
     geom = NodalField(fens.xyz)
@@ -81,4 +81,9 @@ function allrun()
     return true
 end # function allrun
 
-end # module multimaterial_nas_examples
+@info "All examples may be executed with "
+println("using .$(@__MODULE__); $(@__MODULE__).allrun()")
+
+
+end # module 
+nothing
