@@ -4,6 +4,7 @@ using FinEtoolsDeforLinear
 using FinEtoolsDeforLinear.AlgoDeforLinearModule
 using FinEtools.MeshUtilModule
 using FinEtools.AlgoBaseModule
+using Statistics
 
 function THICK_plate_2dir_strong_MST10_conv()
     elementtag = "MST10"
@@ -51,8 +52,8 @@ function THICK_plate_2dir_strong_MST10_conv()
             tnts = sum(nts)
             na, nb = 4 * tnts, 4 * tnts;
 
-            xs = collect(linspace(0.0, a, na+1))
-            ys = collect(linspace(0.0, b, nb+1))
+            xs = collect(linearspace(0.0, a, na+1))
+            ys = collect(linearspace(0.0, b, nb+1))
             fens,fes = T10layeredplatex(xs, ys, ts, nts)
             println("Mesh: na, nb, nts = $na, $nb, $nts")
             println("count(fens) = $(count(fens))")
@@ -108,7 +109,7 @@ function THICK_plate_2dir_strong_MST10_conv()
             # nodes located at the appropriate points.
             nbottomedge = selectnode(fens, box=[a a 0.0 0.0 0.0 0.0], inflate=tolerance)
 
-            println("bottom edge deflection: $(mean(u.values[nbottomedge, 3], 1)/phun("mm")) [mm]")
+            println("bottom edge deflection: $(mean(u.values[nbottomedge, 3], dims=1)/phun("mm")) [mm]")
 
             #  Compute  all stresses
             modeldata["postprocessing"] = FDataDict("file"=>filebase * "-s", "quantity"=>:Cauchy, "component"=>collect(1:6), "outputcsys"=>CSys(3), "nodevalmethod"=>nodevalmeth, "reportat"=>extrap)
@@ -169,7 +170,7 @@ function THICK_plate_2dir_strong_MST10_conv()
     end # extrap
     println("Done")
 
-end # Pagano_3lay_cyl_bend_MST10_conv
+end # 
 
 function allrun()
     println("#####################################################")
@@ -178,4 +179,9 @@ function allrun()
     return true
 end # function allrun
 
-end # module Pagano_examples
+@info "All examples may be executed with "
+println("using .$(@__MODULE__); $(@__MODULE__).allrun()")
+
+
+end # module 
+nothing
