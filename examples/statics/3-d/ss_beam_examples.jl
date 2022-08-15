@@ -175,7 +175,9 @@ function allrun()
     return true
 end # function allrun
 
-end # module ss_beam_examples
+@info "All examples may be executed with "
+println("using .$(@__MODULE__); $(@__MODULE__).allrun()")
 
-using Main.ss_beam_examples
-ss_beam_examples.allrun()
+
+end # module 
+nothing
