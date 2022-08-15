@@ -8,11 +8,15 @@ loadcsv(n) = (
 table(data) = Table([:x => vec(7:length(data)), :y => vec(data[7:end])])
 addtoitems!(items, n, color, mark, style) = begin
 	t = table(loadcsv(n))
-	options = [color, "only marks", style, "mark=$mark"]
-	_p = Plot(@pgf({options...}), t)
+	@pgf(_p = Plot({"only marks"}, t))
+    _p["color"] = color
+    _p["style"] = style
+    _p["mark"] = mark
     push!(items, _p)
-    options = [color, style]
-    _p = Plot(@pgf({options...}), t)
+    # @pgf(_p = Plot({color, style}, t))
+    @pgf(_p = Plot({}, t))
+    _p["color"] = color
+    _p["style"] = style
     push!(items, _p)
     return items
 end
