@@ -1487,4 +1487,9 @@ function allrun()
     return true
 end # function allrun
 
-end # module plate_w_hole_examples
+@info "All examples may be executed with "
+println("using .$(@__MODULE__); $(@__MODULE__).allrun()")
+
+
+end # module 
+nothing
