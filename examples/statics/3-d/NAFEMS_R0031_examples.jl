@@ -663,7 +663,7 @@ function NAFEMS_R0031_2_pressure()
     # println("Normalized Center deflection: $(cdis/wc_analytical)")
 
     File =  "NAFEMS-R0031-2-plate.vtk"
-    vtkexportmesh(File, fes.conn, geom.values, FinEtools.MeshExportModule.H20; scalars = [("Layer", fes.label)], vectors = [("displacement", u.values)])
+    vtkexportmesh(File, fes.conn, geom.values, FinEtools.MeshExportModule.VTK.H20; scalars = [("Layer", fes.label)], vectors = [("displacement", u.values)])
     @async run(`"paraview.exe" $File`)
 
     println("Done")
@@ -764,7 +764,7 @@ function NAFEMS_R0031_3()
     println("")
 
     File =  "NAFEMS-R0031-3-plate.vtk"
-    vtkexportmesh(File, fes.conn, geom.values, FinEtools.MeshExportModule.H20; scalars = [("Layer", fes.label)], vectors = [("displacement", u.values)])
+    vtkexportmesh(File, fes.conn, geom.values, FinEtools.MeshExportModule.VTK.H20; scalars = [("Layer", fes.label)], vectors = [("displacement", u.values)])
     @async run(`"paraview.exe" $File`)
 
     println("Done")
@@ -791,4 +791,10 @@ function allrun()
     return true
 end # function allrun
 
-end # module NAFEMS_R0031_examples
+
+@info "All examples may be executed with "
+println("using .$(@__MODULE__); $(@__MODULE__).allrun()")
+
+
+end # module 
+nothing
