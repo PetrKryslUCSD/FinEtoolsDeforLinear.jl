@@ -260,4 +260,9 @@ function allrun()
     return true
 end # function allrun
 
-end # module LE11NAFEMS_examples
+@info "All examples may be executed with "
+println("using .$(@__MODULE__); $(@__MODULE__).allrun()")
+
+
+end # module 
+nothing
