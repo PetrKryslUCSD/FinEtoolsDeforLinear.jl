@@ -1,9 +1,11 @@
 module LE10NAFEMS_examples
 using FinEtools
+using FinEtools
+using FinEtoolsDeforLinear
+using FinEtoolsDeforLinear.AlgoDeforLinearModule: linearstatics, exportstresselementwise, exportstress
 using FinEtools.MeshExportModule
 using FinEtools.MeshImportModule
 using FinEtools.AlgoBaseModule: evalconvergencestudy
-using FinEtools.AlgoDeforLinearModule: linearstatics, exportstresselementwise, exportstress
 using LinearAlgebra: cholesky
 
 function LE10NAFEMS_Abaqus_fine_MST10()
@@ -1436,7 +1438,7 @@ function LE10NAFEMS_Abaqus_fine_MST10()
     
     File =  "LE10NAFEMS_MST10_sigmay.vtk"
     vtkexportmesh(File, fes.conn, geom.values,
-    FinEtools.MeshExportModule.T10; vectors=[("u", u.values)],
+    FinEtools.MeshExportModule.VTK.T10; vectors=[("u", u.values)],
     scalars=[("sigmay", fld.values)])
     @async run(`"paraview.exe" $File`)
     true
@@ -2858,4 +2860,9 @@ function allrun()
     return true
 end # function allrun
 
-end # module LE10NAFEMS_examples
+@info "All examples may be executed with "
+println("using .$(@__MODULE__); $(@__MODULE__).allrun()")
+
+
+end # module 
+nothing
