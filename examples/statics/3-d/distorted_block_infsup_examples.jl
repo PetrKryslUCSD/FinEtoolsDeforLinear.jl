@@ -18,7 +18,7 @@ function distorted_block_infsup_T10()
 
 	lambdamin = Float64[]
 	h = Float64[]
-	for ne = [2, 4, 6]
+	for ne = [2, 3, 4]
 		Length::FFlt, Width::FFlt, Height::FFlt, nL::FInt, nW::FInt, nH::FInt, orientation::Symbol = (6.0, 6.0, 6.0, ne, ne, ne, :a)
 
 		fens, fes = T4block(Length::FFlt, Width::FFlt, Height::FFlt, nL::FInt, nW::FInt, nH::FInt, orientation::Symbol)
@@ -321,4 +321,9 @@ function allrun()
     return true
 end # function allrun
 
-end # module distorted_block_infsup_examples
+@info "All examples may be executed with "
+println("using .$(@__MODULE__); $(@__MODULE__).allrun()")
+
+
+end # module 
+nothing
