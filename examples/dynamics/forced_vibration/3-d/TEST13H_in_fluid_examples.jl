@@ -59,9 +59,6 @@ function TEST13H_hva()
     Rayleigh_mass = 2*(o1*o2)/(o2^2-o1^2)*(o2*zeta1-o1*zeta2);# a0
     Rayleigh_stiffness = 2*(o1*o2)/(o2^2-o1^2)*(-1/o2*zeta1+1/o1*zeta2);# a1
     
-    Rayleigh_mass = Rayleigh_mass;
-    Rayleigh_stiffness = Rayleigh_stiffness;
-    
     MR = DeforModelRed3D
     fens,fes  = H8block(L, L, t, nL, nL, nt)
     
