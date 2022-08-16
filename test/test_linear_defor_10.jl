@@ -178,7 +178,7 @@ function TEST13H_hva()
     midpointdof = u.dofnums[midpoint, 3]
     
     umidAmpl = abs.(U1[midpointdof, :])/phun("MM")
-    @test abs(maximum(umidAmpl) - 1.60975e+01) < 1.0e-3 * 1.60975e+01
+    @test abs(maximum(umidAmpl) - 9.56807e+00) < 1.0e-3 * 9.56807e+00
 
     umidReal = real.(U1[midpointdof, :])/phun("MM")
     umidImag = imag.(U1[midpointdof, :])/phun("MM")
