@@ -931,29 +931,28 @@ function test()
         # @async run(`"paraview.exe" $File`)
     end
 
-    if true
-        solver = AlgoDeforLinearModule.ssit
-        v0 = [i==j ? one(FFlt) : zero(FFlt) for i=1:size(K,1), j=1:2*neigvs]
-        tol = 1.0e-2
-        maxiter = 20
-        lamb, v, nconv, niter, nmult, lamberr =
-            solver(K+OmegaShift*M, M; nev=neigvs, v0=v0, tol=tol, maxiter=maxiter)
-        @test nconv != neigvs
+    
+    v0 = [i==j ? one(FFlt) : zero(FFlt) for i=1:size(K,1), j=1:2*neigvs]
+    tol = 1.0e-2
+    maxiter = 20
+    lamb, v, nconv, niter, lamberr =
+    AlgoDeforLinearModule.ssit(K+OmegaShift*M, M; nev=neigvs, v0=v0, tol=tol, maxiter=maxiter)
+    @test nconv == neigvs
         # if nconv < neigvs
             # println("NOT converged")
         # end
-        broadcast!(+, lamb, lamb, - OmegaShift);
-        fs = real(sqrt.(complex(lamb)))/(2*pi)
+    broadcast!(+, lamb, lamb, - OmegaShift);
+    fs = real(sqrt.(complex(lamb)))/(2*pi)
         # println("Eigenvalues: $fs [Hz]")
         # println("$(sort(fs))")
-        @test norm(sort(fs)[1:8] - [0.0, 0.0, 0.0, 0.0, 7.9048e-5, 0.0, 517.147, 517.147]) < 2.0e-2
+    @test norm(sort(fs)[1:8] - [0.0, 0.0, 0.0, 0.0, 7.9048e-5, 0.0, 517.147, 517.147]) < 2.0e-2
         # println("Eigenvalue errors: $lamberr [ND]")
         # mode = 7
         # scattersysvec!(u, v[:,mode])
         # File =  "unit_cube_modes.vtk"
         # vtkexportmesh(File, fens, fes; vectors=[("mode$mode", u.values)])
         # @async run(`"paraview.exe" $File`)
-    end
+    
 
 end
 end
@@ -1110,30 +1109,27 @@ function test()
         # @async run(`"paraview.exe" $File`)
     end
 
-    if true
-        solver = AlgoDeforLinearModule.ssit
-        v0 = [i==j ? one(FFlt) : zero(FFlt) for i=1:size(K,1), j=1:2*neigvs]
-        tol = 1.0e-2
-        maxiter = 20
-        lamb, v, nconv, niter, nmult, lamberr =
-            solver(K+OmegaShift*M, M; nev=neigvs, v0=v0, tol=tol, maxiter=maxiter, withrr=true)
-        @test nconv == neigvs
+    v0 = [i==j ? one(FFlt) : zero(FFlt) for i=1:size(K,1), j=1:2*neigvs]
+    tol = 1.0e-2
+    maxiter = 20
+    lamb, v, nconv, niter, lamberr =
+    AlgoDeforLinearModule.ssit(K+OmegaShift*M, M; nev=neigvs, v0=v0, tol=tol, maxiter=maxiter)
+    @test nconv == neigvs
         # if nconv < neigvs
             # println("NOT converged")
         # end
-        lamb = lamb .- OmegaShift;
-        fs = real(sqrt.(complex(lamb)))/(2*pi)
+    lamb = lamb .- OmegaShift;
+    fs = real(sqrt.(complex(lamb)))/(2*pi)
         # println("Eigenvalues: $fs [Hz]")
         # println("$(sort(fs))")
-        @test norm(sort(fs)[1:8] - [0.0, 0.0, 0.0, 0.0, 7.9048e-5, 0.0, 517.147, 517.147]) < 2.0e-2
+    @test norm(sort(fs)[1:8] - [0.0, 0.0, 0.0, 0.0, 7.9048e-5, 0.0, 517.147, 517.147]) < 2.0e-2
         # println("Eigenvalue errors: $lamberr [ND]")
         # mode = 7
         # scattersysvec!(u, v[:,mode])
         # File =  "unit_cube_modes.vtk"
         # vtkexportmesh(File, fens, fes; vectors=[("mode$mode", u.values)])
         # @async run(`"paraview.exe" $File`)
-    end
-
+    
 end
 end
 using .mmtruncatedmfreem2

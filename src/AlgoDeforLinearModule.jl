@@ -812,15 +812,12 @@ function exportmode(modeldata::FDataDict)
 end
 
 """
-    ssit(K, M; nev::Int=6, evshift::FFlt = 0.0,
-        v0::FFltMat = Array{FFlt}(0, 0),
-        tol::FFlt = 1.0e-3, maxiter::Int = 300, verbose::Bool=false)
+    ssit(K, M; nev=6, v0=fill(zero(FFlt), 0, 0), tol=1.0e-3, maxiter=300, verbose=false)
 
-Subspace  Iteration (block inverse power) method.
+Subspace  Iteration method for the generalized eigenvalue problem.
 
-Block inverse power method for k smallest eigenvalues of the generalized
-eigenvalue problem
-           `K*v= lambda*M*v`
+Block inverse power (subspace iteration) method for k smallest eigenvalues of
+the generalized eigenvalue problem `K*v = lambda*M*v`.
 
 # Arguments
 * `K` =  square symmetric stiffness matrix (if necessary mass-shifted),
@@ -829,11 +826,9 @@ eigenvalue problem
 Keyword arguments
 * `v0` =  initial guess of the eigenvectors (for instance random),
 * `nev` = the number of eigenvalues sought
-* `tol` = relative tolerance on the eigenvalue, expressed in terms of norms of the
-      change of the eigenvalue estimates from iteration to iteration.
+* `tol` = relative tolerance on the eigenvalue, expressed in terms of norms 
+      of the change of the eigenvalue estimates from iteration to iteration.
 * `maxiter` =  maximum number of allowed iterations
-* `withrr` = with Rayleigh-Ritz problem solved to improve the subspace?  (default
-    is false)
 * `verbose` = verbose? (default is false)
 
 # Output
@@ -841,20 +836,18 @@ Keyword arguments
 * `v` = computed eigenvectors,
 * `nconv` = number of converged eigenvalues
 * `niter` = number of iterations taken
-* `nmult` = ignore this output
-* `lamberr` = eigenvalue errors, defined as  normalized  differences  of
-    successive  estimates of the eigenvalues
+* `lamberr` = eigenvalue errors, defined as normalized  differences  of
+    successive  estimates of the eigenvalues (or not normalized if the 
+    eigenvalues converge to zero).
 """
-function ssit(K, M; nev::Int=6, evshift::FFlt = 0.0,
-    v0::FFltMat = Array{FFlt}(0, 0),
-    tol::FFlt = 1.0e-3, maxiter::Int = 300, withrr::Bool=false,
-    verbose::Bool=false)
+function ssit(K, M; nev::Int=6, v0::FFltMat = fill(zero(FFlt), 0, 0), tol::FFlt = 1.0e-3, maxiter::Int = 300, verbose::Bool=false)
     @assert nev >= 1
-    v = deepcopy(v0)
-    if isempty(v0)
-        v = rand(size(K, 1), nev)
+    if size(v0) == (0, 0)
+        p = 2*nev
+        v0 = [i==j ? one(FFlt) : zero(FFlt) for i=1:size(K,1), j=1:p]
     end
-    @assert nev <= size(v, 2)
+    v = deepcopy(v0)
+    @assert nev <= size(v0, 2)
     nvecs = size(v, 2)  # How many eigenvalues are iterated?
     plamb = zeros(nvecs)  # previous eigenvalue
     lamb = zeros(nvecs)
@@ -862,19 +855,28 @@ function ssit(K, M; nev::Int=6, evshift::FFlt = 0.0,
     converged = falses(nvecs)  # not yet
     niter = 0
     nconv = 0
-    nmult = 0
-    factor = cholesky(K+evshift*M)
-    Kv = zeros(size(K, 1), size(v, 2))
-    Mv = zeros(size(M, 1), size(v, 2))
+    factor = cholesky(K)
+    Kv = zeros(size(K, 1), nvecs)
+    Mv = zeros(size(M, 1), nvecs)
+    
     for i = 1:maxiter
-        u = factor\(M*v)
-        factorization = qr(u)  # ; full=falseeconomy factorization
-        v = Array(factorization.Q)
+        my_A_mul_B!(Mv, M, v)
+        v .= factor \ Mv
+        _mass_normalize!(v, M)
         my_A_mul_B!(Kv, K, v)
         my_A_mul_B!(Mv, M, v)
+        decomp = eigen(transpose(v)*Kv, transpose(v)*Mv)
+        # my_A_mul_B!(Mv, v, decomp.vectors)
+        # copyto!(v, Mv)
+        # copyto!(lamb, decomp.values)
+        v .= v * decomp.vectors
+        lamb .= decomp.values
         for j = 1:nvecs
-            lamb[j] = dot(v[:, j], Kv[:, j]) / dot(v[:, j], Mv[:, j])
-            lamberr[j] = abs(lamb[j] - plamb[j])/abs(lamb[j])
+            if abs(lamb[j]) <= tol # zero eigenvalues
+                lamberr[j] = abs(lamb[j])
+            else # non zero eigenvalues
+                lamberr[j] = abs(lamb[j] - plamb[j])/abs(lamb[j])
+            end
             converged[j] = lamberr[j] <= tol
         end
         nconv = length(findall(converged[1:nev]))
@@ -882,17 +884,17 @@ function ssit(K, M; nev::Int=6, evshift::FFlt = 0.0,
         if nconv >= nev # converged on all requested eigenvalues
             break
         end
-        if withrr
-            decomp = eigen(transpose(v)*Kv, transpose(v)*Mv)
-            ix = sortperm(abs.(decomp.values))
-            rrd = decomp.values[ix]
-            rrv = decomp.vectors[:, ix]
-            v = v*rrv
-        end
         plamb, lamb = lamb, plamb # swap the eigenvalue arrays
         niter = niter + 1
     end
-    return lamb, v, nconv, niter, nmult, lamberr
+    return lamb, v, nconv, niter, lamberr
+end
+
+function _mass_normalize!(v, M)
+    for k in axes(v, 2)
+        v[:, k] ./= sqrt(v[:, k]' * M * v[:, k])
+    end
+    v
 end
 # (d,[v,],nconv,niter,nmult,resid)
 # eigs returns the nev requested eigenvalues in d, the corresponding Ritz vectors

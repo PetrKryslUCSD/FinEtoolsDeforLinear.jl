@@ -9,4 +9,5 @@ using Test
 @time @testset "Linear deformation 8" begin include("test_linear_defor_8.jl") end
 @time @testset "Linear deformation 9" begin include("test_linear_defor_9.jl") end
 @time @testset "Linear deformation 10" begin include("test_linear_defor_10.jl") end
+@time @testset "Linear deformation 11" begin include("test_linear_defor_11.jl") end
 true
