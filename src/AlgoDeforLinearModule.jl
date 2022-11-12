@@ -887,6 +887,7 @@ function ssit(K, M; nev::Int=6, v0::FFltMat = fill(zero(FFlt), 0, 0), tol::FFlt 
         plamb, lamb = lamb, plamb # swap the eigenvalue arrays
         niter = niter + 1
     end
+    _mass_normalize!(v, M)
     return lamb[1:nev], v[:, 1:nev], nconv, niter, lamberr
 end
 
