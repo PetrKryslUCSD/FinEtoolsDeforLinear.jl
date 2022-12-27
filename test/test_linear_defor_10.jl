@@ -57,7 +57,6 @@ mbaruniax2.test()
 module mTEST13H_in_fluid
 using FinEtools
 using FinEtoolsDeforLinear
-using FinEtoolsDeforLinear.AlgoDeforLinearModule: ssit
 using LinearAlgebra
 using Arpack
 using Test
