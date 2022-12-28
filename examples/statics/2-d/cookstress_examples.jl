@@ -4,6 +4,12 @@ using FinEtoolsDeforLinear
 using FinEtoolsDeforLinear.AlgoDeforLinearModule
 using FinEtools.MeshExportModule
 import LinearAlgebra: cholesky
+using ILUZero
+using SkylineSolvers
+using SuiteSparse
+using SparseArrays
+using SymRCM
+using UnicodePlots
 
 function cookstress()
     println("Cook membrane problem,  plane stress."        )
@@ -62,7 +68,6 @@ function cookstress()
     FinEtools.MeshExportModule.T3; vectors=[("u", u.values)])
 
     true
-
 end # cookstress
 
 
@@ -531,6 +536,100 @@ function cookstress_t6_ortho2iso_algo()
 
 end # cookstress_t6_ortho2iso_algo
 
+function cookstress_big(n = 10, solver = :suitesparse)
+    println("Cook membrane problem,  plane stress. Big model."        )
+    t0 = time()
+
+    E = 1.0;
+    nu = 1.0/3;
+    width = 48.0; height = 44.0; thickness  = 1.0;
+    free_height  = 16.0;
+    Mid_edge  = [48.0, 52.0];# Location of tracked  deflection
+    magn = 1.0/free_height;# Magnitude of applied load
+    convutip = 23.97;
+    
+    tolerance = minimum([width, height])/n/1000.;#Geometrical tolerance
+
+    fens, fes = T3block(width, height,  n,  n)
+
+    # Reshape into a trapezoidal panel
+    for i=1:count(fens)
+        fens.xyz[i, 2]=fens.xyz[i, 2]+(fens.xyz[i, 1]/width)*(height -fens.xyz[i, 2]/height*(height-free_height));
+    end
+
+    # Renumber the nodes
+    femm = FEMMBase(IntegDomain(fes, GaussRule(3, 2)))
+    C = connectionmatrix(femm, count(fens))
+    display(spy(C, canvas = DotCanvas))
+    I, J, V = findnz(C)
+    @show bw = maximum(I .- J) + 1
+    perm = symrcm(C)
+    display(spy(C[perm, perm], canvas = DotCanvas))
+
+    geom = NodalField(fens.xyz)
+    u = NodalField(zeros(size(fens.xyz, 1), 2)) # displacement field
+
+    l1 = selectnode(fens; box=[0, 0, -Inf,  Inf],  inflate = tolerance)
+    setebc!(u, l1, 1, 10.0)
+    setebc!(u, l1, 2, 10.0)
+    applyebc!(u)
+    numberdofs!(u, perm)
+    # numberdofs!(u)
+
+    @time boundaryfes =  meshboundary(fes);
+    Toplist = selectelem(fens, boundaryfes,  box= [width,  width,  -Inf,  Inf ],  inflate=  tolerance);
+    el1femm =  FEMMBase(IntegDomain(subset(boundaryfes, Toplist),  GaussRule(1, 2)))
+    fi = ForceIntensity([0.0, +magn]);
+    F2 = distribloads(el1femm,  geom,  u,  fi,  2);
+
+
+    MR = DeforModelRed2DStress
+    material = MatDeforElastIso(MR,  0.0, E, nu, 0.0)
+
+    femm = FEMMDeforLinear(MR, IntegDomain(fes,  TriRule(1)),  material)
+
+    K = stiffness(femm,  geom,  u)
+
+    @show count(fens)
+
+    if solver == :suitesparse
+        @time K = SuiteSparse.CHOLMOD.cholesky(K)
+        @time U = K\(F2)
+    elseif solver == :cg
+        n = size(K, 1)
+        mKd = mean(diag(K))
+        # @time factor = ilu(K, τ = mKd / 100.0) # This may work for compressible materials
+        @time factor = ilu(K, τ = mKd / 1000000.0) # This may work for incompressible materials
+        # factor = ilu0(K)
+        @show nnz(factor) / nnz(K)
+        opM = LinearOperator(Float64, n, n, false, false, (y, v) -> ldiv!(y, factor, v))
+        @time (U, stats) = Krylov.cg(K, F2; M=opM, itmax=Int(round(n/2)), verbose=1)
+    elseif solver == :skyline
+        I, J, V = SkylineSolvers.Ldlt.findnz(K)
+        @show bw = maximum(abs.(I .- J)) + 1
+        M = size(K, 1)
+        K = nothing; GC.gc()
+        sky = SkylineSolvers.Ldlt.SkylineMatrix(I, J, V, M)
+        I = nothing; J = nothing; V = nothing; GC.gc()
+        @show SkylineSolvers.Ldlt.nnz(sky)
+        @time SkylineSolvers.Ldlt.factorize!(sky)
+        @time U = SkylineSolvers.Ldlt.solve(sky, F2)
+    end
+    scattersysvec!(u, U[:])
+
+    nl = selectnode(fens,  box=[Mid_edge[1], Mid_edge[1], Mid_edge[2], Mid_edge[2]], inflate=tolerance);
+    theutip = zeros(FFlt, 1, 2)
+    gathervalues_asmat!(u, theutip, nl);
+    println("$(time()-t0) [s];  displacement =$(theutip[2]) as compared to converged $convutip")
+
+    # File =  "a.vtk"
+    # vtkexportmesh(File,  fes.conn,  geom.values+u.values,
+    # FinEtools.MeshExportModule.T3; vectors=[("u", u.values)])
+
+    true
+
+end # cookstress
+
 function allrun()
     println("#####################################################")
     println("# cookstress ")
@@ -552,5 +651,8 @@ function allrun()
     cookstress_t6_ortho2iso_algo()
     return true
 end # function allrun
+
+@info "All examples may be executed with "
+println("using .$(@__MODULE__); $(@__MODULE__).allrun()")
 
 end # module cookstress_examples

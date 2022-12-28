@@ -57,9 +57,6 @@ abstract type AbstractFEMMDeforLinearESNICE <: AbstractFEMMDeforLinear end
 # Fitting for a small aspect-ratio range (1.0 to 10)
 _T4_stabilization_parameters = (2.101588423297799,  1.311321055432958)
 
-function set_T4_stabilization_parameters(p) _T4_stabilization_parameters = p
-end
-
 mutable struct _NodalBasisFunctionGradients
     gradN::FFltMat
     patchconn::FIntVec

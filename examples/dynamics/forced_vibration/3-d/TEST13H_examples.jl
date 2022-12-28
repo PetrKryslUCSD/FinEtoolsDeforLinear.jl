@@ -1,7 +1,6 @@
 module TEST13H_examples
 using FinEtools
 using FinEtoolsDeforLinear
-using FinEtoolsDeforLinear.AlgoDeforLinearModule: ssit
 using LinearAlgebra
 using Arpack
 using PGFPlotsX

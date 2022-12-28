@@ -4,11 +4,12 @@ using FinEtools
 using FinEtools.MeshImportModule
 using FinEtools.MeshExportModule
 using FinEtoolsDeforLinear
+using FinEtoolsDeforLinear.AlgoDeforLinearModule: ssit
 using LinearAlgebra: dot
 using Arpack
 using LinearAlgebra
 using SparseArrays
-using PGFPlotsX
+# using PGFPlotsX
 using Test
 
 E = 200e3*phun("MPa");
@@ -17,7 +18,7 @@ rho = 8000*phun("KG/M^3");
 L = 10.00*phun("M"); t = 0.05*phun("M");
 nL = 8; nt =2;
 neigvs = 14                   # how many eigenvalues
-OmegaShift = (10.0*2*pi)^2;
+OmegaShift = (1.0*2*pi)^2;
 # Fundamental frequency
 f_analytical =[0 0 0  0 0 0 1.622 2.360 2.922 4.190 4.190 7.356 7.356 7.668];
 
@@ -38,7 +39,7 @@ function FV12_plate_esnice()
 
     K  = stiffness(femm, geom, u)
     M = mass(femm, geom, u)
-    d,v,nev,nconv = eigs(K+OmegaShift*M, M; nev=neigvs, which=:SM)
+    d,v,nconv = eigs(K+OmegaShift*M, M; nev=neigvs, which=:SM)
     d = d .- OmegaShift;
     fs = real(sqrt.(complex(d)))/(2*pi)
     println("Eigenvalues: $fs [Hz]")
@@ -53,6 +54,10 @@ function FV12_plate_esnice()
     vtkexportmesh(File, connasarray(fes), fens.xyz, FinEtools.MeshExportModule.VTK.T4; vectors = vectors)
     @async run(`"paraview.exe" $File`)
 
+    d,v,nconv = ssit(K+OmegaShift*M, M; nev=neigvs)
+    d = d .- OmegaShift;
+    fs = real(sqrt.(complex(d)))/(2*pi)
+    println("Eigenvalues: $fs [Hz]")
 
     true
 end # function
