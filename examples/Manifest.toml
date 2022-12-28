@@ -2,7 +2,7 @@
 
 julia_version = "1.8.3"
 manifest_format = "2.0"
-project_hash = "985bccd44576b8ed95866e4171ff52c487e19242"
+project_hash = "e7d8a30e619fdace4de7ee8d805bc1fbc83926a5"
 
 [[deps.AMD]]
 deps = ["Libdl", "LinearAlgebra", "SparseArrays", "Test"]
@@ -51,9 +51,9 @@ version = "6.0.24"
 
 [[deps.ArrayInterfaceCore]]
 deps = ["LinearAlgebra", "SparseArrays", "SuiteSparse"]
-git-tree-sha1 = "badccc4459ffffb6bce5628461119b7057dec32c"
+git-tree-sha1 = "14c3f84a763848906ac681f94cf469a851601d92"
 uuid = "30b0a656-2188-435a-8636-2ec0e6a096e2"
-version = "0.1.27"
+version = "0.1.28"
 
 [[deps.ArrayInterfaceOffsetArrays]]
 deps = ["ArrayInterface", "OffsetArrays", "Static"]
@@ -343,7 +343,7 @@ version = "5.4.10"
 deps = ["Arpack", "CSV", "DataDrop", "FinEtools", "LinearAlgebra", "Revise", "SparseArrays", "Statistics", "StatsBase", "SuiteSparse", "Test"]
 path = ".."
 uuid = "e9187c00-8bdd-11e9-1e70-7ba8303116a2"
-version = "1.4.6"
+version = "1.4.7"
 
 [[deps.FixedPointNumbers]]
 deps = ["Statistics"]
