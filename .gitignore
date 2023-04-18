@@ -10,4 +10,5 @@
 docs/build/
 *.pdf
 *.enl
+*.bak
 test/playground.jl
