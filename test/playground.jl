@@ -1,221 +1,63 @@
 
-module mholestr1
+module malum_cyl_mode_esnice_t4
 using FinEtools
 using FinEtoolsDeforLinear
 using Test
-import LinearAlgebra: norm, cholesky, cross
+using Arpack
+using LinearAlgebra
+using DataDrop
+using InteractiveUtils
 function test()
-    E = 100.0;
-    nu = 1.0/3;
-    cte = 0.15
-    xradius = 1.0
-    yradius = 1.0
-    L = 3.0
-    H = 3.0
-    # nL = 50
-    # nH = 50
-    # nW = 70
-    nL = 100
-    nH = 100
-    nW = 120
-    tolerance = min(xradius, yradius, L, H)/min(nL, nH, nW)/1000.;#Geometrical tolerance
+    # Aluminum cylinder free vibration, mesh imported from Abaqus
+    # Mesh converted from quadratic tetrahedra to linear tetrahedra
+    # NICE tetrahedral elements used
+    E = 70000*phun("MPa");
+    nu = 0.33;
+    rho = 2700*phun("KG/M^3");
+    radius = 0.5*phun("ft");
+    neigvs = 20                   # how many eigenvalues
+    OmegaShift = (10.0*2*pi)^2;
+    Eigenvalues =   [0.0, 0.0, 0.0, 1.8846e-5, 7.35917e-5, 0.000119445, 2498.15, 2498.88, 2513.31, 4082.65, 4585.99, 4586.42, 4987.01, 6648.02, 6648.48, 6679.04, 6682.16, 6777.89, 6780.59, 6799.36]
 
-    fens, fes = Q4elliphole(xradius, yradius, L, H,    nL, nH, nW)
+    MR = DeforModelRed3D
+    output = import_ABAQUS("alum_cyl.inp")
+    fens, fes = output["fens"], output["fesets"][1]
+    fens.xyz .*= phun("mm") # The input is provided in SI(mm) units
+    @show boundingbox(fens.xyz)
+    fens, fes = T10toT4(fens, fes)
 
     geom = NodalField(fens.xyz)
-    u = NodalField(zeros(size(fens.xyz, 1), 2)) # displacement field
+    u = NodalField(zeros(size(fens.xyz,1),3)) # displacement field
 
-    l1 = selectnode(fens; box=[0, 0, -Inf,  Inf],  inflate = tolerance)
-    setebc!(u, l1, 1, 0.0)
-    l2 = selectnode(fens; box=[-Inf,  Inf, 0, 0],  inflate = tolerance)
-    setebc!(u, l2, 2, 0.0)
-    applyebc!(u)
     numberdofs!(u)
 
-    boundaryfes =  meshboundary(fes);
-    lce = selectelem(fens, boundaryfes, facing=true, direction = x -> -x,  inflate=  tolerance);
-    lc = connectednodes(subset(boundaryfes, lce))
-    
-    le = selectelem(fens, boundaryfes,  box= [-Inf,  Inf, H, H],  inflate=  tolerance);
-    el1femm =  FEMMBase(IntegDomain(subset(boundaryfes, le),  GaussRule(1, 2)))
-    fi = ForceIntensity([0.0, 1.0]);
-    Fm = distribloads(el1femm,  geom,  u,  fi,  2);
-    le = selectelem(fens, boundaryfes,  box= [L, L, -Inf,  Inf],  inflate=  tolerance);
-    el2femm =  FEMMBase(IntegDomain(subset(boundaryfes, le),  GaussRule(1, 2)))
-    fi = ForceIntensity([1.0, 0.0]);
-    Fm += distribloads(el2femm,  geom,  u,  fi,  2);
+    material = MatDeforElastIso(MR, rho, E, nu, 0.0)
 
-    MR = DeforModelRed2DStress
-    material = MatDeforElastIso(MR,  0.0, E, nu, cte)
+    femm = FEMMDeforLinearESNICET4(MR, IntegDomain(fes, NodalSimplexRule(3)), material)
+    associategeometry!(femm,  geom)
+    @edit stiffness(femm, SysmatAssemblerSparse(), geom, u)
+    K  = stiffness(femm, SysmatAssemblerSparse(), geom, u)
+    M = mass(femm, geom, u)
 
-    femm = FEMMDeforLinear(MR, IntegDomain(fes,  GaussRule(2, 2)),  material)
-    
-    K = stiffness(femm,  geom,  u)
-    U=  K\(Fm)
-    scattersysvec!(u, U[:])
+    Kref = DataDrop.retrieve_matrix("rfK")
+    @show norm(Kref - K)
 
-    
-    fld= fieldfromintegpoints(femm, geom, u, :princCauchy, 1)
-    # @test norm(maximum(fld.values) - 8.190847372888073e7)/8.190847372888073e7 <= 1.0e-4
-    # File =  "mholestr1-s1.vtk"
-    # vtkexportmesh(File, fens, fes; scalars=[("sigma_1", fld.values)], vectors=[("u", u.values)])
-    # @async run(`"paraview.exe" $File`)
-    fld= fieldfromintegpoints(femm, geom, u, :maxshear, 1)
-    @test norm(maximum(fld.values) - 2.210557410276065)/2.210557410276065 <= 1.0e-4
-    # File =  "mholestr1-maxshear.vtk"
-    # vtkexportmesh(File, fens, fes; scalars=[("maxshear", fld.values)], vectors=[("u", u.values)])
-    # @async run(`"paraview.exe" $File`)
-    
+    Mref = DataDrop.retrieve_matrix("rfM")
+    @show norm(Mref - M)
 
+    DataDrop.empty_hdf5_file("K")
+    DataDrop.empty_hdf5_file("M")
+    DataDrop.store_matrix("K", K)
+    DataDrop.store_matrix("M", M)
+    d,v,nev,nconv = eigs(K+OmegaShift*M, M; nev=neigvs, which=:SM, explicittransform=:none)
+    d = d .- OmegaShift;
+    fs = real(sqrt.(complex(d)))/(2*pi)
+    println("Eigenvalues: $fs [Hz]")
+    @show norm(vec(fs) .- vec(Eigenvalues)) < 1.0e-3*maximum(vec(Eigenvalues))
+
+    nothing
 end
 end
-using .mholestr1
-mholestr1.test()
-
-
-module mholestr2
-using FinEtools
-using FinEtoolsDeforLinear
-using Test
-import LinearAlgebra: norm, cholesky, cross
-function test()
-    E = 100.0;
-    nu = 1.0/3;
-    cte = 0.15
-    xradius = 1.0
-    yradius = 1.0
-    L = 3.0
-    H = 3.0
-    # nL = 50
-    # nH = 50
-    # nW = 70
-    nL = 100
-    nH = 100
-    nW = 120
-    tolerance = min(xradius, yradius, L, H)/min(nL, nH, nW)/1000.;#Geometrical tolerance
-
-    fens, fes = Q4elliphole(xradius, yradius, L, H,    nL, nH, nW)
-
-    geom = NodalField(fens.xyz)
-    u = NodalField(zeros(size(fens.xyz, 1), 2)) # displacement field
-
-    l1 = selectnode(fens; box=[0, 0, -Inf,  Inf],  inflate = tolerance)
-    setebc!(u, l1, 1, 0.0)
-    l2 = selectnode(fens; box=[-Inf,  Inf, 0, 0],  inflate = tolerance)
-    setebc!(u, l2, 2, 0.0)
-    applyebc!(u)
-    numberdofs!(u)
-
-    boundaryfes =  meshboundary(fes);
-    lce = selectelem(fens, boundaryfes, facing=true, direction = x -> -x,  inflate=  tolerance);
-    lc = connectednodes(subset(boundaryfes, lce))
-    
-    le = selectelem(fens, boundaryfes,  box= [-Inf,  Inf, H, H],  inflate=  tolerance);
-    el1femm =  FEMMBase(IntegDomain(subset(boundaryfes, le),  GaussRule(1, 2)))
-    fi = ForceIntensity([0.0, 1.0]);
-    Fm = distribloads(el1femm,  geom,  u,  fi,  2);
-    le = selectelem(fens, boundaryfes,  box= [L, L, -Inf,  Inf],  inflate=  tolerance);
-    el2femm =  FEMMBase(IntegDomain(subset(boundaryfes, le),  GaussRule(1, 2)))
-    fi = ForceIntensity([1.0, 0.0]);
-    Fm += distribloads(el2femm,  geom,  u,  fi,  2);
-
-    MR = DeforModelRed2DStrain
-    material = MatDeforElastIso(MR,  0.0, E, nu, cte)
-
-    femm = FEMMDeforLinear(MR, IntegDomain(fes,  GaussRule(2, 2)),  material)
-    
-    K = stiffness(femm,  geom,  u)
-    U=  K\(Fm)
-    scattersysvec!(u, U[:])
-
-    
-    fld= fieldfromintegpoints(femm, geom, u, :princCauchy, 1)
-    # @test norm(maximum(fld.values) - 8.190847372888073e7)/8.190847372888073e7 <= 1.0e-4
-    # File =  "mholestr2-s1.vtk"
-    # vtkexportmesh(File, fens, fes; scalars=[("sigma_1", fld.values)], vectors=[("u", u.values)])
-    # @async run(`"paraview.exe" $File`)
-    fld= fieldfromintegpoints(femm, geom, u, :maxshear, 1)
-    @test norm(maximum(fld.values) - 2.2102738887214257)/2.2102738887214257 <= 1.0e-4
-    # File =  "mholestr2-maxshear.vtk"
-    # vtkexportmesh(File, fens, fes; scalars=[("maxshear", fld.values)], vectors=[("u", u.values)])
-    # @async run(`"paraview.exe" $File`)
-    
-
-end
-end
-using .mholestr2
-mholestr2.test()
-
-module mholestr3
-using FinEtools
-using FinEtoolsDeforLinear
-using Test
-import LinearAlgebra: norm, cholesky, cross
-function test()
-    E = 100.0;
-    nu = 1.0/3;
-    cte = 0.15
-    xradius = 1.0
-    yradius = 1.0
-    L = 3.0
-    H = 3.0
-    # nL = 50
-    # nH = 50
-    # nW = 70
-    nL = 100
-    nH = 100
-    nW = 120
-    tolerance = min(xradius, yradius, L, H)/min(nL, nH, nW)/1000.;#Geometrical tolerance
-
-    fens, fes = Q4elliphole(xradius, yradius, L, H,    nL, nH, nW)
-
-    geom = NodalField(fens.xyz)
-    u = NodalField(zeros(size(fens.xyz, 1), 2)) # displacement field
-
-    l1 = selectnode(fens; box=[0, 0, -Inf,  Inf],  inflate = tolerance)
-    setebc!(u, l1, 1, 0.0)
-    l2 = selectnode(fens; box=[-Inf,  Inf, 0, 0],  inflate = tolerance)
-    setebc!(u, l2, 2, 0.0)
-    applyebc!(u)
-    numberdofs!(u)
-
-    boundaryfes =  meshboundary(fes);
-    lce = selectelem(fens, boundaryfes, facing=true, direction = x -> -x,  inflate=  tolerance);
-    lc = connectednodes(subset(boundaryfes, lce))
-    
-    le = selectelem(fens, boundaryfes,  box= [-Inf,  Inf, H, H],  inflate=  tolerance);
-    el1femm =  FEMMBase(IntegDomain(subset(boundaryfes, le),  GaussRule(1, 2)))
-    fi = ForceIntensity([0.0, -1.0]);
-    Fm = distribloads(el1femm,  geom,  u,  fi,  2);
-    le = selectelem(fens, boundaryfes,  box= [L, L, -Inf,  Inf],  inflate=  tolerance);
-    el2femm =  FEMMBase(IntegDomain(subset(boundaryfes, le),  GaussRule(1, 2)))
-    fi = ForceIntensity([1.0, 0.0]);
-    Fm += distribloads(el2femm,  geom,  u,  fi,  2);
-
-    MR = DeforModelRed2DStress
-    material = MatDeforElastIso(MR,  0.0, E, nu, cte)
-
-    femm = FEMMDeforLinear(MR, IntegDomain(fes,  GaussRule(2, 2)),  material)
-    
-    K = stiffness(femm,  geom,  u)
-    U=  K\(Fm)
-    scattersysvec!(u, U[:])
-
-    
-    fld= fieldfromintegpoints(femm, geom, u, :princCauchy, 1)
-    # @test norm(maximum(fld.values) - 8.190847372888073e7)/8.190847372888073e7 <= 1.0e-4
-    File =  "mholestr3-s1.vtk"
-    vtkexportmesh(File, fens, fes; scalars=[("sigma_1", fld.values)], vectors=[("u", u.values)])
-    @async run(`"paraview.exe" $File`)
-    fld= fieldfromintegpoints(femm, geom, u, :maxshear, 1)
-    @test norm(maximum(fld.values) - 5.921999943843146)/5.921999943843146 <= 1.0e-4
-    # File =  "mholestr3-maxshear.vtk"
-    # vtkexportmesh(File, fens, fes; scalars=[("maxshear", fld.values)], vectors=[("u", u.values)])
-    # @async run(`"paraview.exe" $File`)
-    
-
-end
-end
-using .mholestr3
-mholestr3.test()
+using .malum_cyl_mode_esnice_t4
+malum_cyl_mode_esnice_t4.test()
 
