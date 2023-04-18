@@ -2,15 +2,18 @@
     "folders":
     [
         {
-            "path": "."
-        }
+            "path": ".",
+        },
+        {
+			"path": "C:\\Users\\pkonl\\Documents\\00WIP\\FinEtools.jl"
+		},
     ], 
     "settings": {
          // "theme": "Asphalt.sublime-theme",
          // "color_scheme": "Monokai.sublime-color-scheme",
-         // "color_scheme": "Packages/Color Scheme - Dusk/Dusk.tmTheme",
+         "color_scheme": "Packages/Color Scheme - Dusk/Dusk.tmTheme",
          // "color_scheme": "Packages/Color Scheme - JustBeforeDawn/JustBeforeDawn.tmTheme",
          // "color_scheme": "Packages/Theme - Asphalt/Asphalt.tmTheme",
-         "color_scheme": "Packages/Theme - Flatland/Flatland Dark.tmTheme",
-    }
+         // "color_scheme": "Packages/Theme - Flatland/Flatland Dark.tmTheme",
+    },
 }
