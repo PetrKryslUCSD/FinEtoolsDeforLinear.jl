@@ -27,7 +27,7 @@ import FinEtoolsDeforLinear.MatDeforLinearElasticModule: AbstractMatDeforLinearE
 import FinEtoolsDeforLinear.MatDeforElastIsoModule: MatDeforElastIso
 import FinEtools.FieldModule: ndofs, gatherdofnums!, gatherfixedvalues_asvec!, gathervalues_asvec!, gathervalues_asmat!
 import FinEtools.NodalFieldModule: NodalField, nnodes
-import FinEtools.CSysModule: CSys, updatecsmat!
+import FinEtools.CSysModule: CSys, updatecsmat!, csmat
 import FinEtools.FENodeToFEMapModule: FENodeToFEMap
 import FinEtoolsDeforLinear.DeforModelRedModule: nstressstrain, nthermstrain, Blmat!, divmat, vgradmat
 import FinEtools.AssemblyModule: AbstractSysvecAssembler, AbstractSysmatAssembler, SysmatAssemblerSparseSymm, startassembly!, assemble!, makematrix!, makevector!, SysvecAssembler
@@ -89,9 +89,9 @@ end
 
 FEMM type for Nodally Integrated Continuum Elements (NICE) based on the 4-node tetrahedron.
 """
-mutable struct FEMMDeforLinearESNICET4{MR<:AbstractDeforModelRed, S<:FESetT4, F<:Function, M<:AbstractMatDeforLinearElastic} <: AbstractFEMMDeforLinearESNICE
+mutable struct FEMMDeforLinearESNICET4{MR<:AbstractDeforModelRed, ID<:IntegDomain{S} where {S<:FESetT4}, M<:AbstractMatDeforLinearElastic} <: AbstractFEMMDeforLinearESNICE
     mr::Type{MR}
-    integdomain::IntegDomain{S, F} # geometry data
+    integdomain::ID # geometry data
     mcsys::CSys # updater of the material orientation matrix
     material::M # material object
     stabilization_material::MatDeforElastIso
@@ -106,9 +106,9 @@ end
 FEMM type for Nodally Integrated Continuum Elements (NICE) based on the 8-node
 hexahedron.
 """
-mutable struct FEMMDeforLinearESNICEH8{MR<:AbstractDeforModelRed, S<:FESetH8, F<:Function, M<:AbstractMatDeforLinearElastic} <: AbstractFEMMDeforLinearESNICE
+mutable struct FEMMDeforLinearESNICEH8{MR<:AbstractDeforModelRed, ID<:IntegDomain{S} where {S<:FESetH8}, M<:AbstractMatDeforLinearElastic} <: AbstractFEMMDeforLinearESNICE
     mr::Type{MR}
-    integdomain::IntegDomain{S, F} # geometry data
+    integdomain::ID # geometry data
     mcsys::CSys # updater of the material orientation matrix
     material::M # material object
     stabilization_material::MatDeforElastIso
@@ -243,10 +243,10 @@ function _computenodalbfungrads(self, geom)
                 @assert 1 <= pci <= nodesperelem(fes)
                 # centered coordinates of nodes in the material coordinate system
                 for cn = 1:length(kconn)
-                    xl[cn, :] = (reshape(geom.values[kconn[cn], :], 1, ndofs(geom)) - c) * self.mcsys.csmat
+                    xl[cn, :] = (reshape(geom.values[kconn[cn], :], 1, ndofs(geom)) - c) * csmat(self.mcsys)
                 end
                 jac!(J, xl, gradNparams[pci])
-                At_mul_B!(csmatTJ, self.mcsys.csmat, J); # local Jacobian matrix
+                At_mul_B!(csmatTJ, csmat(self.mcsys), J); # local Jacobian matrix
                 Jac = Jacobianvolume(self.integdomain, J, c, fes.conn[i], Ns[pci]);
                 Vpatch += Jac * w[pci];
                 sgradN = gradNparams[pci] * adjugate3!(adjJ, J);
@@ -398,7 +398,7 @@ function stiffness(self::AbstractFEMMDeforLinearESNICE, assembler::A, geom::Noda
         updatecsmat!(self.mcsys, c, J, 0);
         nd = length(patchconn) * ndofs(u)
         Bnodal = fill(0.0, size(D, 1), nd)
-        Blmat!(self.mr, Bnodal, Ns[1], gradN, c, self.mcsys.csmat);
+        Blmat!(self.mr, Bnodal, Ns[1], gradN, c, csmat(self.mcsys));
         elmat = fill(0.0, nd, nd) # Can we SPEED it UP?
         DB = fill(0.0, size(D, 1), nd)
         add_btdb_ut_only!(elmat, Bnodal, Vpatch, D, DB)
@@ -423,9 +423,9 @@ function stiffness(self::AbstractFEMMDeforLinearESNICE, assembler::A, geom::Noda
             # that its Jacobian is non-positive, skip the following step.
             if self.ephis[i] > 0  && Jac != 0.0
                 updatecsmat!(self.mcsys, loc, J, fes.label[i]);
-                At_mul_B!(csmatTJ, self.mcsys.csmat, J); # local Jacobian matrix
+                At_mul_B!(csmatTJ, csmat(self.mcsys), J); # local Jacobian matrix
                 gradN!(fes, gradN, gradNparams[j], csmatTJ);
-                Blmat!(self.mr, B, Ns[j], gradN, loc, self.mcsys.csmat);
+                Blmat!(self.mr, B, Ns[j], gradN, loc, csmat(self.mcsys));
                 add_btdb_ut_only!(elmat, B, self.ephis[i]*Jac*w[j], Dstab, DB)
             end
         end # Loop over quadrature points
@@ -521,7 +521,7 @@ function inspectintegpoints(self::AbstractFEMMDeforLinearESNICE, geom::NodalFiel
     		updatecsmat!(self.mcsys, loc, J, nix);
     		nd = length(patchconn) * ndofs(u)
     		Bnodal = fill(0.0, size(D, 1), nd)
-    		Blmat!(self.mr, Bnodal, Ns[1], nodalgradN, loc, self.mcsys.csmat);
+    		Blmat!(self.mr, Bnodal, Ns[1], nodalgradN, loc, csmat(self.mcsys));
     		updatecsmat!(outputcsys, loc, J, nix); # Update output coordinate system
     		# Quadrature point quantities
     		A_mul_B!(qpstrain, Bnodal, ue); # strain in material coordinates
@@ -536,9 +536,9 @@ function inspectintegpoints(self::AbstractFEMMDeforLinearESNICE, geom::NodalFiel
     		pci = findfirst(cx -> cx == nix, fes.conn[i]);# at which node are we?
     		locjac!(loc, J, geom.values, fes.conn[i], Ns[pci], gradNparams[pci])
     		updatecsmat!(self.mcsys, loc, J, fes.label[i]);
-    		At_mul_B!(csmatTJ, self.mcsys.csmat, J); # local Jacobian matrix
+    		At_mul_B!(csmatTJ, csmat(self.mcsys), J); # local Jacobian matrix
     		gradN!(fes, gradN, gradNparams[pci], csmatTJ);
-    		Blmat!(self.mr, B, Ns[pci], gradN, loc, self.mcsys.csmat);
+    		Blmat!(self.mr, B, Ns[pci], gradN, loc, csmat(self.mcsys));
     		gathervalues_asvec!(u, eue, fes.conn[i]);# retrieve element displacements
     		A_mul_B!(qpstrain, B, eue); # strain in material coordinates
     		out = update!(self.stabilization_material, qpstress, out, vec(qpstrain), qpthstrain, t, dt, loc, nix, quantity)
@@ -546,8 +546,8 @@ function inspectintegpoints(self::AbstractFEMMDeforLinearESNICE, geom::NodalFiel
     		out, outtot = outtot, out # swap in the total output
     		if (quantity == :Cauchy)   # Transform stress tensor,  if that is "out"
     		    (length(out1) >= length(out)) || (out1 = zeros(length(out)))
-    		    rotstressvec!(self.mr, out1, out, transpose(self.mcsys.csmat))# To global coord sys
-    		    rotstressvec!(self.mr, out, out1, outputcsys.csmat)# To output coord sys
+    		    rotstressvec!(self.mr, out1, out, transpose(csmat(self.mcsys)))# To global coord sys
+    		    rotstressvec!(self.mr, out, out1, csmat(outputcsys))# To output coord sys
     		end
     		# Call the inspector
     		idat = inspector(idat, i, fes.conn[i], ecoords, out, loc);

@@ -18,7 +18,7 @@ import FinEtoolsDeforLinear.MatDeforLinearElasticModule: AbstractMatDeforLinearE
 import FinEtoolsDeforLinear.MatDeforElastIsoModule: MatDeforElastIso
 import FinEtools.FieldModule: ndofs, gatherdofnums!, gatherfixedvalues_asvec!, gathervalues_asvec!, gathervalues_asmat!
 import FinEtools.NodalFieldModule: NodalField
-import FinEtools.CSysModule: CSys, updatecsmat!
+import FinEtools.CSysModule: CSys, updatecsmat!, csmat
 import FinEtoolsDeforLinear.DeforModelRedModule: nstressstrain, nthermstrain, Blmat!, divmat, vgradmat
 import FinEtools.AssemblyModule: AbstractSysvecAssembler, AbstractSysmatAssembler, SysmatAssemblerSparseSymm, startassembly!, assemble!, makematrix!, makevector!, SysvecAssembler
 using FinEtools.MatrixUtilityModule: add_btdb_ut_only!, complete_lt!, loc!, jac!, locjac!
@@ -206,7 +206,7 @@ function associategeometry!(self::F,  geom::NodalField{FFlt}) where {F<:FEMMDefo
         updatecsmat!(self.mcsys, loc, J, fes.label[i]);
         for j = 1:npts # Loop over quadrature points
             jac!(J, ecoords, gradNparams[j])
-            At_mul_B!(csmatTJ, self.mcsys.csmat, J); # local Jacobian matrix
+            At_mul_B!(csmatTJ, csmat(self.mcsys), J); # local Jacobian matrix
             gradN!(fes, gradN, gradNparams[j], csmatTJ);
             h2 = diag(transpose(csmatTJ)*csmatTJ)
             cap_phi = (2 * (1 + self.stabilization_material.nu) * (minimum(h2) / maximum(h2)))  # Plane stress
@@ -238,7 +238,7 @@ function associategeometry!(self::F,  geom::NodalField{FFlt}) where {F<:FEMMDefo
         updatecsmat!(self.mcsys, loc, J, fes.label[i]);
         for j = 1:npts # Loop over quadrature points
             jac!(J, ecoords, gradNparams[j])
-            At_mul_B!(csmatTJ, self.mcsys.csmat, J); # local Jacobian matrix
+            At_mul_B!(csmatTJ, csmat(self.mcsys), J); # local Jacobian matrix
             condJ = cond(csmatTJ);
             cap_phi = C*(1.0/condJ)^(gamma);
             phi = cap_phi / (1 + cap_phi)
@@ -278,19 +278,19 @@ function stiffness(self::AbstractFEMMDeforLinearMS, assembler::A,
         for j = 1:npts # Loop over quadrature points
             jac!(J, ecoords, gradNparams[j])
             Jac[j] = Jacobianvolume(self.integdomain, J, loc, fes.conn[i], Ns[j]);
-            At_mul_B!(csmatTJ, self.mcsys.csmat, J); # local Jacobian matrix
+            At_mul_B!(csmatTJ, csmat(self.mcsys), J); # local Jacobian matrix
             gradN!(fes, AllgradN[j], gradNparams[j], csmatTJ);
             dvol = Jac[j]*w[j]
             MeangradN .= MeangradN .+ AllgradN[j]*dvol
             vol = vol + dvol
         end # Loop over quadrature points
         MeangradN .= MeangradN/vol
-        Blmat!(self.mr, Bbar, Ns[1], MeangradN, loc, self.mcsys.csmat);
+        Blmat!(self.mr, Bbar, Ns[1], MeangradN, loc, csmat(self.mcsys));
         fill!(elmat,  0.0); # Initialize element matrix
         add_btdb_ut_only!(elmat, Bbar, vol, D, DB)
         add_btdb_ut_only!(elmat, Bbar, -self.phis[i]*vol, Dstab, DB)
         for j = 1:npts # Loop over quadrature points
-            Blmat!(self.mr, B, Ns[j], AllgradN[j], loc, self.mcsys.csmat);
+            Blmat!(self.mr, B, Ns[j], AllgradN[j], loc, csmat(self.mcsys));
             add_btdb_ut_only!(elmat, B, self.phis[i]*Jac[j]*w[j], Dstab, DB)
         end # Loop over quadrature points
         complete_lt!(elmat)
@@ -330,19 +330,19 @@ function nzebcloadsstiffness(self::AbstractFEMMDeforLinearMS,  assembler::A, geo
             for j = 1:npts # Loop over quadrature points
                 jac!(J, ecoords, gradNparams[j])
                 Jac[j] = Jacobianvolume(self.integdomain, J, loc, fes.conn[i], Ns[j]);
-                At_mul_B!(csmatTJ, self.mcsys.csmat, J); # local Jacobian matrix
+                At_mul_B!(csmatTJ, csmat(self.mcsys), J); # local Jacobian matrix
                 gradN!(fes, AllgradN[j], gradNparams[j], csmatTJ);
                 dvol = Jac[j]*w[j]
                 MeangradN .= MeangradN .+ AllgradN[j]*dvol
                 vol = vol + dvol
             end # Loop over quadrature points
             MeangradN .= MeangradN/vol
-            Blmat!(self.mr, Bbar, Ns[1], MeangradN, loc, self.mcsys.csmat);
+            Blmat!(self.mr, Bbar, Ns[1], MeangradN, loc, csmat(self.mcsys));
             fill!(elmat,  0.0); # Initialize element matrix
             add_btdb_ut_only!(elmat, Bbar, vol, D, DB)
             add_btdb_ut_only!(elmat, Bbar, -self.phis[i]*vol, Dstab, DB)
             for j = 1:npts # Loop over quadrature points
-                Blmat!(self.mr, B, Ns[j], AllgradN[j], loc, self.mcsys.csmat);
+                Blmat!(self.mr, B, Ns[j], AllgradN[j], loc, csmat(self.mcsys));
                 add_btdb_ut_only!(elmat, B, self.phis[i]*Jac[j]*w[j], Dstab, DB)
             end # Loop over quadrature points
             complete_lt!(elmat)
@@ -403,7 +403,7 @@ function _iip_meanonly(self::AbstractFEMMDeforLinearMS, geom::NodalField{FFlt}, 
         for j = 1:npts # Loop over quadrature points
             jac!(J, ecoords, gradNparams[j])
             Jac[j] = Jacobianvolume(self.integdomain, J, loc, fes.conn[i], Ns[j]);
-            At_mul_B!(csmatTJ, self.mcsys.csmat, J); # local Jacobian matrix
+            At_mul_B!(csmatTJ, csmat(self.mcsys), J); # local Jacobian matrix
             gradN!(fes, AllgradN[j], gradNparams[j], csmatTJ);
             dvol = Jac[j]*w[j]
             MeangradN .= MeangradN .+ AllgradN[j]*dvol
@@ -411,7 +411,7 @@ function _iip_meanonly(self::AbstractFEMMDeforLinearMS, geom::NodalField{FFlt}, 
             vol = vol + dvol
         end # Loop over quadrature points
         MeangradN .= MeangradN/vol
-        Blmat!(self.mr, Bbar, MeanN, MeangradN, loc, self.mcsys.csmat);
+        Blmat!(self.mr, Bbar, MeanN, MeangradN, loc, csmat(self.mcsys));
         MeanN .= MeanN/vol
         qpdT = dot(vec(dTe), vec(MeanN));# Quadrature point temperature increment
         # Quadrature point quantities
@@ -421,8 +421,8 @@ function _iip_meanonly(self::AbstractFEMMDeforLinearMS, geom::NodalField{FFlt}, 
         out = update!(realmat, qpstress, out, vec(qpstrain), qpthstrain, t, dt, loc, fes.label[i], quantity)
         if (quantity == :Cauchy)   # Transform stress tensor,  if that is "quantity"
             (length(out1) >= length(out)) || (out1 = zeros(length(out)))
-            rotstressvec!(self.mr, out1, out, transpose(self.mcsys.csmat))# To global coord sys
-            rotstressvec!(self.mr, out, out1, outputcsys.csmat)# To output coord sys
+            rotstressvec!(self.mr, out1, out, transpose(csmat(self.mcsys)))# To global coord sys
+            rotstressvec!(self.mr, out, out1, csmat(outputcsys))# To output coord sys
         end
         # Call the inspector
         idat = inspector(idat, i, fes.conn[i], ecoords, out, loc);
@@ -474,7 +474,7 @@ function _iip_extrapmean(self::AbstractFEMMDeforLinearMS, geom::NodalField{FFlt}
         for j = 1:npts # Loop over quadrature points
             jac!(J, ecoords, gradNparams[j])
             Jac[j] = Jacobianvolume(self.integdomain, J, loc, fes.conn[i], Ns[j]);
-            At_mul_B!(csmatTJ, self.mcsys.csmat, J); # local Jacobian matrix
+            At_mul_B!(csmatTJ, csmat(self.mcsys), J); # local Jacobian matrix
             gradN!(fes, AllgradN[j], gradNparams[j], csmatTJ);
             dvol = Jac[j]*w[j]
             MeangradN .= MeangradN .+ AllgradN[j]*dvol
@@ -482,7 +482,7 @@ function _iip_extrapmean(self::AbstractFEMMDeforLinearMS, geom::NodalField{FFlt}
             vol = vol + dvol
         end # Loop over quadrature points
         MeangradN .= MeangradN/vol
-        Blmat!(self.mr, Bbar, MeanN, MeangradN, loc, self.mcsys.csmat);
+        Blmat!(self.mr, Bbar, MeanN, MeangradN, loc, csmat(self.mcsys));
         MeanN .= MeanN/vol
         qpdT = dot(vec(dTe), vec(MeanN));# Quadrature point temperature increment
         # Quadrature point quantities
@@ -493,8 +493,8 @@ function _iip_extrapmean(self::AbstractFEMMDeforLinearMS, geom::NodalField{FFlt}
             vec(qpstrain), qpthstrain, t, dt, loc, fes.label[i], quantity)
         if (quantity == :Cauchy)   # Transform stress tensor,  if that is "quantity"
             (length(out1) >= length(out)) || (out1 = zeros(length(out)))
-            rotstressvec!(self.mr, out1, out, transpose(self.mcsys.csmat))# To global coord sys
-            rotstressvec!(self.mr, out, out1, outputcsys.csmat)# To output coord sys
+            rotstressvec!(self.mr, out1, out, transpose(csmat(self.mcsys)))# To global coord sys
+            rotstressvec!(self.mr, out, out1, csmat(outputcsys)) # To output coord sys
         end
         # Call the inspector for each node location
         for nod = 1:size(ecoords, 1)
@@ -555,7 +555,7 @@ function _iip_extraptrend(self::AbstractFEMMDeforLinearMS, geom::NodalField{FFlt
         for j = 1:npts # Loop over quadrature points
             jac!(J, ecoords, gradNparams[j])
             Jac[j] = Jacobianvolume(self.integdomain, J, loc, fes.conn[i], Ns[j]);
-            At_mul_B!(csmatTJ, self.mcsys.csmat, J); # local Jacobian matrix
+            At_mul_B!(csmatTJ, csmat(self.mcsys), J); # local Jacobian matrix
             gradN!(fes, AllgradN[j], gradNparams[j], csmatTJ);
             dvol = Jac[j]*w[j]
             MeangradN .= MeangradN .+ AllgradN[j]*dvol
@@ -563,7 +563,7 @@ function _iip_extraptrend(self::AbstractFEMMDeforLinearMS, geom::NodalField{FFlt
             vol = vol + dvol
         end # Loop over quadrature points
         MeangradN .= MeangradN/vol
-        Blmat!(self.mr, Bbar, MeanN, MeangradN, loc, self.mcsys.csmat);
+        Blmat!(self.mr, Bbar, MeanN, MeangradN, loc, csmat(self.mcsys));
         MeanN .= MeanN/vol
         qpdT = dot(vec(dTe), vec(MeanN));# Quadrature point temperature increment
         # Quadrature point quantities
@@ -573,20 +573,20 @@ function _iip_extraptrend(self::AbstractFEMMDeforLinearMS, geom::NodalField{FFlt
         rout = update!(realmat, qpstress, rout, vec(qpstrain), qpthstrain, t, dt, loc, fes.label[i], quantity)
         if (quantity == :Cauchy)   # Transform stress tensor,  if that is "quantity"
             (length(rout1) >= length(rout)) || (rout1 = zeros(length(rout)))
-            rotstressvec!(self.mr, rout1, rout, transpose(self.mcsys.csmat))# To global coord sys
-            rotstressvec!(self.mr, rout, rout1, outputcsys.csmat)# To output coord sys
+            rotstressvec!(self.mr, rout1, rout, transpose(csmat(self.mcsys)))# To global coord sys
+            rotstressvec!(self.mr, rout, rout1, csmat(outputcsys))# To output coord sys
         end
         # STABILIZATION Material updates the state and returns the output
         sbout = update!(stabmat, qpstress, sbout, vec(qpstrain), qpthstrain, t, dt, loc, fes.label[i], quantity)
         if (quantity == :Cauchy)   # Transform stress tensor,  if that is "quantity"
             (length(sbout1) >= length(sbout)) || (sbout1 = zeros(length(sbout)))
-            rotstressvec!(self.mr, sbout1, sbout, transpose(self.mcsys.csmat))# To global coord sys
-            rotstressvec!(self.mr, sbout, sbout1, outputcsys.csmat)# To output coord sys
+            rotstressvec!(self.mr, sbout1, sbout, transpose(csmat(self.mcsys)))# To global coord sys
+            rotstressvec!(self.mr, sbout, sbout1, csmat(outputcsys))# To output coord sys
         end
         for j = 1:npts # Loop over quadrature points (STABILIZATION material)
             At_mul_B!(sqploc, Ns[j], ecoords);# Quadrature point location
             A[j, 1:3] .= vec(sqploc - loc);
-            Blmat!(self.mr, B, Ns[j], AllgradN[j], sqploc, self.mcsys.csmat);
+            Blmat!(self.mr, B, Ns[j], AllgradN[j], sqploc, csmat(self.mcsys));
             qpdT = dot(vec(dTe), vec(Ns[j]));# Quadrature point temperature increment
             #  Quadrature point quantities
             A_mul_B!(qpstrain, B, ue); # strain in material coordinates
@@ -595,8 +595,8 @@ function _iip_extraptrend(self::AbstractFEMMDeforLinearMS, geom::NodalField{FFlt
             sout = update!(stabmat, qpstress, sout, vec(qpstrain), qpthstrain, t, dt, loc, fes.label[i], quantity)
             if (quantity == :Cauchy)   # Transform stress tensor,  if that is "quantity"
                 (length(sout1) >= length(sout)) || (sout1 = zeros(length(sout)))
-                rotstressvec!(self.mr, sout1, sout, transpose(self.mcsys.csmat))# To global coord sys
-                rotstressvec!(self.mr, sout, sout1, outputcsys.csmat)# To output coord sys
+                rotstressvec!(self.mr, sout1, sout, transpose(csmat(self.mcsys)))# To global coord sys
+                rotstressvec!(self.mr, sout, sout1, csmat(outputcsys))# To output coord sys
             end
             sstoredout[j, :] .= sout # store  the output for this quadrature point
         end # Loop over quadrature points
@@ -698,7 +698,7 @@ function infsup_gh(self::AbstractFEMMDeforLinearMS, assembler::A, geom::NodalFie
 		for j = 1:npts # Loop over quadrature points
 		    jac!(J, ecoords, gradNparams[j])
 		    Jac[j] = Jacobianvolume(self.integdomain, J, loc, fes.conn[i], Ns[j]);
-		    At_mul_B!(csmatTJ, self.mcsys.csmat, J); # local Jacobian matrix
+		    At_mul_B!(csmatTJ, csmat(self.mcsys), J); # local Jacobian matrix
 		    gradN!(fes, AllgradN[j], gradNparams[j], csmatTJ);
 		    dvol = Jac[j]*w[j]
 		    MeangradN .= MeangradN .+ AllgradN[j]*dvol
@@ -749,7 +749,7 @@ function infsup_sh(self::AbstractFEMMDeforLinearMS, assembler::A, geom::NodalFie
 		for j = 1:npts # Loop over quadrature points
 		    jac!(J, ecoords, gradNparams[j])
 		    Jac[j] = Jacobianvolume(self.integdomain, J, loc, fes.conn[i], Ns[j]);
-		    At_mul_B!(csmatTJ, self.mcsys.csmat, J); # local Jacobian matrix
+		    At_mul_B!(csmatTJ, csmat(self.mcsys), J); # local Jacobian matrix
 		    gradN!(fes, AllgradN[j], gradNparams[j], csmatTJ);
 		    dvol = Jac[j]*w[j]
 		    MeangradN .= MeangradN .+ AllgradN[j]*dvol

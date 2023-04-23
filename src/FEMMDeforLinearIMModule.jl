@@ -19,7 +19,7 @@ import FinEtoolsDeforLinear.MatDeforLinearElasticModule: AbstractMatDeforLinearE
 import FinEtoolsDeforLinear.MatDeforElastIsoModule: MatDeforElastIso
 import FinEtools.FieldModule: ndofs, gatherdofnums!, gatherfixedvalues_asvec!, gathervalues_asvec!, gathervalues_asmat!
 import FinEtools.NodalFieldModule: NodalField
-import FinEtools.CSysModule: CSys, updatecsmat!
+import FinEtools.CSysModule: CSys, updatecsmat!, csmat
 import FinEtoolsDeforLinear.DeforModelRedModule: nstressstrain, nthermstrain, Blmat!, divmat, vgradmat
 import FinEtools.AssemblyModule: AbstractSysvecAssembler, AbstractSysmatAssembler, SysmatAssemblerSparseSymm, startassembly!, assemble!, makematrix!, makevector!, SysvecAssembler
 using FinEtools.MatrixUtilityModule: add_btdb_ut_only!, complete_lt!, loc!, jac!, locjac!
@@ -203,18 +203,18 @@ function stiffness(self::FEMMDeforLinearIMH8, assembler::A,
         locjac!(loc0, J0, ecoords, Ns0[1], gradNparams0[1])
         updatecsmat!(self.mcsys, loc0, J0, fes.label[i]);
         Jac0 = Jacobianvolume(self.integdomain, J0, loc0, fes.conn[i], Ns0[1]);
-        At_mul_B!(csmatTJ0, self.mcsys.csmat, J0); # local Jacobian matrix
+        At_mul_B!(csmatTJ0, csmat(self.mcsys), J0); # local Jacobian matrix
         gradN!(fes, gradN0, gradNparams0[1], csmatTJ0);
         fill!(elmat,  0.0); # Initialize element matrix
         for j = 1:npts # Loop over quadrature points
         	locjac!(loc, J, ecoords, Ns[j], gradNparams[j])
         	Jac = Jacobianvolume(self.integdomain, J, loc, fes.conn[i], Ns[j]);
-        	At_mul_B!(csmatTJ, self.mcsys.csmat, J); # local Jacobian matrix
+        	At_mul_B!(csmatTJ, csmat(self.mcsys), J); # local Jacobian matrix
         	gradN!(fes, gradN, gradNparams[j], csmatTJ);
-        	Blmat!(self.mr, Bc, Ns[j], gradN, loc, self.mcsys.csmat);
+        	Blmat!(self.mr, Bc, Ns[j], gradN, loc, csmat(self.mcsys));
         	B[:, 1:24] .= sqrt(Jac * w[j]) .* Bc
             gradN!(fes, imgradN, imgradNparams[j], csmatTJ0);
-        	imBlmat!(self.mr, imB, imNs[j], imgradN, loc0, self.mcsys.csmat, self.nmodes);
+        	imBlmat!(self.mr, imB, imNs[j], imgradN, loc0, csmat(self.mcsys), self.nmodes);
         	B[:, 25:end] .= sqrt(Jac0 * w[j]) .* imB
         	add_btdb_ut_only!(elmat, B, 1.0, D, DB)
         end # Loop over quadrature points
@@ -257,19 +257,19 @@ end
 #             for j = 1:npts # Loop over quadrature points
 #                 jac!(J, ecoords, gradNparams[j])
 #                 Jac[j] = Jacobianvolume(self.integdomain, J, loc, fes.conn[i], Ns[j]);
-#                 At_mul_B!(csmatTJ, self.mcsys.csmat, J); # local Jacobian matrix
+#                 At_mul_B!(csmatTJ, csmat(self.mcsys), J); # local Jacobian matrix
 #                 gradN!(fes, AllgradN[j], gradNparams[j], csmatTJ);
 #                 dvol = Jac[j]*w[j]
 #                 MeangradN .= MeangradN .+ AllgradN[j]*dvol
 #                 vol = vol + dvol
 #             end # Loop over quadrature points
 #             MeangradN .= MeangradN/vol
-#             Blmat!(self.mr, Bbar, Ns[1], MeangradN, loc, self.mcsys.csmat);
+#             Blmat!(self.mr, Bbar, Ns[1], MeangradN, loc, csmat(self.mcsys));
 #             fill!(elmat,  0.0); # Initialize element matrix
 #             add_btdb_ut_only!(elmat, Bbar, vol, D, DB)
 #             add_btdb_ut_only!(elmat, Bbar, -self.phis[i]*vol, Dstab, DB)
 #             for j = 1:npts # Loop over quadrature points
-#                 Blmat!(self.mr, B, Ns[j], AllgradN[j], loc, self.mcsys.csmat);
+#                 Blmat!(self.mr, B, Ns[j], AllgradN[j], loc, csmat(self.mcsys));
 #                 add_btdb_ut_only!(elmat, B, self.phis[i]*Jac[j]*w[j], Dstab, DB)
 #             end # Loop over quadrature points
 #             complete_lt!(elmat)

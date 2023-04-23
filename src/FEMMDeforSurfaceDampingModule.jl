@@ -26,8 +26,8 @@ import LinearAlgebra: norm, cross
 
 Type for surface damping model.
 """
-mutable struct FEMMDeforSurfaceDamping{S<:AbstractFESet, F<:Function} <: AbstractFEMM
-    integdomain::IntegDomain{S, F} # geometry data
+mutable struct FEMMDeforSurfaceDamping{ID<:IntegDomain} <: AbstractFEMM
+    integdomain::ID # geometry data
 end
 
 """

@@ -23,7 +23,7 @@ import FinEtoolsDeforLinear.DeforModelRedModule: AbstractDeforModelRed, DeforMod
 import FinEtoolsDeforLinear.MatDeforLinearElasticModule: AbstractMatDeforLinearElastic, tangentmoduli!, update!, thermalstrain!
 import FinEtools.FieldModule: ndofs, gatherdofnums!, gatherfixedvalues_asvec!, gathervalues_asvec!, gathervalues_asmat!
 import FinEtools.NodalFieldModule: NodalField, nnodes
-import FinEtools.CSysModule: CSys, updatecsmat!
+import FinEtools.CSysModule: CSys, updatecsmat!, csmat
 import FinEtools.FENodeToFEMapModule: FENodeToFEMap
 import FinEtoolsDeforLinear.DeforModelRedModule: nstressstrain, nthermstrain, Blmat!
 import FinEtools.AssemblyModule: AbstractSysvecAssembler, AbstractSysmatAssembler, SysmatAssemblerSparseSymm, startassembly!, assemble!, makematrix!, makevector!, SysvecAssembler
@@ -190,10 +190,10 @@ function computenodalbfungrads(self, geom)
                 @assert 1 <= pci <= nodesperelem(fes)
                 # centered coordinates of nodes in the material coordinate system
                 for cn = 1:length(kconn)
-                    xl[cn, :] = (reshape(geom.values[kconn[cn], :], 1, ndofs(geom)) - c) * self.mcsys.csmat
+                    xl[cn, :] = (reshape(geom.values[kconn[cn], :], 1, ndofs(geom)) - c) * csmat(self.mcsys)
                 end
                 jac!(J, xl, gradNparams[pci])
-                At_mul_B!(csmatTJ, self.mcsys.csmat, J); # local Jacobian matrix
+                At_mul_B!(csmatTJ, csmat(self.mcsys), J); # local Jacobian matrix
                 Jac = Jacobianvolume(self.integdomain, J, c, fes.conn[i], Ns[pci]);
                 Vpatch += Jac * w[pci];
                 sgradN = gradNparams[pci] * adjugate3!(adjJ, J);
@@ -264,7 +264,7 @@ function stiffness(self::AbstractFEMMDeforLinearNICE, assembler::A, geom::NodalF
         updatecsmat!(self.mcsys, c, J, 0);
         nd = length(patchconn) * ndofs(u)
         Bnodal = fill(0.0, size(D, 1), nd)
-        Blmat!(self.mr, Bnodal, Ns[1], gradN, c, self.mcsys.csmat);
+        Blmat!(self.mr, Bnodal, Ns[1], gradN, c, csmat(self.mcsys));
         elmat = fill(0.0, nd, nd) # Can we SPEED it UP?
         DB = fill(0.0, size(D, 1), nd)
         add_btdb_ut_only!(elmat, Bnodal, Vpatch, D, DB)

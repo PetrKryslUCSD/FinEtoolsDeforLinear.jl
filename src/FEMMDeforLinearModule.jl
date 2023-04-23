@@ -22,9 +22,9 @@ import FinEtools.CSysModule: CSys
 
 Class for linear deformation finite element modeling machine.
 """
-mutable struct FEMMDeforLinear{MR<:AbstractDeforModelRed,  S<:AbstractFESet, F<:Function, M<:AbstractMatDeforLinearElastic} <: AbstractFEMMDeforLinear
+mutable struct FEMMDeforLinear{MR<:AbstractDeforModelRed,  ID<:IntegDomain, M<:AbstractMatDeforLinearElastic} <: AbstractFEMMDeforLinear
     mr::Type{MR} # model reduction type
-    integdomain::IntegDomain{S, F} # integration domain data
+    integdomain::ID # integration domain data
     mcsys::CSys # updater of the material orientation matrix
     material::M # material object
 end

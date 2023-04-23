@@ -16,7 +16,7 @@ import FinEtools.FieldModule: ndofs, gatherdofnums!, gatherfixedvalues_asvec!, g
 import FinEtools.NodalFieldModule: NodalField, nnodes
 import FinEtools.AssemblyModule: AbstractSysvecAssembler, AbstractSysmatAssembler, SysmatAssemblerSparseSymm, startassembly!, assemble!, makematrix!, makevector!, SysvecAssembler
 import FinEtools.FEMMBaseModule: AbstractFEMM, inspectintegpoints
-import FinEtools.CSysModule: CSys, updatecsmat!
+import FinEtools.CSysModule: CSys, updatecsmat!, csmat
 import FinEtoolsDeforLinear.DeforModelRedModule: nstressstrain, nthermstrain, Blmat!, divmat, vgradmat
 import FinEtools.MatrixUtilityModule: add_btdb_ut_only!, complete_lt!, locjac!, add_nnt_ut_only!, add_btsigma!
 import FinEtoolsDeforLinear.MatDeforModule: rotstressvec!
@@ -124,9 +124,9 @@ function stiffness(self::AbstractFEMMDeforLinear, assembler::A, geom::NodalField
             locjac!(loc, J, ecoords, Ns[j], gradNparams[j])
             Jac = Jacobianvolume(self.integdomain, J, loc, fes.conn[i], Ns[j]);
             updatecsmat!(self.mcsys, loc, J, fes.label[i]);
-            At_mul_B!(csmatTJ, self.mcsys.csmat, J); # local Jacobian matrix
+            At_mul_B!(csmatTJ, csmat(self.mcsys), J); # local Jacobian matrix
             gradN!(fes, gradN, gradNparams[j], csmatTJ);
-            Blmat!(self.mr, B, Ns[j], gradN, loc, self.mcsys.csmat);
+            Blmat!(self.mr, B, Ns[j], gradN, loc, csmat(self.mcsys));
             add_btdb_ut_only!(elmat, B, Jac*w[j], D, DB)
         end # Loop over quadrature points
         complete_lt!(elmat)
@@ -163,9 +163,9 @@ function nzebcloadsstiffness(self::AbstractFEMMDeforLinear,  assembler::A, geom:
                 locjac!(loc, J, ecoords, Ns[j], gradNparams[j])
                 Jac = Jacobianvolume(self.integdomain, J, loc, fes.conn[i], Ns[j]);
                 updatecsmat!(self.mcsys, loc, J, fes.label[i]);
-                At_mul_B!(csmatTJ, self.mcsys.csmat, J); # local Jacobian matrix
+                At_mul_B!(csmatTJ, csmat(self.mcsys), J); # local Jacobian matrix
                 gradN!(fes, gradN, gradNparams[j], csmatTJ);
-                Blmat!(self.mr, B, Ns[j], gradN, loc, self.mcsys.csmat);
+                Blmat!(self.mr, B, Ns[j], gradN, loc, csmat(self.mcsys));
                 add_btdb_ut_only!(elmat, B, Jac*w[j], D, DB)
             end # Loop over quadrature points
             complete_lt!(elmat)
@@ -209,9 +209,9 @@ function  thermalstrainloads(self::AbstractFEMMDeforLinear, assembler::A, geom::
                 locjac!(loc, J, ecoords, Ns[j], gradNparams[j])
                 Jac = Jacobianvolume(self.integdomain, J, loc, fes.conn[i], Ns[j]);
                 updatecsmat!(self.mcsys, loc, J, fes.label[i]);
-                At_mul_B!(csmatTJ,  self.mcsys.csmat,  J); # local Jacobian matrix
+                At_mul_B!(csmatTJ,  csmat(self.mcsys),  J); # local Jacobian matrix
                 gradN!(fes, gradN, gradNparams[j], csmatTJ);#Do: gradN = gradNparams[j]/csmatTJ;
-                Blmat!(self.mr, B, Ns[j], gradN, loc, self.mcsys.csmat);# strains in mater cs, displ in global cs
+                Blmat!(self.mr, B, Ns[j], gradN, loc, csmat(self.mcsys));# strains in mater cs, displ in global cs
                 thermalstrain!(self.material, thstrain, dot(vec(Ns[j]), DeltaT))
                 thstress = update!(self.material, thstress, thstress, strain, thstrain, t, dt, loc, fes.label[i], :nothing)
                 add_btsigma!(elvec, B, (-1)*(Jac*w[j]), thstress)
@@ -290,9 +290,9 @@ function inspectintegpoints(self::FEMM, geom::NodalField{FFlt},  u::NodalField{T
             locjac!(loc, J, ecoords, Ns[j], gradNparams[j])
             Jac = Jacobianvolume(self.integdomain, J, loc, fes.conn[i], Ns[j]);
             updatecsmat!(self.mcsys, loc, J, fes.label[i]);
-            At_mul_B!(csmatTJ,  self.mcsys.csmat,  J); # local Jacobian matrix
+            At_mul_B!(csmatTJ,  csmat(self.mcsys),  J); # local Jacobian matrix
             gradN!(fes, gradN, gradNparams[j], csmatTJ);
-            Blmat!(self.mr, B, Ns[j], gradN, loc, self.mcsys.csmat);
+            Blmat!(self.mr, B, Ns[j], gradN, loc, csmat(self.mcsys));
             updatecsmat!(outputcsys, loc, J, fes.label[i]);
             # Quadrature point quantities
             A_mul_B!(qpstrain, B, ue); # strain in material coordinates
@@ -302,8 +302,8 @@ function inspectintegpoints(self::FEMM, geom::NodalField{FFlt},  u::NodalField{T
             out = update!(self.material, qpstress, out, vec(qpstrain), qpthstrain, t, dt, loc, fes.label[i], quantity)
             if (quantity == :Cauchy)   # Transform stress tensor,  if that is "out"
                 (length(out1) >= length(out)) || (out1 = zeros(length(out)))
-                rotstressvec!(self.mr, out1, out, transpose(self.mcsys.csmat))# To global coord sys
-                rotstressvec!(self.mr, out, out1, outputcsys.csmat)# To output coord sys
+                rotstressvec!(self.mr, out1, out, transpose(csmat(self.mcsys)))# To global coord sys
+                rotstressvec!(self.mr, out, out1, csmat(outputcsys))# To output coord sys
             end
             # Call the inspector
             idat = inspector(idat, i, fes.conn[i], ecoords, out, loc);
@@ -361,7 +361,7 @@ function infsup_gh(self::AbstractFEMMDeforLinear, assembler::A, geom::NodalField
 	        locjac!(loc, J, ecoords, Ns[j], gradNparams[j])
 	        Jac = Jacobianvolume(self.integdomain, J, loc, fes.conn[i], Ns[j]);
 	        updatecsmat!(self.mcsys, loc, J, fes.label[i]);
-	        At_mul_B!(csmatTJ, self.mcsys.csmat, J); # local Jacobian matrix
+	        At_mul_B!(csmatTJ, csmat(self.mcsys), J); # local Jacobian matrix
 	        gradN!(fes, gradN, gradNparams[j], csmatTJ);
 	        divm = divmat(self.mr, Ns[j], gradN, loc);
 	        elmat += (transpose(divm) * divm) * (Jac*w[j])
@@ -422,7 +422,7 @@ function infsup_sh(self::AbstractFEMMDeforLinear, assembler::A, geom::NodalField
 	        locjac!(loc, J, ecoords, Ns[j], gradNparams[j])
 	        Jac = Jacobianvolume(self.integdomain, J, loc, fes.conn[i], Ns[j]);
 	        updatecsmat!(self.mcsys, loc, J, fes.label[i]);
-	        At_mul_B!(csmatTJ, self.mcsys.csmat, J); # local Jacobian matrix
+	        At_mul_B!(csmatTJ, csmat(self.mcsys), J); # local Jacobian matrix
 	        gradN!(fes, gradN, gradNparams[j], csmatTJ);
 	        vgradm = vgradmat(self.mr, Ns[j], gradN, loc);
 	        elmat += (transpose(vgradm) * vgradm) * (Jac*w[j])
