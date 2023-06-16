@@ -9,24 +9,25 @@ module FEMMDeforLinearBaseModule
 __precompile__(true)
 
 using FinEtools.FTypesModule: FInt, FFlt, FCplxFlt, FFltVec, FIntVec, FFltMat, FIntMat, FMat, FVec, FDataDict
-import FinEtools.FENodeSetModule: FENodeSet
-import FinEtools.FESetModule: gradN!, nodesperelem, manifdim
-import FinEtools.IntegDomainModule: IntegDomain, integrationdata, Jacobianvolume
-import FinEtools.FieldModule: ndofs, gatherdofnums!, gatherfixedvalues_asvec!, gathervalues_asvec!, gathervalues_asmat!
-import FinEtools.NodalFieldModule: NodalField, nnodes
-import FinEtools.AssemblyModule: AbstractSysvecAssembler, AbstractSysmatAssembler, SysmatAssemblerSparseSymm, startassembly!, assemble!, makematrix!, makevector!, SysvecAssembler
-import FinEtools.FEMMBaseModule: AbstractFEMM, inspectintegpoints
-import FinEtools.CSysModule: CSys, updatecsmat!, csmat
-import FinEtoolsDeforLinear.DeforModelRedModule: nstressstrain, nthermstrain, Blmat!, divmat, vgradmat
-import FinEtools.MatrixUtilityModule: add_btdb_ut_only!, complete_lt!, locjac!, add_nnt_ut_only!, add_btsigma!
-import FinEtoolsDeforLinear.MatDeforModule: rotstressvec!
-import FinEtools.MatModule: massdensity
-import FinEtoolsDeforLinear.MatDeforLinearElasticModule: tangentmoduli!, update!, thermalstrain!
-import FinEtools.SurfaceNormalModule: SurfaceNormal, updatenormal!
-import LinearAlgebra: Transpose, mul!
+using FinEtools.FENodeSetModule: FENodeSet
+using FinEtools.FESetModule: gradN!, nodesperelem, manifdim
+using FinEtools.IntegDomainModule: IntegDomain, integrationdata, Jacobianvolume
+using FinEtools.FieldModule: ndofs, gatherdofnums!, gatherfixedvalues_asvec!, gathervalues_asvec!, gathervalues_asmat!, nalldofs
+using FinEtools.NodalFieldModule: NodalField, nnodes
+using FinEtools.AssemblyModule: AbstractSysvecAssembler, AbstractSysmatAssembler, SysmatAssemblerSparseSymm, startassembly!, assemble!, makematrix!, makevector!, SysvecAssembler
+using FinEtools.FEMMBaseModule: AbstractFEMM
+import FinEtools.FEMMBaseModule: inspectintegpoints
+using FinEtools.CSysModule: CSys, updatecsmat!, csmat
+using FinEtools.DeforModelRedModule: nstressstrain, nthermstrain, blmat!, divmat, vgradmat
+using FinEtools.MatrixUtilityModule: add_btdb_ut_only!, complete_lt!, locjac!, add_nnt_ut_only!, add_btsigma!
+using FinEtoolsDeforLinear.MatDeforModule: rotstressvec!
+using FinEtools.MatModule: massdensity
+using FinEtoolsDeforLinear.MatDeforLinearElasticModule: tangentmoduli!, update!, thermalstrain!
+using FinEtools.SurfaceNormalModule: SurfaceNormal, updatenormal!
+using LinearAlgebra: Transpose, mul!
 At_mul_B!(C, A, B) = mul!(C, Transpose(A), B)
 A_mul_B!(C, A, B) = mul!(C, A, B)
-import LinearAlgebra: norm, dot
+using LinearAlgebra: norm, dot
 
 """
     AbstractFEMMDeforLinear <: AbstractFEMMBase
@@ -83,7 +84,7 @@ function mass(self::AbstractFEMMDeforLinear,  assembler::A,  geom::NodalField{FF
         end
         push!(NexpTNexp, Nexp'*Nexp);
     end
-    startassembly!(assembler,  size(elmat,1),  size(elmat,2),  count(fes), u.nfreedofs,  u.nfreedofs);
+    startassembly!(assembler,  prod(size(elmat)) * count(fes), nalldofs(u),  nalldofs(u));
     for i = 1:count(fes) # Loop over elements
         gathervalues_asmat!(geom, ecoords, fes.conn[i]);
         fill!(elmat,  0.0); # Initialize element matrix
@@ -116,7 +117,7 @@ function stiffness(self::AbstractFEMMDeforLinear, assembler::A, geom::NodalField
     npts,  Ns,  gradNparams,  w,  pc = integrationdata(self.integdomain);
     ecoords, dofnums, loc, J, csmatTJ, gradN, D, B, DB, elmat, elvec, elvecfix = _buffers(self, geom, u)
     tangentmoduli!(self.material, D, 0.0, 0.0, loc, 0)
-    startassembly!(assembler, size(elmat, 1), size(elmat, 2), count(fes), u.nfreedofs, u.nfreedofs);
+    startassembly!(assembler, prod(size(elmat)) * count(fes), nalldofs(u), nalldofs(u));
     for i = 1:count(fes) # Loop over elements
         gathervalues_asmat!(geom, ecoords, fes.conn[i]);
         fill!(elmat,  0.0); # Initialize element matrix
@@ -126,7 +127,7 @@ function stiffness(self::AbstractFEMMDeforLinear, assembler::A, geom::NodalField
             updatecsmat!(self.mcsys, loc, J, fes.label[i]);
             At_mul_B!(csmatTJ, csmat(self.mcsys), J); # local Jacobian matrix
             gradN!(fes, gradN, gradNparams[j], csmatTJ);
-            Blmat!(self.mr, B, Ns[j], gradN, loc, csmat(self.mcsys));
+            blmat!(self.mr, B, Ns[j], gradN, loc, csmat(self.mcsys));
             add_btdb_ut_only!(elmat, B, Jac*w[j], D, DB)
         end # Loop over quadrature points
         complete_lt!(elmat)
@@ -153,7 +154,7 @@ function nzebcloadsstiffness(self::AbstractFEMMDeforLinear,  assembler::A, geom:
     npts,  Ns,  gradNparams,  w,  pc = integrationdata(self.integdomain);
     ecoords, dofnums, loc, J, csmatTJ, gradN, D, B, DB, elmat, elvec, elvecfix = _buffers(self, geom, u)
     tangentmoduli!(self.material, D, 0.0, 0.0, loc, 0)
-    startassembly!(assembler,  u.nfreedofs);
+    startassembly!(assembler,  nalldofs(u));
     for i = 1:count(fes) # Loop over elements
         gatherfixedvalues_asvec!(u, elvecfix, fes.conn[i]);# retrieve element displacement vector
         if norm(elvecfix, Inf) != 0.0   # Is the load nonzero?
@@ -165,7 +166,7 @@ function nzebcloadsstiffness(self::AbstractFEMMDeforLinear,  assembler::A, geom:
                 updatecsmat!(self.mcsys, loc, J, fes.label[i]);
                 At_mul_B!(csmatTJ, csmat(self.mcsys), J); # local Jacobian matrix
                 gradN!(fes, gradN, gradNparams[j], csmatTJ);
-                Blmat!(self.mr, B, Ns[j], gradN, loc, csmat(self.mcsys));
+                blmat!(self.mr, B, Ns[j], gradN, loc, csmat(self.mcsys));
                 add_btdb_ut_only!(elmat, B, Jac*w[j], D, DB)
             end # Loop over quadrature points
             complete_lt!(elmat)
@@ -199,7 +200,7 @@ function  thermalstrainloads(self::AbstractFEMMDeforLinear, assembler::A, geom::
     strain = fill(zero(FFlt), nstressstrain(self.mr)); # total strain -- buffer
     thstrain = fill(zero(FFlt), nthermstrain(self.mr)); # thermal strain -- buffer
     thstress = fill(zero(FFlt), nstressstrain(self.mr)); # thermal stress -- buffer
-    startassembly!(assembler,  u.nfreedofs);
+    startassembly!(assembler,  nalldofs(u));
     for i = 1:count(fes) # Loop over elements
         gathervalues_asvec!(dT, DeltaT, fes.conn[i]);# retrieve element temperatures
         if norm(DeltaT, Inf) != 0     # Is the thermal increment nonzero?
@@ -211,7 +212,7 @@ function  thermalstrainloads(self::AbstractFEMMDeforLinear, assembler::A, geom::
                 updatecsmat!(self.mcsys, loc, J, fes.label[i]);
                 At_mul_B!(csmatTJ,  csmat(self.mcsys),  J); # local Jacobian matrix
                 gradN!(fes, gradN, gradNparams[j], csmatTJ);#Do: gradN = gradNparams[j]/csmatTJ;
-                Blmat!(self.mr, B, Ns[j], gradN, loc, csmat(self.mcsys));# strains in mater cs, displ in global cs
+                blmat!(self.mr, B, Ns[j], gradN, loc, csmat(self.mcsys));# strains in mater cs, displ in global cs
                 thermalstrain!(self.material, thstrain, dot(vec(Ns[j]), DeltaT))
                 thstress = update!(self.material, thstress, thstress, strain, thstrain, t, dt, loc, fes.label[i], :nothing)
                 add_btsigma!(elvec, B, (-1)*(Jac*w[j]), thstress)
@@ -292,7 +293,7 @@ function inspectintegpoints(self::FEMM, geom::NodalField{FFlt},  u::NodalField{T
             updatecsmat!(self.mcsys, loc, J, fes.label[i]);
             At_mul_B!(csmatTJ,  csmat(self.mcsys),  J); # local Jacobian matrix
             gradN!(fes, gradN, gradNparams[j], csmatTJ);
-            Blmat!(self.mr, B, Ns[j], gradN, loc, csmat(self.mcsys));
+            blmat!(self.mr, B, Ns[j], gradN, loc, csmat(self.mcsys));
             updatecsmat!(outputcsys, loc, J, fes.label[i]);
             # Quadrature point quantities
             A_mul_B!(qpstrain, B, ue); # strain in material coordinates
@@ -353,7 +354,7 @@ function infsup_gh(self::AbstractFEMMDeforLinear, assembler::A, geom::NodalField
 	fes = self.integdomain.fes
 	npts,  Ns,  gradNparams,  w,  pc = integrationdata(self.integdomain);
 	ecoords, dofnums, loc, J, csmatTJ, gradN, elmat = _buffers2(self, geom, u)
-	startassembly!(assembler, size(elmat, 1), size(elmat, 2), count(fes), u.nfreedofs, u.nfreedofs);
+	startassembly!(assembler, prod(size(elmat)) * count(fes), nalldofs(u), nalldofs(u));
 	for i = 1:count(fes) # Loop over elements
         gathervalues_asmat!(geom, ecoords, fes.conn[i]);
 	    fill!(elmat,  0.0); # Initialize element matrix
@@ -414,7 +415,7 @@ function infsup_sh(self::AbstractFEMMDeforLinear, assembler::A, geom::NodalField
 	fes = self.integdomain.fes
 	npts,  Ns,  gradNparams,  w,  pc = integrationdata(self.integdomain);
 	ecoords, dofnums, loc, J, csmatTJ, gradN, elmat = _buffers3(self, geom, u)
-	startassembly!(assembler, size(elmat, 1), size(elmat, 2), count(fes), u.nfreedofs, u.nfreedofs);
+	startassembly!(assembler, prod(size(elmat)) * count(fes), nalldofs(u), nalldofs(u));
 	for i = 1:count(fes) # Loop over elements
         gathervalues_asmat!(geom, ecoords, fes.conn[i]);
 	    fill!(elmat,  0.0); # Initialize element matrix

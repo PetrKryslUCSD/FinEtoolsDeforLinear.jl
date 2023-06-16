@@ -9,27 +9,27 @@ module FEMMDeforLinearMSModule
 __precompile__(true)
 
 using FinEtools.FTypesModule: FInt, FFlt, FCplxFlt, FFltVec, FIntVec, FFltMat, FIntMat, FMat, FVec, FDataDict
-import FinEtools.FENodeSetModule: FENodeSet
-import FinEtools.FESetModule: AbstractFESet, FESetH8, FESetT10, manifdim, nodesperelem, gradN!
-import FinEtools.IntegDomainModule: IntegDomain, integrationdata, Jacobianvolume
-import FinEtoolsDeforLinear.FEMMDeforLinearBaseModule: AbstractFEMMDeforLinear
-import FinEtoolsDeforLinear.DeforModelRedModule: AbstractDeforModelRed, DeforModelRed3D
-import FinEtoolsDeforLinear.MatDeforLinearElasticModule: AbstractMatDeforLinearElastic, tangentmoduli!, update!, thermalstrain!
-import FinEtoolsDeforLinear.MatDeforElastIsoModule: MatDeforElastIso
-import FinEtools.FieldModule: ndofs, gatherdofnums!, gatherfixedvalues_asvec!, gathervalues_asvec!, gathervalues_asmat!
-import FinEtools.NodalFieldModule: NodalField
-import FinEtools.CSysModule: CSys, updatecsmat!, csmat
-import FinEtoolsDeforLinear.DeforModelRedModule: nstressstrain, nthermstrain, Blmat!, divmat, vgradmat
-import FinEtools.AssemblyModule: AbstractSysvecAssembler, AbstractSysmatAssembler, SysmatAssemblerSparseSymm, startassembly!, assemble!, makematrix!, makevector!, SysvecAssembler
+using FinEtools.FENodeSetModule: FENodeSet
+using FinEtools.FESetModule: AbstractFESet, FESetH8, FESetT10, manifdim, nodesperelem, gradN!
+using FinEtools.IntegDomainModule: IntegDomain, integrationdata, Jacobianvolume
+using FinEtoolsDeforLinear.FEMMDeforLinearBaseModule: AbstractFEMMDeforLinear
+using FinEtools.DeforModelRedModule: AbstractDeforModelRed, DeforModelRed3D
+using FinEtoolsDeforLinear.MatDeforLinearElasticModule: AbstractMatDeforLinearElastic, tangentmoduli!, update!, thermalstrain!
+using FinEtoolsDeforLinear.MatDeforElastIsoModule: MatDeforElastIso
+using FinEtools.FieldModule: ndofs, gatherdofnums!, gatherfixedvalues_asvec!, gathervalues_asvec!, gathervalues_asmat!, nalldofs
+using FinEtools.NodalFieldModule: NodalField
+using FinEtools.CSysModule: CSys, updatecsmat!, csmat
+using FinEtools.DeforModelRedModule: nstressstrain, nthermstrain, blmat!, divmat, vgradmat
+using FinEtools.AssemblyModule: AbstractSysvecAssembler, AbstractSysmatAssembler, SysmatAssemblerSparseSymm, startassembly!, assemble!, makematrix!, makevector!, SysvecAssembler
 using FinEtools.MatrixUtilityModule: add_btdb_ut_only!, complete_lt!, loc!, jac!, locjac!
 import FinEtoolsDeforLinear.FEMMDeforLinearBaseModule: stiffness, nzebcloadsstiffness, mass, thermalstrainloads, inspectintegpoints
 import FinEtools.FEMMBaseModule: associategeometry!
-import FinEtoolsDeforLinear.MatDeforModule: rotstressvec!
-import LinearAlgebra: mul!, Transpose, UpperTriangular
+using FinEtoolsDeforLinear.MatDeforModule: rotstressvec!
+using LinearAlgebra: mul!, Transpose, UpperTriangular
 At_mul_B!(C, A, B) = mul!(C, Transpose(A), B)
 A_mul_B!(C, A, B) = mul!(C, A, B)
-import LinearAlgebra: norm, qr, diag, dot, cond
-import Statistics: mean
+using LinearAlgebra: norm, qr, diag, dot, cond
+using Statistics: mean
 
 """
     AbstractFEMMDeforLinearMS <: AbstractFEMMDeforLinear
@@ -265,8 +265,7 @@ function stiffness(self::AbstractFEMMDeforLinearMS, assembler::A,
     stabmat = self.stabilization_material
     tangentmoduli!(realmat, D, 0.0, 0.0, loc, 0)
     tangentmoduli!(stabmat, Dstab, 0.0, 0.0, loc, 0)
-    startassembly!(assembler, size(elmat, 1), size(elmat, 2), count(fes),
-    u.nfreedofs, u.nfreedofs);
+    startassembly!(assembler, prod(size(elmat)) * count(fes), nalldofs(u), nalldofs(u));
     for i = 1:count(fes) # Loop over elements
         gathervalues_asmat!(geom, ecoords, fes.conn[i]);
         # NOTE: the coordinate system should be evaluated at a single point within the
@@ -285,12 +284,12 @@ function stiffness(self::AbstractFEMMDeforLinearMS, assembler::A,
             vol = vol + dvol
         end # Loop over quadrature points
         MeangradN .= MeangradN/vol
-        Blmat!(self.mr, Bbar, Ns[1], MeangradN, loc, csmat(self.mcsys));
+        blmat!(self.mr, Bbar, Ns[1], MeangradN, loc, csmat(self.mcsys));
         fill!(elmat,  0.0); # Initialize element matrix
         add_btdb_ut_only!(elmat, Bbar, vol, D, DB)
         add_btdb_ut_only!(elmat, Bbar, -self.phis[i]*vol, Dstab, DB)
         for j = 1:npts # Loop over quadrature points
-            Blmat!(self.mr, B, Ns[j], AllgradN[j], loc, csmat(self.mcsys));
+            blmat!(self.mr, B, Ns[j], AllgradN[j], loc, csmat(self.mcsys));
             add_btdb_ut_only!(elmat, B, self.phis[i]*Jac[j]*w[j], Dstab, DB)
         end # Loop over quadrature points
         complete_lt!(elmat)
@@ -337,12 +336,12 @@ function nzebcloadsstiffness(self::AbstractFEMMDeforLinearMS,  assembler::A, geo
                 vol = vol + dvol
             end # Loop over quadrature points
             MeangradN .= MeangradN/vol
-            Blmat!(self.mr, Bbar, Ns[1], MeangradN, loc, csmat(self.mcsys));
+            blmat!(self.mr, Bbar, Ns[1], MeangradN, loc, csmat(self.mcsys));
             fill!(elmat,  0.0); # Initialize element matrix
             add_btdb_ut_only!(elmat, Bbar, vol, D, DB)
             add_btdb_ut_only!(elmat, Bbar, -self.phis[i]*vol, Dstab, DB)
             for j = 1:npts # Loop over quadrature points
-                Blmat!(self.mr, B, Ns[j], AllgradN[j], loc, csmat(self.mcsys));
+                blmat!(self.mr, B, Ns[j], AllgradN[j], loc, csmat(self.mcsys));
                 add_btdb_ut_only!(elmat, B, self.phis[i]*Jac[j]*w[j], Dstab, DB)
             end # Loop over quadrature points
             complete_lt!(elmat)
@@ -411,7 +410,7 @@ function _iip_meanonly(self::AbstractFEMMDeforLinearMS, geom::NodalField{FFlt}, 
             vol = vol + dvol
         end # Loop over quadrature points
         MeangradN .= MeangradN/vol
-        Blmat!(self.mr, Bbar, MeanN, MeangradN, loc, csmat(self.mcsys));
+        blmat!(self.mr, Bbar, MeanN, MeangradN, loc, csmat(self.mcsys));
         MeanN .= MeanN/vol
         qpdT = dot(vec(dTe), vec(MeanN));# Quadrature point temperature increment
         # Quadrature point quantities
@@ -482,7 +481,7 @@ function _iip_extrapmean(self::AbstractFEMMDeforLinearMS, geom::NodalField{FFlt}
             vol = vol + dvol
         end # Loop over quadrature points
         MeangradN .= MeangradN/vol
-        Blmat!(self.mr, Bbar, MeanN, MeangradN, loc, csmat(self.mcsys));
+        blmat!(self.mr, Bbar, MeanN, MeangradN, loc, csmat(self.mcsys));
         MeanN .= MeanN/vol
         qpdT = dot(vec(dTe), vec(MeanN));# Quadrature point temperature increment
         # Quadrature point quantities
@@ -563,7 +562,7 @@ function _iip_extraptrend(self::AbstractFEMMDeforLinearMS, geom::NodalField{FFlt
             vol = vol + dvol
         end # Loop over quadrature points
         MeangradN .= MeangradN/vol
-        Blmat!(self.mr, Bbar, MeanN, MeangradN, loc, csmat(self.mcsys));
+        blmat!(self.mr, Bbar, MeanN, MeangradN, loc, csmat(self.mcsys));
         MeanN .= MeanN/vol
         qpdT = dot(vec(dTe), vec(MeanN));# Quadrature point temperature increment
         # Quadrature point quantities
@@ -586,7 +585,7 @@ function _iip_extraptrend(self::AbstractFEMMDeforLinearMS, geom::NodalField{FFlt
         for j = 1:npts # Loop over quadrature points (STABILIZATION material)
             At_mul_B!(sqploc, Ns[j], ecoords);# Quadrature point location
             A[j, 1:3] .= vec(sqploc - loc);
-            Blmat!(self.mr, B, Ns[j], AllgradN[j], sqploc, csmat(self.mcsys));
+            blmat!(self.mr, B, Ns[j], AllgradN[j], sqploc, csmat(self.mcsys));
             qpdT = dot(vec(dTe), vec(Ns[j]));# Quadrature point temperature increment
             #  Quadrature point quantities
             A_mul_B!(qpstrain, B, ue); # strain in material coordinates

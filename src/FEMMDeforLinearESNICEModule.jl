@@ -18,30 +18,30 @@ module FEMMDeforLinearESNICEModule
 __precompile__(true)
 
 using FinEtools.FTypesModule: FInt, FFlt, FCplxFlt, FFltVec, FIntVec, FFltMat, FIntMat, FMat, FVec, FDataDict
-import FinEtools.FENodeSetModule: FENodeSet
-import FinEtools.FESetModule: AbstractFESet, FESetH8, FESetT4, manifdim, nodesperelem, gradN!
-import FinEtools.IntegDomainModule: IntegDomain, integrationdata, Jacobianvolume
-import FinEtoolsDeforLinear.FEMMDeforLinearBaseModule: AbstractFEMMDeforLinear
-import FinEtoolsDeforLinear.DeforModelRedModule: AbstractDeforModelRed, DeforModelRed3D
-import FinEtoolsDeforLinear.MatDeforLinearElasticModule: AbstractMatDeforLinearElastic, tangentmoduli!, update!, thermalstrain!
-import FinEtoolsDeforLinear.MatDeforElastIsoModule: MatDeforElastIso
-import FinEtools.FieldModule: ndofs, gatherdofnums!, gatherfixedvalues_asvec!, gathervalues_asvec!, gathervalues_asmat!
-import FinEtools.NodalFieldModule: NodalField, nnodes
-import FinEtools.CSysModule: CSys, updatecsmat!, csmat
-import FinEtools.FENodeToFEMapModule: FENodeToFEMap
-import FinEtoolsDeforLinear.DeforModelRedModule: nstressstrain, nthermstrain, Blmat!, divmat, vgradmat
-import FinEtools.AssemblyModule: AbstractSysvecAssembler, AbstractSysmatAssembler, SysmatAssemblerSparseSymm, startassembly!, assemble!, makematrix!, makevector!, SysvecAssembler
+using FinEtools.FENodeSetModule: FENodeSet
+using FinEtools.FESetModule: AbstractFESet, FESetH8, FESetT4, manifdim, nodesperelem, gradN!
+using FinEtools.IntegDomainModule: IntegDomain, integrationdata, Jacobianvolume
+using FinEtoolsDeforLinear.FEMMDeforLinearBaseModule: AbstractFEMMDeforLinear
+using FinEtools.DeforModelRedModule: AbstractDeforModelRed, DeforModelRed3D
+using FinEtoolsDeforLinear.MatDeforLinearElasticModule: AbstractMatDeforLinearElastic, tangentmoduli!, update!, thermalstrain!
+using FinEtoolsDeforLinear.MatDeforElastIsoModule: MatDeforElastIso
+using FinEtools.FieldModule: ndofs, gatherdofnums!, gatherfixedvalues_asvec!, gathervalues_asvec!, gathervalues_asmat!
+using FinEtools.NodalFieldModule: NodalField, nnodes
+using FinEtools.CSysModule: CSys, updatecsmat!, csmat
+using FinEtools.FENodeToFEMapModule: FENodeToFEMap
+using FinEtools.DeforModelRedModule: nstressstrain, nthermstrain, blmat!, divmat, vgradmat
+using FinEtools.AssemblyModule: AbstractSysvecAssembler, AbstractSysmatAssembler, SysmatAssemblerSparseSymm, startassembly!, assemble!, makematrix!, makevector!, SysvecAssembler
 using FinEtools.MatrixUtilityModule: add_btdb_ut_only!, complete_lt!, loc!, jac!, locjac!, adjugate3!
 import FinEtoolsDeforLinear.FEMMDeforLinearBaseModule: stiffness, nzebcloadsstiffness, mass, thermalstrainloads, inspectintegpoints
 import FinEtools.FEMMBaseModule: associategeometry!
-import FinEtoolsDeforLinear.MatDeforModule: rotstressvec!
-import FinEtools.MatModule: massdensity
-import LinearAlgebra: mul!, Transpose, UpperTriangular, eigvals, det
+using FinEtoolsDeforLinear.MatDeforModule: rotstressvec!
+using FinEtools.MatModule: massdensity
+using LinearAlgebra: mul!, Transpose, UpperTriangular, eigvals, det
 At_mul_B!(C, A, B) = mul!(C, Transpose(A), B)
 A_mul_B!(C, A, B) = mul!(C, A, B)
-import LinearAlgebra: norm, qr, diag, dot, cond, I, cross
-import Statistics: mean
-import StatsBase: geomean
+using LinearAlgebra: norm, qr, diag, dot, cond, I, cross
+using Statistics: mean
+using StatsBase: geomean
 
 """
     AbstractFEMMDeforLinearESNICE <: AbstractFEMMDeforLinear
@@ -398,7 +398,7 @@ function stiffness(self::AbstractFEMMDeforLinearESNICE, assembler::A, geom::Noda
         updatecsmat!(self.mcsys, c, J, 0);
         nd = length(patchconn) * ndofs(u)
         Bnodal = fill(0.0, size(D, 1), nd)
-        Blmat!(self.mr, Bnodal, Ns[1], gradN, c, csmat(self.mcsys));
+        blmat!(self.mr, Bnodal, Ns[1], gradN, c, csmat(self.mcsys));
         elmat = fill(0.0, nd, nd) # Can we SPEED it UP?
         DB = fill(0.0, size(D, 1), nd)
         add_btdb_ut_only!(elmat, Bnodal, Vpatch, D, DB)
@@ -425,7 +425,7 @@ function stiffness(self::AbstractFEMMDeforLinearESNICE, assembler::A, geom::Noda
                 updatecsmat!(self.mcsys, loc, J, fes.label[i]);
                 At_mul_B!(csmatTJ, csmat(self.mcsys), J); # local Jacobian matrix
                 gradN!(fes, gradN, gradNparams[j], csmatTJ);
-                Blmat!(self.mr, B, Ns[j], gradN, loc, csmat(self.mcsys));
+                blmat!(self.mr, B, Ns[j], gradN, loc, csmat(self.mcsys));
                 add_btdb_ut_only!(elmat, B, self.ephis[i]*Jac*w[j], Dstab, DB)
             end
         end # Loop over quadrature points
@@ -521,7 +521,7 @@ function inspectintegpoints(self::AbstractFEMMDeforLinearESNICE, geom::NodalFiel
     		updatecsmat!(self.mcsys, loc, J, nix);
     		nd = length(patchconn) * ndofs(u)
     		Bnodal = fill(0.0, size(D, 1), nd)
-    		Blmat!(self.mr, Bnodal, Ns[1], nodalgradN, loc, csmat(self.mcsys));
+    		blmat!(self.mr, Bnodal, Ns[1], nodalgradN, loc, csmat(self.mcsys));
     		updatecsmat!(outputcsys, loc, J, nix); # Update output coordinate system
     		# Quadrature point quantities
     		A_mul_B!(qpstrain, Bnodal, ue); # strain in material coordinates
@@ -538,7 +538,7 @@ function inspectintegpoints(self::AbstractFEMMDeforLinearESNICE, geom::NodalFiel
     		updatecsmat!(self.mcsys, loc, J, fes.label[i]);
     		At_mul_B!(csmatTJ, csmat(self.mcsys), J); # local Jacobian matrix
     		gradN!(fes, gradN, gradNparams[pci], csmatTJ);
-    		Blmat!(self.mr, B, Ns[pci], gradN, loc, csmat(self.mcsys));
+    		blmat!(self.mr, B, Ns[pci], gradN, loc, csmat(self.mcsys));
     		gathervalues_asvec!(u, eue, fes.conn[i]);# retrieve element displacements
     		A_mul_B!(qpstrain, B, eue); # strain in material coordinates
     		out = update!(self.stabilization_material, qpstress, out, vec(qpstrain), qpthstrain, t, dt, loc, nix, quantity)

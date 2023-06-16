@@ -10,16 +10,16 @@ module FEMMDeforSurfaceDampingModule
 __precompile__(true)
 
 using FinEtools.FTypesModule: FInt, FFlt, FCplxFlt, FFltVec, FIntVec, FFltMat, FIntMat, FMat, FVec, FDataDict
-import FinEtools.FENodeSetModule: FENodeSet
-import FinEtools.FESetModule: AbstractFESet, nodesperelem, manifdim
-import FinEtools.IntegDomainModule: IntegDomain, integrationdata, Jacobiansurface
-import FinEtools.FieldModule: ndofs, gatherdofnums!, gathervalues_asmat!
-import FinEtools.NodalFieldModule: NodalField 
-import FinEtools.FEMMBaseModule: AbstractFEMM
-import FinEtools.AssemblyModule: AbstractSysvecAssembler, AbstractSysmatAssembler, SysmatAssemblerSparseSymm, startassembly!, assemble!, makematrix!
-import FinEtools.MatrixUtilityModule: add_nnt_ut_only!, complete_lt!, locjac!
-import FinEtools.SurfaceNormalModule: SurfaceNormal, updatenormal!
-import LinearAlgebra: norm, cross
+using FinEtools.FENodeSetModule: FENodeSet
+using FinEtools.FESetModule: AbstractFESet, nodesperelem, manifdim
+using FinEtools.IntegDomainModule: IntegDomain, integrationdata, Jacobiansurface
+using FinEtools.FieldModule: ndofs, gatherdofnums!, gathervalues_asmat!
+using FinEtools.NodalFieldModule: NodalField
+using FinEtools.FEMMBaseModule: AbstractFEMM
+using FinEtools.AssemblyModule: AbstractSysvecAssembler, AbstractSysmatAssembler, SysmatAssemblerSparseSymm, startassembly!, assemble!, makematrix!
+using FinEtools.MatrixUtilityModule: add_nnt_ut_only!, complete_lt!, locjac!
+using FinEtools.SurfaceNormalModule: SurfaceNormal, updatenormal!
+using LinearAlgebra: norm, cross
 
 """
     FEMMDeforSurfaceDamping{S<:AbstractFESet, F<:Function} <: AbstractFEMM
