@@ -1,6 +1,7 @@
 
 module scratch1_06092017_ortho
 using FinEtools
+using FinEtools.AlgoBaseModule: solve!
 using FinEtoolsDeforLinear
 using Test
 
@@ -137,9 +138,8 @@ function test()
   femm = FEMMDeforLinear(MR, IntegDomain(fes, GaussRule(2, 2), axisymmetric), material)
 
   K = stiffness(femm, geom, u)
-  #K=cholesky(K)
-  U =  K\(F2)
-  scattersysvec!(u,U[:])
+
+  u = solve!(u, K, F2)
 
   # Transfer the solution of the displacement to the nodes on the
   # internal cylindrical surface and convert to
@@ -198,6 +198,7 @@ scratch1_06092017_ortho.test()
 
 module mmLE11Q8mm
 using FinEtools
+using FinEtools.AlgoBaseModule: solve!
 using FinEtoolsDeforLinear
 using Test
 import LinearAlgebra: norm, cholesky, cross
@@ -279,9 +280,8 @@ function test()
 
   K  = stiffness(femm, geom, u)
   F  =  thermalstrainloads(femm, geom, u, dT)
-  #K = cholesky(K)
-  U =   K\F
-  scattersysvec!(u, U[:])
+
+  u = solve!(u, K, F)
 
   nA  = selectnode(fens,box = FFlt[1.0  1.0 0.0 0.0], inflate = tolerance);
 
@@ -317,6 +317,7 @@ mmLE11Q8mm.test()
 
 module mmLE11Q8mmortho
 using FinEtools
+using FinEtools.AlgoBaseModule: solve!
 using FinEtoolsDeforLinear
 using Test
 import LinearAlgebra: norm, cholesky, cross
@@ -399,9 +400,8 @@ function test()
 
   K  = stiffness(femm, geom, u)
   F  =  thermalstrainloads(femm, geom, u, dT)
-  #K = cholesky(K)
-  U =   K\F
-  scattersysvec!(u, U[:])
+
+  u = solve!(u, K, F)
 
   nA  = selectnode(fens,box = FFlt[1.0  1.0 0.0 0.0], inflate = tolerance);
 
@@ -437,6 +437,7 @@ mmLE11Q8mmortho.test()
 
 module mLE11Q8aximmm
 using FinEtools
+using FinEtools.AlgoBaseModule: solve!
 using FinEtoolsDeforLinear
 using Test
 import LinearAlgebra: norm, cholesky, cross
@@ -517,9 +518,8 @@ function test()
 
   K  = stiffness(femm, geom, u)
   F  =  thermalstrainloads(femm, geom, u, dT)
-  #K = cholesky(K)
-  U =   K\F
-  scattersysvec!(u, U[:])
+
+  u = solve!(u, K, F)
 
   nA  = selectnode(fens,box = FFlt[1.0  1.0 0.0 0.0], inflate = tolerance);
 
@@ -607,6 +607,7 @@ mLE11Q8aximmm.test()
 
 module mLE11Q8aximorthom
 using FinEtools
+using FinEtools.AlgoBaseModule: solve!
 using FinEtoolsDeforLinear
 using Test
 import LinearAlgebra: norm, cholesky, cross
@@ -687,9 +688,8 @@ function test()
 
   K  = stiffness(femm, geom, u)
   F  =  thermalstrainloads(femm, geom, u, dT)
-  #K = cholesky(K)
-  U =   K\F
-  scattersysvec!(u, U[:])
+
+  u = solve!(u, K, F)
 
   nA  = selectnode(fens,box = FFlt[1.0  1.0 0.0 0.0], inflate = tolerance);
 

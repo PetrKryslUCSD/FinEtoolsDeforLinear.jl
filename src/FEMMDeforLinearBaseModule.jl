@@ -143,47 +143,6 @@ function stiffness(self::AbstractFEMMDeforLinear, geom::NodalField{FFlt},  u::No
 end
 
 """
-    nzebcloadsstiffness(self::AbstractFEMMDeforLinear,  assembler::A,
-      geom::NodalField{FFlt},
-      u::NodalField{T}) where {A<:AbstractSysvecAssembler, T<:Number}
-
-Compute load vector for nonzero EBC for fixed displacement.
-"""
-function nzebcloadsstiffness(self::AbstractFEMMDeforLinear,  assembler::A, geom::NodalField{FFlt}, u::NodalField{T}) where {A<:AbstractSysvecAssembler, T<:Number}
-    fes = self.integdomain.fes
-    npts,  Ns,  gradNparams,  w,  pc = integrationdata(self.integdomain);
-    ecoords, dofnums, loc, J, csmatTJ, gradN, D, B, DB, elmat, elvec, elvecfix = _buffers(self, geom, u)
-    tangentmoduli!(self.material, D, 0.0, 0.0, loc, 0)
-    startassembly!(assembler,  nalldofs(u));
-    for i = 1:count(fes) # Loop over elements
-        gatherfixedvalues_asvec!(u, elvecfix, fes.conn[i]);# retrieve element displacement vector
-        if norm(elvecfix, Inf) != 0.0   # Is the load nonzero?
-            gathervalues_asmat!(geom, ecoords, fes.conn[i]);
-            fill!(elmat,  0.0); # Initialize element matrix
-            for j = 1:npts # Loop over quadrature points
-                locjac!(loc, J, ecoords, Ns[j], gradNparams[j])
-                Jac = Jacobianvolume(self.integdomain, J, loc, fes.conn[i], Ns[j]);
-                updatecsmat!(self.mcsys, loc, J, fes.label[i]);
-                At_mul_B!(csmatTJ, csmat(self.mcsys), J); # local Jacobian matrix
-                gradN!(fes, gradN, gradNparams[j], csmatTJ);
-                blmat!(self.mr, B, Ns[j], gradN, loc, csmat(self.mcsys));
-                add_btdb_ut_only!(elmat, B, Jac*w[j], D, DB)
-            end # Loop over quadrature points
-            complete_lt!(elmat)
-            gatherdofnums!(u, dofnums, fes.conn[i]); # retrieve degrees of freedom
-            A_mul_B!(elvec, elmat, elvecfix)
-            assemble!(assembler,  -elvec,  dofnums); # assemble element load vector
-        end
-    end # Loop over elements
-    return makevector!(assembler);
-end
-
-function nzebcloadsstiffness(self::AbstractFEMMDeforLinear, geom::NodalField{FFlt}, u::NodalField{T}) where {T<:Number}
-    assembler = SysvecAssembler()
-    return  nzebcloadsstiffness(self, assembler, geom, u);
-end
-
-"""
     thermalstrainloads(self::AbstractFEMMDeforLinear, assembler::A,
         geom::NodalField{FFlt}, u::NodalField{T},
         dT::NodalField{FFlt}) where {A<:AbstractSysvecAssembler, T<:Number}

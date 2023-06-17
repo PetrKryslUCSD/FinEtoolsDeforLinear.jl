@@ -46,9 +46,9 @@ using .MatDeforElastOrthoModule: MatDeforElastOrtho
 # Exported: type of orthotropic elastic material
 export MatDeforElastOrtho
 
-using .FEMMDeforLinearBaseModule: AbstractFEMMDeforLinear, stiffness, nzebcloadsstiffness, thermalstrainloads, mass, inspectintegpoints
+using .FEMMDeforLinearBaseModule: AbstractFEMMDeforLinear, stiffness, thermalstrainloads, mass, inspectintegpoints
 # Exported: abstract type for linear information, discretization methods for the abstract type
-export AbstractFEMMDeforLinear, stiffness, nzebcloadsstiffness, thermalstrainloads, mass, inspectintegpoints
+export AbstractFEMMDeforLinear, stiffness, thermalstrainloads, mass, inspectintegpoints
 
 using .FEMMDeforLinearModule: FEMMDeforLinear
 # Exported: type for linear deformation
@@ -58,24 +58,24 @@ using .FEMMDeforWinklerModule: FEMMDeforWinkler, surfacenormalspringstiffness
 # Exported: type for distributed-spring support, discretization method
 export FEMMDeforWinkler, surfacenormalspringstiffness
 
-using .FEMMDeforLinearMSModule: FEMMDeforLinearMSH8, FEMMDeforLinearMST10, stiffness, nzebcloadsstiffness, thermalstrainloads, inspectintegpoints
+using .FEMMDeforLinearMSModule: FEMMDeforLinearMSH8, FEMMDeforLinearMST10, stiffness, thermalstrainloads, inspectintegpoints
 # Exported: type for mean-strain solid elements, discretization methods
-export FEMMDeforLinearMSH8, FEMMDeforLinearMST10, stiffness, nzebcloadsstiffness, thermalstrainloads, inspectintegpoints
+export FEMMDeforLinearMSH8, FEMMDeforLinearMST10, stiffness, thermalstrainloads, inspectintegpoints
 
-using .FEMMDeforLinearIMModule: FEMMDeforLinearIMH8, stiffness, nzebcloadsstiffness, thermalstrainloads, inspectintegpoints
+using .FEMMDeforLinearIMModule: FEMMDeforLinearIMH8, stiffness, thermalstrainloads, inspectintegpoints
 # Exported: type for mean-strain solid elements, discretization methods
-export FEMMDeforLinearIMH8, stiffness, nzebcloadsstiffness, thermalstrainloads, inspectintegpoints
+export FEMMDeforLinearIMH8, stiffness, thermalstrainloads, inspectintegpoints
 
 using .FEMMDeforSurfaceDampingModule: FEMMDeforSurfaceDamping, dampingABC
 #Exported: type for surface damping (absorbing boundary conditions)
 export FEMMDeforSurfaceDamping, dampingABC
 
-using .FEMMDeforLinearNICEModule: FEMMDeforLinearNICEH8, FEMMDeforLinearNICET4, stiffness, nzebcloadsstiffness, thermalstrainloads, inspectintegpoints
+using .FEMMDeforLinearNICEModule: FEMMDeforLinearNICEH8, FEMMDeforLinearNICET4, stiffness, thermalstrainloads, inspectintegpoints
 # Exported: type for NICE (Nodally-integrated continuum elements) solid elements, discretization methods
-export FEMMDeforLinearNICEH8, FEMMDeforLinearNICET4, stiffness, nzebcloadsstiffness, thermalstrainloads, inspectintegpoints
+export FEMMDeforLinearNICEH8, FEMMDeforLinearNICET4, stiffness, thermalstrainloads, inspectintegpoints
 
-using .FEMMDeforLinearESNICEModule: FEMMDeforLinearESNICET4, FEMMDeforLinearESNICEH8, stiffness, nzebcloadsstiffness, thermalstrainloads, inspectintegpoints
+using .FEMMDeforLinearESNICEModule: FEMMDeforLinearESNICET4, FEMMDeforLinearESNICEH8, stiffness, thermalstrainloads, inspectintegpoints
 # Exported: type for ESICE (Energy-sampling stabilized nodally-integrated continuum elements) solid elements, discretization methods
-export FEMMDeforLinearESNICET4, FEMMDeforLinearESNICEH8, stiffness, nzebcloadsstiffness, thermalstrainloads, inspectintegpoints
+export FEMMDeforLinearESNICET4, FEMMDeforLinearESNICEH8, stiffness, thermalstrainloads, inspectintegpoints
 
 end # module

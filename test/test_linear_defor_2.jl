@@ -668,10 +668,11 @@ muunit_cube_modes_exportmmm.test()
 
 module mmpipemmPSmorthom
 using FinEtools
+using FinEtools.AlgoBaseModule: solve!
 using FinEtoolsDeforLinear
 using Test
-import LinearAlgebra: norm, cholesky, cross, dot
-import Statistics: mean
+using LinearAlgebra: norm, cholesky, cross, dot
+using Statistics: mean
 
 mutable struct MyIData
     c::FInt
@@ -833,10 +834,8 @@ material = MatDeforElastOrtho(MR, E, nu)
 
 femm = FEMMDeforLinear(MR, IntegDomain(fes, GaussRule(2, 2)), material)
 
-K =stiffness(femm, geom, u)
-#K=cholesky(K)
-U=  K\(F2)
-scattersysvec!(u, U[:])
+K = stiffness(femm, geom, u)
+u = solve!(u, K, F2)
 
 # Transfer the solution of the displacement to the nodes on the
 # internal cylindrical surface and convert to

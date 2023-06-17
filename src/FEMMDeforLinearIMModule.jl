@@ -23,7 +23,7 @@ using FinEtools.CSysModule: CSys, updatecsmat!, csmat
 using FinEtools.DeforModelRedModule: nstressstrain, nthermstrain, blmat!, divmat, vgradmat
 using FinEtools.AssemblyModule: AbstractSysvecAssembler, AbstractSysmatAssembler, SysmatAssemblerSparseSymm, startassembly!, assemble!, makematrix!, makevector!, SysvecAssembler
 using FinEtools.MatrixUtilityModule: add_btdb_ut_only!, complete_lt!, loc!, jac!, locjac!
-import FinEtoolsDeforLinear.FEMMDeforLinearBaseModule: stiffness, nzebcloadsstiffness, mass, thermalstrainloads, inspectintegpoints
+import FinEtoolsDeforLinear.FEMMDeforLinearBaseModule: stiffness,  mass, thermalstrainloads, inspectintegpoints
 import FinEtools.FEMMBaseModule: associategeometry!
 using FinEtoolsDeforLinear.MatDeforModule: rotstressvec!
 using LinearAlgebra: mul!, Transpose, UpperTriangular

@@ -1,9 +1,10 @@
 
 module mmLE1NAFEMSsstress
 using FinEtools
+using FinEtools.AlgoBaseModule: matrix_blocked, vector_blocked
 using FinEtoolsDeforLinear
 using Test
-import LinearAlgebra: norm, cholesky, cross
+using LinearAlgebra: norm, cholesky, cross, Symmetric
 function test()
     E = 210e3*phun("MEGA*PA");# 210e3 MPa
     nu = 0.3;
@@ -61,9 +62,15 @@ function test()
     femm = associategeometry!(femm, geom)
 
     K = stiffness(femm, geom, u)
-    K = cholesky(K)
-    U = K\(F2)
-    scattersysvec!(u, U[:])
+
+    K_ff, K_fd = matrix_blocked(K, nfreedofs(u), nfreedofs(u))[(:ff, :fd)]
+
+    F_f = vector_blocked(F2, nfreedofs(u))[:f]
+    U_d = gathersysvec(u, :d)
+
+    factor = cholesky(Symmetric(K_ff))
+    U_f = factor\F_f
+    scattersysvec!(u, U_f)
 
     nl = selectnode(fens, box=[2.0, 2.0, 0.0, 0.0, 0.0, 0.0],inflate=tolerance);
     thecorneru = zeros(FFlt,1,3)
@@ -98,6 +105,7 @@ mmLE1NAFEMSsstress.test()
 
 module mocylpullFun
 using FinEtools
+using FinEtools.AlgoBaseModule: matrix_blocked, vector_blocked
 using FinEtoolsDeforLinear
 using FinEtoolsDeforLinear.AlgoDeforLinearModule
 using Test
@@ -183,10 +191,11 @@ mocylpullFun.test()
 
 module mmLE11malgo
 using FinEtools
+using FinEtools.AlgoBaseModule: matrix_blocked, vector_blocked
 using FinEtoolsDeforLinear
 using FinEtoolsDeforLinear.AlgoDeforLinearModule
 using Test
-import LinearAlgebra: norm, cholesky, cross
+using LinearAlgebra: norm, cholesky, cross, Symmetric
 function test()
 
 
@@ -302,10 +311,11 @@ mmLE11malgo.test()
 
 module mmtwistedmsh8ort
 using FinEtools
+using FinEtools.AlgoBaseModule: matrix_blocked, vector_blocked
 using FinEtoolsDeforLinear
 using FinEtoolsDeforLinear.AlgoDeforLinearModule
 using Test
-import LinearAlgebra: norm, cholesky, cross
+using LinearAlgebra: norm, cholesky, cross, Symmetric
 import Statistics: mean
 function test()
 
@@ -434,10 +444,11 @@ mmtwistedmsh8ort.test()
 
 module mmtwistedmsh9ort
 using FinEtools
+using FinEtools.AlgoBaseModule: matrix_blocked, vector_blocked
 using FinEtoolsDeforLinear
 using FinEtoolsDeforLinear.AlgoDeforLinearModule
 using Test
-import LinearAlgebra: norm, cholesky, cross
+using LinearAlgebra: norm, cholesky, cross, Symmetric
 import Statistics: mean
 function test()
 
@@ -565,6 +576,7 @@ mmtwistedmsh9ort.test()
 
 module mxRMSerror3a1
 using FinEtools
+using FinEtools.AlgoBaseModule: matrix_blocked, vector_blocked
 using FinEtoolsDeforLinear
 using FinEtoolsDeforLinear.AlgoDeforLinearModule
 using FinEtools.MeshUtilModule
@@ -746,6 +758,7 @@ mxRMSerror3a1.test()
 
 module munit_cube_modes_nice_t4
 using FinEtools
+using FinEtools.AlgoBaseModule: matrix_blocked, vector_blocked
 using FinEtoolsDeforLinear
 using Test
 using Arpack
@@ -785,7 +798,11 @@ function test()
     associategeometry!(femm,  geom)
     K  = stiffness(femm, geom, u)
     M = mass(femm, geom, u)
-    d,v,nev,nconv = eigs(K+OmegaShift*M, M; nev=neigvs, which=:SM, explicittransform=:none)
+
+    K_ff = matrix_blocked(K, nfreedofs(u), nfreedofs(u))[:ff]
+    M_ff = matrix_blocked(M, nfreedofs(u), nfreedofs(u))[:ff]
+
+    d,v,nev,nconv = eigs(K_ff+OmegaShift*M_ff, M_ff; nev=neigvs, which=:SM, explicittransform=:none)
     d = d .- OmegaShift;
     fs = real(sqrt.(complex(d)))/(2*pi)
     # # println("Eigenvalues: $fs [Hz]")
@@ -805,6 +822,7 @@ munit_cube_modes_nice_t4.test()
 
 module malum_cyl_mode_nice_t4
 using FinEtools
+using FinEtools.AlgoBaseModule: matrix_blocked, vector_blocked
 using FinEtoolsDeforLinear
 using Test
 using Arpack
@@ -839,7 +857,11 @@ function test()
     associategeometry!(femm,  geom)
     K  = stiffness(femm, geom, u)
     M = mass(femm, geom, u)
-    d,v,nev,nconv = eigs(K+OmegaShift*M, M; nev=neigvs, which=:SM, explicittransform=:none)
+
+    K_ff = matrix_blocked(K, nfreedofs(u), nfreedofs(u))[:ff]
+    M_ff = matrix_blocked(M, nfreedofs(u), nfreedofs(u))[:ff]
+
+    d,v,nev,nconv = eigs(K_ff+OmegaShift*M_ff, M_ff; nev=neigvs, which=:SM, explicittransform=:none)
     d = d .- OmegaShift;
     fs = real(sqrt.(complex(d)))/(2*pi)
     # # println("Eigenvalues: $fs [Hz]")
@@ -853,6 +875,7 @@ malum_cyl_mode_nice_t4.test()
 
 module malum_cyl_mode_esnice_t4
 using FinEtools
+using FinEtools.AlgoBaseModule: matrix_blocked, vector_blocked
 using FinEtoolsDeforLinear
 using Test
 using Arpack
@@ -886,7 +909,11 @@ function test()
     associategeometry!(femm,  geom)
     K  = stiffness(femm, geom, u)
     M = mass(femm, geom, u)
-    d,v,nev,nconv = eigs(K+OmegaShift*M, M; nev=neigvs, which=:SM, explicittransform=:none)
+
+    K_ff = matrix_blocked(K, nfreedofs(u), nfreedofs(u))[:ff]
+    M_ff = matrix_blocked(M, nfreedofs(u), nfreedofs(u))[:ff]
+
+    d,v,nev,nconv = eigs(K_ff+OmegaShift*M_ff, M_ff; nev=neigvs, which=:SM, explicittransform=:none)
     d = d .- OmegaShift;
     fs = real(sqrt.(complex(d)))/(2*pi)
     # println("Eigenvalues: $fs [Hz]")
@@ -901,7 +928,9 @@ malum_cyl_mode_esnice_t4.test()
 
 module mocylpull14 # From linear deformation
 using FinEtools
+using FinEtools.AlgoBaseModule: matrix_blocked, vector_blocked
 using FinEtoolsDeforLinear
+using LinearAlgebra
 using Test
 function test()
     # Cylinder  compressed by enforced displacement, axially symmetric model
@@ -948,7 +977,7 @@ function test()
     applyebc!(u)
     numberdofs!(u)
     # println("Number of degrees of freedom = $(u.nfreedofs)")
-    @test u.nfreedofs == 240
+    @test nfreedofs(u) == 240
 
     # Property and material
     material=MatDeforElastIso(MR, 00.0, E1, nu23, 0.0)
@@ -958,9 +987,14 @@ function test()
     femm = FEMMDeforLinear(MR, IntegDomain(fes, GaussRule(2, 2), true), material)
 
     K =stiffness(femm, geom, u)
-    F = nzebcloadsstiffness(femm, geom, u)
-    U=  K\(F)
-    scattersysvec!(u,U[:])
+
+    K_ff, K_fd = matrix_blocked(K, nfreedofs(u), nfreedofs(u))[(:ff, :fd)]
+
+    U_d = gathersysvec(u, :d)
+
+    factor = cholesky(Symmetric(K_ff))
+    U_f = factor\(-K_fd * U_d)
+    scattersysvec!(u, U_f)
 
     fld= fieldfromintegpoints(femm, geom, u, :princCauchy, 1)
     # println("Minimum/maximum = $(minimum(fld.values))/$(maximum(fld.values))")
@@ -987,6 +1021,7 @@ mocylpull14.test()
 
 module mocylpull1 # From deformation
 using FinEtools
+using FinEtools.AlgoBaseModule: matrix_blocked, vector_blocked
 using FinEtoolsDeforLinear
 using Test
 function test()
@@ -1040,7 +1075,7 @@ function test()
     applyebc!(u)
     numberdofs!(u)
     # println("Number of degrees of freedom = $(u.nfreedofs)")
-    @test u.nfreedofs == 240
+    @test nfreedofs(u) == 240
 
     # Property and material
     material=MatDeforElastOrtho(MR, E1,E2,E3,nu12,nu13,nu23,G12,G13,G23)
@@ -1048,9 +1083,14 @@ function test()
     femm = FEMMDeforLinear(MR, IntegDomain(fes, GaussRule(2, 2), true), material)
 
     K =stiffness(femm, geom, u)
-    F = nzebcloadsstiffness(femm, geom, u)
-    U=  K\(F)
-    scattersysvec!(u,U[:])
+
+    K_ff, K_fd = matrix_blocked(K, nfreedofs(u), nfreedofs(u))[(:ff, :fd)]
+
+    U_d = gathersysvec(u, :d)
+
+    factor = cholesky(Symmetric(K_ff))
+    U_f = factor\(-K_fd * U_d)
+    scattersysvec!(u, U_f)
 
     # Produce a plot of the radial stress component in the cylindrical
     # coordinate system. Note that this is the usual representation of
@@ -1072,9 +1112,10 @@ mocylpull1.test()
 
 module mmLE1NAFEMSsstressx1
 using FinEtools
+using FinEtools.AlgoBaseModule: matrix_blocked, vector_blocked
 using FinEtoolsDeforLinear
 using Test
-import LinearAlgebra: norm, cholesky, cross
+using LinearAlgebra: norm, cholesky, cross, Symmetric
 function test()
     E = 210e3*phun("MEGA*PA");# 210e3 MPa
     nu = 0.3;
@@ -1162,9 +1203,10 @@ mmLE1NAFEMSsstressx1.test()
 
 module mholestr1
 using FinEtools
+using FinEtools.AlgoBaseModule: matrix_blocked, vector_blocked
 using FinEtoolsDeforLinear
 using Test
-import LinearAlgebra: norm, cholesky, cross
+using LinearAlgebra: norm, cholesky, cross, Symmetric
 function test()
     E = 100.0;
     nu = 1.0/3;
@@ -1212,8 +1254,16 @@ function test()
     femm = FEMMDeforLinear(MR, IntegDomain(fes,  GaussRule(2, 2)),  material)
     
     K = stiffness(femm,  geom,  u)
-    U=  K\(Fm)
-    scattersysvec!(u, U[:])
+
+    K_ff, K_fd = matrix_blocked(K, nfreedofs(u), nfreedofs(u))[(:ff, :fd)]
+
+    F_f = vector_blocked(F, nfreedofs(u))[:f]
+    U_d = gathersysvec(u, :d)
+
+    factor = cholesky(Symmetric(K_ff))
+    U_f = factor\F_f
+    scattersysvec!(u, U_f)
+
 
     
     fld= fieldfromintegpoints(femm, geom, u, :princCauchy, 1)
@@ -1236,9 +1286,10 @@ mholestr1.test()
 
 module mholestr2
 using FinEtools
+using FinEtools.AlgoBaseModule: matrix_blocked, vector_blocked
 using FinEtoolsDeforLinear
 using Test
-import LinearAlgebra: norm, cholesky, cross
+using LinearAlgebra: norm, cholesky, cross, Symmetric
 function test()
     E = 100.0;
     nu = 1.0/3;
@@ -1286,8 +1337,16 @@ function test()
     femm = FEMMDeforLinear(MR, IntegDomain(fes,  GaussRule(2, 2)),  material)
     
     K = stiffness(femm,  geom,  u)
-    U=  K\(Fm)
-    scattersysvec!(u, U[:])
+
+    K_ff, K_fd = matrix_blocked(K, nfreedofs(u), nfreedofs(u))[(:ff, :fd)]
+
+    F_f = vector_blocked(F, nfreedofs(u))[:f]
+    U_d = gathersysvec(u, :d)
+
+    factor = cholesky(Symmetric(K_ff))
+    U_f = factor\F_f
+    scattersysvec!(u, U_f)
+
 
     
     fld= fieldfromintegpoints(femm, geom, u, :princCauchy, 1)
@@ -1309,9 +1368,10 @@ mholestr2.test()
 
 module mholestr3
 using FinEtools
+using FinEtools.AlgoBaseModule: matrix_blocked, vector_blocked
 using FinEtoolsDeforLinear
 using Test
-import LinearAlgebra: norm, cholesky, cross
+using LinearAlgebra: norm, cholesky, cross, Symmetric
 function test()
     E = 100.0;
     nu = 1.0/3;
@@ -1359,8 +1419,16 @@ function test()
     femm = FEMMDeforLinear(MR, IntegDomain(fes,  GaussRule(2, 2)),  material)
     
     K = stiffness(femm,  geom,  u)
-    U=  K\(Fm)
-    scattersysvec!(u, U[:])
+
+    K_ff, K_fd = matrix_blocked(K, nfreedofs(u), nfreedofs(u))[(:ff, :fd)]
+
+    F_f = vector_blocked(F, nfreedofs(u))[:f]
+    U_d = gathersysvec(u, :d)
+
+    factor = cholesky(Symmetric(K_ff))
+    U_f = factor\F_f
+    scattersysvec!(u, U_f)
+
 
     
     fld= fieldfromintegpoints(femm, geom, u, :princCauchy, 1)

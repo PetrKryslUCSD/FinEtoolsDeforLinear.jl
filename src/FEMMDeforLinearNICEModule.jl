@@ -15,27 +15,27 @@ module FEMMDeforLinearNICEModule
 __precompile__(true)
 
 using FinEtools.FTypesModule: FInt, FFlt, FCplxFlt, FFltVec, FIntVec, FFltMat, FIntMat, FMat, FVec, FDataDict
-import FinEtools.FENodeSetModule: FENodeSet
-import FinEtools.FESetModule: AbstractFESet, FESetH8, FESetT4, manifdim, nodesperelem, gradN!
-import FinEtools.IntegDomainModule: IntegDomain, integrationdata, Jacobianvolume
-import FinEtoolsDeforLinear.FEMMDeforLinearBaseModule: AbstractFEMMDeforLinear
-import FinEtools.DeforModelRedModule: AbstractDeforModelRed, DeforModelRed3D
-import FinEtoolsDeforLinear.MatDeforLinearElasticModule: AbstractMatDeforLinearElastic, tangentmoduli!, update!, thermalstrain!
-import FinEtools.FieldModule: ndofs, gatherdofnums!, gatherfixedvalues_asvec!, gathervalues_asvec!, gathervalues_asmat!
-import FinEtools.NodalFieldModule: NodalField, nnodes
-import FinEtools.CSysModule: CSys, updatecsmat!, csmat
-import FinEtools.FENodeToFEMapModule: FENodeToFEMap
-import FinEtools.DeforModelRedModule: nstressstrain, nthermstrain, blmat!
-import FinEtools.AssemblyModule: AbstractSysvecAssembler, AbstractSysmatAssembler, SysmatAssemblerSparseSymm, startassembly!, assemble!, makematrix!, makevector!, SysvecAssembler
+using FinEtools.FENodeSetModule: FENodeSet
+using FinEtools.FESetModule: AbstractFESet, FESetH8, FESetT4, manifdim, nodesperelem, gradN!
+using FinEtools.IntegDomainModule: IntegDomain, integrationdata, Jacobianvolume
+using FinEtoolsDeforLinear.FEMMDeforLinearBaseModule: AbstractFEMMDeforLinear
+using FinEtools.DeforModelRedModule: AbstractDeforModelRed, DeforModelRed3D
+using FinEtoolsDeforLinear.MatDeforLinearElasticModule: AbstractMatDeforLinearElastic, tangentmoduli!, update!, thermalstrain!
+using FinEtools.FieldModule: ndofs, gatherdofnums!, gatherfixedvalues_asvec!, gathervalues_asvec!, gathervalues_asmat!, nalldofs
+using FinEtools.NodalFieldModule: NodalField, nnodes
+using FinEtools.CSysModule: CSys, updatecsmat!, csmat
+using FinEtools.FENodeToFEMapModule: FENodeToFEMap
+using FinEtools.DeforModelRedModule: nstressstrain, nthermstrain, blmat!
+using FinEtools.AssemblyModule: AbstractSysvecAssembler, AbstractSysmatAssembler, SysmatAssemblerSparseSymm, startassembly!, assemble!, makematrix!, makevector!, SysvecAssembler
 using FinEtools.MatrixUtilityModule: add_btdb_ut_only!, complete_lt!, loc!, jac!, locjac!, adjugate3!
 import FinEtoolsDeforLinear.FEMMDeforLinearBaseModule: stiffness, nzebcloadsstiffness, mass, thermalstrainloads, inspectintegpoints
 import FinEtools.FEMMBaseModule: associategeometry!
-import FinEtoolsDeforLinear.MatDeforModule: rotstressvec!
-import LinearAlgebra: mul!, Transpose, UpperTriangular, eigvals
+using FinEtoolsDeforLinear.MatDeforModule: rotstressvec!
+using LinearAlgebra: mul!, Transpose, UpperTriangular, eigvals
 At_mul_B!(C, A, B) = mul!(C, Transpose(A), B)
 A_mul_B!(C, A, B) = mul!(C, A, B)
-import LinearAlgebra: norm, qr, diag, dot, cond, I
-import Statistics: mean
+using LinearAlgebra: norm, qr, diag, dot, cond, I
+using Statistics: mean
 
 """
     AbstractFEMMDeforLinearNICE <: AbstractFEMMDeforLinear
@@ -255,7 +255,7 @@ function stiffness(self::AbstractFEMMDeforLinearNICE, assembler::A, geom::NodalF
     Dmod = sort(eigvals(D))
     stabDmod = mean(Dmod[1:2], dims=1)
     elmatsizeguess = 4*nodesperelem(fes)*ndofs(u)
-    startassembly!(assembler, elmatsizeguess, elmatsizeguess, nnodes(u), u.nfreedofs, u.nfreedofs);
+    startassembly!(assembler, elmatsizeguess^2  * nnodes(u), nalldofs(u), nalldofs(u))
     for nix = 1:length(self.nodalbasisfunctiongrad)
         gradN = self.nodalbasisfunctiongrad[nix].gradN
         patchconn = self.nodalbasisfunctiongrad[nix].patchconn

@@ -16,10 +16,10 @@ my_A_mul_B!(C, A, B) = mul!(C, A, B)
 using FinEtools.FieldModule: AbstractField, ndofs, setebc!, numberdofs!, applyebc!, scattersysvec!, nalldofs, nfreedofs, gathersysvec
 using FinEtools.NodalFieldModule: NodalField, nnodes
 import FinEtools.FEMMBaseModule: associategeometry!, distribloads, fieldfromintegpoints, elemfieldfromintegpoints
-using FinEtoolsDeforLinear.FEMMDeforLinearBaseModule: stiffness, mass, nzebcloadsstiffness, thermalstrainloads, inspectintegpoints
-using FinEtoolsDeforLinear.FEMMDeforLinearMSModule: stiffness, mass, nzebcloadsstiffness, thermalstrainloads, inspectintegpoints
+using FinEtoolsDeforLinear.FEMMDeforLinearBaseModule: stiffness, mass, thermalstrainloads, inspectintegpoints
+using FinEtoolsDeforLinear.FEMMDeforLinearMSModule: stiffness, mass, thermalstrainloads, inspectintegpoints
 using FinEtools.DeforModelRedModule: stresscomponentmap
-using FinEtools.AssemblyModule: matrix_blocked, vector_blocked
+using FinEtools.AlgoBaseModule: matrix_blocked, vector_blocked
 using FinEtools.ForceIntensityModule: ForceIntensity
 using FinEtools.MeshModificationModule: meshboundary
 using FinEtools.MeshExportModule.VTK: vtkexportmesh
@@ -721,7 +721,10 @@ function modal(modeldata::FDataDict)
     # [W,Omega]= eigs(@(bv)mAt\(mA\bv), nalldofs(u), M, neigvs, 'SM', evopts);
     #          [W,Omega]= eigen(full(K+omega_shift*M), full(M));
 
-    d, v, nconv = eigs(K+omega_shift*M, M; nev=neigvs, which=:SM)
+    K_ff = matrix_blocked(K, nfreedofs(u), nfreedofs(u))[:ff]
+    M_ff = matrix_blocked(M, nfreedofs(u), nfreedofs(u))[:ff]
+
+    d, v, nconv = eigs(K_ff + omega_shift*M_ff, M_ff; nev=neigvs, which=:SM)
     #    Subtract the mass-shifting Angular frequency
     broadcast!(+, d, d, -omega_shift);
 
