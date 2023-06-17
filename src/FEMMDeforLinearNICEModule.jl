@@ -28,7 +28,7 @@ using FinEtools.FENodeToFEMapModule: FENodeToFEMap
 using FinEtools.DeforModelRedModule: nstressstrain, nthermstrain, blmat!
 using FinEtools.AssemblyModule: AbstractSysvecAssembler, AbstractSysmatAssembler, SysmatAssemblerSparseSymm, startassembly!, assemble!, makematrix!, makevector!, SysvecAssembler
 using FinEtools.MatrixUtilityModule: add_btdb_ut_only!, complete_lt!, loc!, jac!, locjac!, adjugate3!
-import FinEtoolsDeforLinear.FEMMDeforLinearBaseModule: stiffness, nzebcloadsstiffness, mass, thermalstrainloads, inspectintegpoints
+import FinEtoolsDeforLinear.FEMMDeforLinearBaseModule: stiffness, mass, thermalstrainloads, inspectintegpoints
 import FinEtools.FEMMBaseModule: associategeometry!
 using FinEtoolsDeforLinear.MatDeforModule: rotstressvec!
 using LinearAlgebra: mul!, Transpose, UpperTriangular, eigvals
@@ -289,23 +289,6 @@ Compute and assemble  stiffness matrix.
 function stiffness(self::AbstractFEMMDeforLinearNICE, geom::NodalField{FFlt},  u::NodalField{T}) where {T<:Number}
     assembler = SysmatAssemblerSparseSymm();
     return stiffness(self, assembler, geom, u);
-end
-
-
-"""
-nzebcloadsstiffness(self::AbstractFEMMDeforLinear,  assembler::A,
-  geom::NodalField{FFlt},
-  u::NodalField{T}) where {A<:AbstractSysvecAssembler, T<:Number}
-
-Compute load vector for nonzero EBC for fixed displacement.
-"""
-function nzebcloadsstiffness(self::AbstractFEMMDeforLinearNICE,  assembler::A, geom::NodalField{FFlt}, u::NodalField{T}) where {A<:AbstractSysvecAssembler, T<:Number}
-    error("Not implemented yet")
-end
-
-function nzebcloadsstiffness(self::AbstractFEMMDeforLinearNICE, geom::NodalField{FFlt}, u::NodalField{T}) where {T<:Number}
-    assembler = SysvecAssembler()
-    return  nzebcloadsstiffness(self, assembler, geom, u);
 end
 
 end
