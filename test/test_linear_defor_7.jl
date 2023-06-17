@@ -1,7 +1,9 @@
 
 module m111ocylpull14nnn # From miscellaneous
 using FinEtools
+using FinEtools.AlgoBaseModule: matrix_blocked, vector_blocked
 using FinEtoolsDeforLinear
+using LinearAlgebra
 using Test
 function test()
     # Cylinder  compressed by enforced displacement, axially symmetric model
@@ -47,8 +49,8 @@ function test()
 
     applyebc!(u)
     numberdofs!(u)
-    # println("Number of degrees of freedom = $(u.nfreedofs)")
-    @test u.nfreedofs == 240
+    # println("Number of degrees of freedom = $(nfreedofs(u))")
+    @test nfreedofs(u) == 240
 
     # Property and material
     material = MatDeforElastIso(MR, 00.0, E1, nu23, 0.0)
@@ -58,10 +60,16 @@ function test()
 
     femm = FEMMDeforLinear(MR, IntegDomain(fes, GaussRule(2, 2), true), material)
 
-    K =stiffness(femm, geom, u)
-    F = nzebcloadsstiffness(femm, geom, u)
-    U=  K\(F)
-    scattersysvec!(u,U[:])
+    K = stiffness(femm, geom, u)
+
+    K_ff, K_fd = matrix_blocked(K, nfreedofs(u), nfreedofs(u))[(:ff, :fd)]
+
+    U_d = gathersysvec(u, :d)
+
+    factor = cholesky(Symmetric(K_ff))
+    U_f = factor\(-K_fd * U_d)
+    scattersysvec!(u, U_f)
+
 
     fld= fieldfromintegpoints(femm, geom, u, :princCauchy, 1)
     # println("Minimum/maximum = $(minimum(fld.values))/$(maximum(fld.values))")
@@ -111,7 +119,7 @@ function test()
     setebc!(u,l1,true, 2, 0.0)
     applyebc!(u)
     numberdofs!(u)
-    @test u.nfreedofs == 240
+    @test nfreedofs(u) == 240
 
     material=MatDeforElastIso(MR, 00.0, E1, nu23, 0.0)
     # println("success? ")

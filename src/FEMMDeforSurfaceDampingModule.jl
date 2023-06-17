@@ -13,7 +13,7 @@ using FinEtools.FTypesModule: FInt, FFlt, FCplxFlt, FFltVec, FIntVec, FFltMat, F
 using FinEtools.FENodeSetModule: FENodeSet
 using FinEtools.FESetModule: AbstractFESet, nodesperelem, manifdim
 using FinEtools.IntegDomainModule: IntegDomain, integrationdata, Jacobiansurface
-using FinEtools.FieldModule: ndofs, gatherdofnums!, gathervalues_asmat!
+using FinEtools.FieldModule: ndofs, gatherdofnums!, gathervalues_asmat!, nalldofs
 using FinEtools.NodalFieldModule: NodalField
 using FinEtools.FEMMBaseModule: AbstractFEMM
 using FinEtools.AssemblyModule: AbstractSysvecAssembler, AbstractSysmatAssembler, SysmatAssemblerSparseSymm, startassembly!, assemble!, makematrix!
@@ -57,7 +57,7 @@ function dampingABC(self::FEMMDeforSurfaceDamping, assembler::A,
     Nn = zeros(FFlt, Cedim); # column vector
     dofnums = zeros(FInt, Cedim); # degree of freedom array -- used as a buffer
     # Prepare assembler and temporaries
-    startassembly!(assembler, Cedim, Cedim, nfes, u.nfreedofs, u.nfreedofs);
+    startassembly!(assembler, Cedim^2 * nfes, nalldofs(u), nalldofs(u))
     for i = 1:nfes # loop over finite elements
         gathervalues_asmat!(geom, ecoords, fes.conn[i]);
         fill!(Ce, 0.0); # Initialize element damping matrix

@@ -1023,6 +1023,7 @@ module mocylpull1 # From deformation
 using FinEtools
 using FinEtools.AlgoBaseModule: matrix_blocked, vector_blocked
 using FinEtoolsDeforLinear
+using LinearAlgebra
 using Test
 function test()
     # Cylinder  pulled by enforced displacement, axially symmetric model
@@ -1173,9 +1174,15 @@ function test()
     femm = associategeometry!(femm, geom)
 
     K = stiffness(femm, geom, u)
-    K = cholesky(K)
-    U = K\(F2)
-    scattersysvec!(u, U[:])
+
+    K_ff, K_fd = matrix_blocked(K, nfreedofs(u), nfreedofs(u))[(:ff, :fd)]
+
+    F_f = vector_blocked(F2, nfreedofs(u))[:f]
+    U_d = gathersysvec(u, :d)
+
+    factor = cholesky(Symmetric(K_ff))
+    U_f = factor\F_f
+    scattersysvec!(u, U_f)
 
     nl = selectnode(fens, box=[2.0, 2.0, 0.0, 0.0, 0.0, 0.0],inflate=tolerance);
     thecorneru = zeros(FFlt,1,3)
@@ -1257,7 +1264,7 @@ function test()
 
     K_ff, K_fd = matrix_blocked(K, nfreedofs(u), nfreedofs(u))[(:ff, :fd)]
 
-    F_f = vector_blocked(F, nfreedofs(u))[:f]
+    F_f = vector_blocked(Fm, nfreedofs(u))[:f]
     U_d = gathersysvec(u, :d)
 
     factor = cholesky(Symmetric(K_ff))
@@ -1340,7 +1347,7 @@ function test()
 
     K_ff, K_fd = matrix_blocked(K, nfreedofs(u), nfreedofs(u))[(:ff, :fd)]
 
-    F_f = vector_blocked(F, nfreedofs(u))[:f]
+    F_f = vector_blocked(Fm, nfreedofs(u))[:f]
     U_d = gathersysvec(u, :d)
 
     factor = cholesky(Symmetric(K_ff))
@@ -1422,7 +1429,7 @@ function test()
 
     K_ff, K_fd = matrix_blocked(K, nfreedofs(u), nfreedofs(u))[(:ff, :fd)]
 
-    F_f = vector_blocked(F, nfreedofs(u))[:f]
+    F_f = vector_blocked(Fm, nfreedofs(u))[:f]
     U_d = gathersysvec(u, :d)
 
     factor = cholesky(Symmetric(K_ff))
