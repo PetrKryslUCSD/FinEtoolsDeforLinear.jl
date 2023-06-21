@@ -133,7 +133,7 @@ function  thermalstrainloads(self::AbstractFEMMDeforLinear, assembler::A, geom::
             for j = 1:npts # Loop over quadrature points
                 locjac!(loc, J, ecoords, Ns[j], gradNparams[j])
                 Jac = Jacobianvolume(self.integdomain, J, loc, fes.conn[i], Ns[j]);
-                updatecsmat!(self.mcsys, loc, J, fes.label[i]);
+                updatecsmat!(self.mcsys, loc, J, i, j)
                 At_mul_B!(csmatTJ,  csmat(self.mcsys),  J); # local Jacobian matrix
                 gradN!(fes, gradN, gradNparams[j], csmatTJ);#Do: gradN = gradNparams[j]/csmatTJ;
                 blmat!(self.mr, B, Ns[j], gradN, loc, csmat(self.mcsys));# strains in mater cs, displ in global cs
@@ -206,19 +206,19 @@ function inspectintegpoints(self::FEMM, geom::NodalField{FFlt},  u::NodalField{T
     out1 = fill(zero(FFlt), nstressstrain(self.mr)); # stress -- buffer
     out =  fill(zero(FFlt), nstressstrain(self.mr));# output -- buffer
     # Loop over  all the elements and all the quadrature points within them
-    for ilist = 1:length(felist) # Loop over elements
+    for ilist  in  1:length(felist) # Loop over elements
         i = felist[ilist];
         gathervalues_asmat!(geom, ecoords, fes.conn[i]);
         gathervalues_asvec!(u, ue, fes.conn[i]);# retrieve element displacements
         gathervalues_asvec!(dT, dTe, fes.conn[i]);# retrieve element temp. increments
-        for j = 1:npts # Loop over quadrature points
+        for j  in  1:npts # Loop over quadrature points
             locjac!(loc, J, ecoords, Ns[j], gradNparams[j])
             Jac = Jacobianvolume(self.integdomain, J, loc, fes.conn[i], Ns[j]);
-            updatecsmat!(self.mcsys, loc, J, fes.label[i]);
+            updatecsmat!(self.mcsys, loc, J, i, j)
             At_mul_B!(csmatTJ,  csmat(self.mcsys),  J); # local Jacobian matrix
             gradN!(fes, gradN, gradNparams[j], csmatTJ);
             blmat!(self.mr, B, Ns[j], gradN, loc, csmat(self.mcsys));
-            updatecsmat!(outputcsys, loc, J, fes.label[i]);
+            updatecsmat!(outputcsys, loc, J, i, j)
             # Quadrature point quantities
             A_mul_B!(qpstrain, B, ue); # strain in material coordinates
             qpdT = dot(vec(dTe), vec(Ns[j]));# Quadrature point temperature increment
@@ -285,7 +285,7 @@ function infsup_gh(self::AbstractFEMMDeforLinear, assembler::A, geom::NodalField
 	    for j = 1:npts # Loop over quadrature points
 	        locjac!(loc, J, ecoords, Ns[j], gradNparams[j])
 	        Jac = Jacobianvolume(self.integdomain, J, loc, fes.conn[i], Ns[j]);
-	        updatecsmat!(self.mcsys, loc, J, fes.label[i]);
+	        updatecsmat!(self.mcsys, loc, J, i, j)
 	        At_mul_B!(csmatTJ, csmat(self.mcsys), J); # local Jacobian matrix
 	        gradN!(fes, gradN, gradNparams[j], csmatTJ);
 	        divm = divmat(self.mr, Ns[j], gradN, loc);
@@ -346,7 +346,7 @@ function infsup_sh(self::AbstractFEMMDeforLinear, assembler::A, geom::NodalField
 	    for j = 1:npts # Loop over quadrature points
 	        locjac!(loc, J, ecoords, Ns[j], gradNparams[j])
 	        Jac = Jacobianvolume(self.integdomain, J, loc, fes.conn[i], Ns[j]);
-	        updatecsmat!(self.mcsys, loc, J, fes.label[i]);
+	        updatecsmat!(self.mcsys, loc, J, i, j)
 	        At_mul_B!(csmatTJ, csmat(self.mcsys), J); # local Jacobian matrix
 	        gradN!(fes, gradN, gradNparams[j], csmatTJ);
 	        vgradm = vgradmat(self.mr, Ns[j], gradN, loc);

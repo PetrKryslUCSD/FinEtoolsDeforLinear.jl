@@ -42,7 +42,7 @@ function test()
 
 
     el1femm =  FEMMBase(IntegDomain(subset(bdryfes,icl), GaussRule(2, 2)))
-    function pfun(forceout::FVec{T}, XYZ::FFltMat, tangents::FFltMat, fe_label::FInt) where {T}
+    function pfun(forceout::FVec{T}, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) where {T}
         pt= [2.75/3.25*XYZ[1], 3.25/2.75*XYZ[2], 0.0]
         forceout .=    vec(p*pt/norm(pt));
         return forceout
@@ -641,8 +641,10 @@ function test()
         CTE1, CTE2, CTE3)
 
         # The material coordinate system function is defined as:
-        function updatecs!(csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, fe_label::FInt)
+        function updatecs!(csmatout::FFltMat, feid::FInt, labels)
+            fe_label = labels[feid]
             rotmat3!(csmatout, angles[fe_label]/180.0*pi* [0.0; 0.0; 1.0]);
+            csmatout
         end
 
         # The vvolume integrals are evaluated using this rule
@@ -652,8 +654,13 @@ function test()
         regions = FDataDict[]
         for layer = 1:nLayers
             rls = selectelem(fens, fes, label =  layer)
+            rfes = subset(fes, rls)
             push!(regions, FDataDict("femm"=>FEMMDeforLinearMSH8(MR,
-            IntegDomain(subset(fes, rls), gr), CSys(3, 3, updatecs!), skinmaterial)))
+                IntegDomain(rfes, gr), CSys(3, 3,
+                    (csmatout, XYZ, tangents, feid, qpid) ->
+                    updatecs!(csmatout, feid, rfes.label)),
+                    skinmaterial)
+            ))
         end
 
         # File =  "Meyer_Piening_sandwich-r1.vtk"
@@ -673,7 +680,7 @@ function test()
 
         # The traction boundary condition is applied at the top of the plate.
         bfes = meshboundary(fes)
-        function pfun(forceout::FVec{T}, XYZ::FFltMat, tangents::FFltMat, fe_label::FInt) where {T}
+        function pfun(forceout::FVec{T}, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) where {T}
             forceout[1] = 0.0
             forceout[2] = 0.0
             forceout[3] = -q0*sin(pi*XYZ[1]/L)
@@ -1154,7 +1161,7 @@ function test()
 
 
     el1femm =  FEMMBase(IntegDomain(subset(bdryfes,icl), GaussRule(2, 2)))
-    function pfun(forceout::FVec{T}, XYZ::FFltMat, tangents::FFltMat, fe_label::FInt) where {T}
+    function pfun(forceout::FVec{T}, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) where {T}
         pt= [2.75/3.25*XYZ[1], 3.25/2.75*XYZ[2], 0.0]
         forceout .=    vec(p*pt/norm(pt));
         return forceout

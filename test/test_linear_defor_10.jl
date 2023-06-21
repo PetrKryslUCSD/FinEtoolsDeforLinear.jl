@@ -160,7 +160,7 @@ function TEST13H_hva()
     bdryfes = meshboundary(fes)
     topbfl = selectelem(fens, bdryfes, facing=true, direction=[0.0 0.0 1.0])
     el1femm =  FEMMBase(IntegDomain(subset(bdryfes,topbfl), GaussRule(2,2)))
-    function pfun(forceout::FVec{T}, XYZ::FFltMat, tangents::FFltMat, fe_label::FInt) where {T}
+    function pfun(forceout::FVec{T}, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) where {T}
         forceout .=  [0.0, 0.0, -qmagn]
         return forceout
     end

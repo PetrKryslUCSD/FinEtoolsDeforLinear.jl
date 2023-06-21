@@ -58,13 +58,13 @@ function dampingABC(self::FEMMDeforSurfaceDamping, assembler::A,
     dofnums = zeros(FInt, Cedim); # degree of freedom array -- used as a buffer
     # Prepare assembler and temporaries
     startassembly!(assembler, Cedim^2 * nfes, nalldofs(u), nalldofs(u))
-    for i = 1:nfes # loop over finite elements
+    for i  in eachindex(fes)  # loop over finite elements
         gathervalues_asmat!(geom, ecoords, fes.conn[i]);
         fill!(Ce, 0.0); # Initialize element damping matrix
-        for j = 1:npts # loop over quadrature points
+        for j  in  1:npts # loop over quadrature points
             locjac!(loc, J, ecoords, Ns[j], gradNparams[j])
             Jac = Jacobiansurface(self.integdomain, J, loc, fes.conn[i], Ns[j]);
-            n = updatenormal!(surfacenormal, loc, J, self.integdomain.fes.label[i]);
+            n = updatenormal!(surfacenormal, loc, J, i, j)
             for k = 1:nne
                 Nn[(k-1)*ndn+1:k*ndn] = n * Ns[j][k]
             end

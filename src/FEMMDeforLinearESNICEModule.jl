@@ -233,7 +233,7 @@ function _computenodalbfungrads(self, geom)
             np = length(p);
             lnmap[p] .= 1:np;# now store the local numbers
             c = reshape(geom.values[thisnn, :], 1, ndofs(geom))
-            updatecsmat!(self.mcsys, c, J, 0);
+            updatecsmat!(self.mcsys, c, J, nix, 0);
             gradNavg = fill(0.0, np, ndofs(geom));# preallocate strain-displacement matrix
             Vpatch = 0.0;
             for k = 1:length(gl)
@@ -395,7 +395,7 @@ function stiffness(self::AbstractFEMMDeforLinearESNICE, assembler::A, geom::Noda
         patchconn = self.nodalbasisfunctiongrad[nix].patchconn
         Vpatch = self.nodalbasisfunctiongrad[nix].Vpatch
         c = reshape(geom.values[nix, :], 1, ndofs(geom))
-        updatecsmat!(self.mcsys, c, J, 0);
+        updatecsmat!(self.mcsys, c, J, nix, 0);
         nd = length(patchconn) * ndofs(u)
         Bnodal = fill(0.0, size(D, 1), nd)
         blmat!(self.mr, Bnodal, Ns[1], gradN, c, csmat(self.mcsys));
@@ -422,7 +422,7 @@ function stiffness(self::AbstractFEMMDeforLinearESNICE, assembler::A, geom::Noda
             # stabilization factor is positive; if the element is so distorted
             # that its Jacobian is non-positive, skip the following step.
             if self.ephis[i] > 0  && Jac != 0.0
-                updatecsmat!(self.mcsys, loc, J, fes.label[i]);
+                updatecsmat!(self.mcsys, loc, J, i, j)
                 At_mul_B!(csmatTJ, csmat(self.mcsys), J); # local Jacobian matrix
                 gradN!(fes, gradN, gradNparams[j], csmatTJ);
                 blmat!(self.mr, B, Ns[j], gradN, loc, csmat(self.mcsys));
@@ -518,7 +518,7 @@ function inspectintegpoints(self::AbstractFEMMDeforLinearESNICE, geom::NodalFiel
     		outtot .+= -self.nphis[nix].*out
     		pci = findfirst(cx -> cx == nix, fes.conn[i]);# at which node are we?
     		locjac!(loc, J, geom.values, fes.conn[i], Ns[pci], gradNparams[pci])
-    		updatecsmat!(self.mcsys, loc, J, fes.label[i]);
+    		updatecsmat!(self.mcsys, loc, J, i, j)
     		At_mul_B!(csmatTJ, csmat(self.mcsys), J); # local Jacobian matrix
     		gradN!(fes, gradN, gradNparams[pci], csmatTJ);
     		blmat!(self.mr, B, Ns[pci], gradN, loc, csmat(self.mcsys));

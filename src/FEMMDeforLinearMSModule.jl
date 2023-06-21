@@ -198,12 +198,12 @@ function associategeometry!(self::F,  geom::NodalField{FFlt}) where {F<:FEMMDefo
     npts,  Ns,  gradNparams,  w,  pc = integrationdata(self.integdomain);
     ecoords, loc, J, csmatTJ, gradN = _buffers1(self, geom, npts)
     self.phis = fill(zero(FFlt), count(fes))
-    for i = 1:count(fes) # Loop over elements
+    for i  in  1:count(fes) # Loop over elements
         gathervalues_asmat!(geom, ecoords, fes.conn[i]);
         # NOTE: the coordinate system should be evaluated at a single point within the
         # element in order for the derivatives to be consistent at all quadrature points
         loc = centroid!(self,  loc, ecoords)
-        updatecsmat!(self.mcsys, loc, J, fes.label[i]);
+        updatecsmat!(self.mcsys, loc, J, i, 0)
         for j = 1:npts # Loop over quadrature points
             jac!(J, ecoords, gradNparams[j])
             At_mul_B!(csmatTJ, csmat(self.mcsys), J); # local Jacobian matrix
@@ -235,7 +235,7 @@ function associategeometry!(self::F,  geom::NodalField{FFlt}) where {F<:FEMMDefo
         # NOTE: the coordinate system should be evaluated at a single point within the
         # element in order for the derivatives to be consistent at all quadrature points
         loc = centroid!(self,  loc, ecoords)
-        updatecsmat!(self.mcsys, loc, J, fes.label[i]);
+        updatecsmat!(self.mcsys, loc, J, i, 0)
         for j = 1:npts # Loop over quadrature points
             jac!(J, ecoords, gradNparams[j])
             At_mul_B!(csmatTJ, csmat(self.mcsys), J); # local Jacobian matrix
@@ -271,7 +271,7 @@ function stiffness(self::AbstractFEMMDeforLinearMS, assembler::A,
         # NOTE: the coordinate system should be evaluated at a single point within the
         # element in order for the derivatives to be consistent at all quadrature points
         loc = centroid!(self,  loc, ecoords)
-        updatecsmat!(self.mcsys, loc, J, fes.label[i]);
+        updatecsmat!(self.mcsys, loc, J, i, 0)
         vol = 0.0; # volume of the element
         fill!(MeangradN, 0.0) # mean basis function gradients
         for j = 1:npts # Loop over quadrature points
@@ -323,7 +323,7 @@ function nzebcloadsstiffness(self::AbstractFEMMDeforLinearMS,  assembler::A, geo
             # NOTE: the coordinate system should be evaluated at a single point within the
             # element in order for the derivatives to be consistent at all quadrature points
             loc = centroid!(self,  loc, ecoords)
-            updatecsmat!(self.mcsys, loc, J, fes.label[i]);
+            updatecsmat!(self.mcsys, loc, J, i, 0)
             vol = 0.0; # volume of the element
             fill!(MeangradN, 0.0) # mean basis function gradients
             for j = 1:npts # Loop over quadrature points
@@ -394,8 +394,8 @@ function _iip_meanonly(self::AbstractFEMMDeforLinearMS, geom::NodalField{FFlt}, 
         # NOTE: the coordinate system should be evaluated at a single point within the
         # element in order for the derivatives to be consistent at all quadrature points
         loc = centroid!(self,  loc, ecoords)
-        updatecsmat!(self.mcsys, loc, J, fes.label[i]);
-        updatecsmat!(outputcsys, loc, J, fes.label[i]);
+        updatecsmat!(self.mcsys, loc, J, i, 0)
+        updatecsmat!(outputcsys, loc, J, i, 0)
         vol = 0.0; # volume of the element
         fill!(MeangradN, 0.0) # mean basis function gradients
         fill!(MeanN, 0.0) # mean basis function gradients
@@ -465,8 +465,8 @@ function _iip_extrapmean(self::AbstractFEMMDeforLinearMS, geom::NodalField{FFlt}
         # NOTE: the coordinate system should be evaluated at a single point within the
         # element in order for the derivatives to be consistent at all quadrature points
         loc = centroid!(self,  loc, ecoords)
-        updatecsmat!(self.mcsys, loc, J, fes.label[i]);
-        updatecsmat!(outputcsys, loc, J, fes.label[i]);
+        updatecsmat!(self.mcsys, loc, J, i, 0)
+        updatecsmat!(outputcsys, loc, J, i, 0)
         vol = 0.0; # volume of the element
         fill!(MeangradN, 0.0) # mean basis function gradients
         fill!(MeanN, 0.0) # mean basis function gradients
@@ -546,8 +546,8 @@ function _iip_extraptrend(self::AbstractFEMMDeforLinearMS, geom::NodalField{FFlt
         # NOTE: the coordinate system should be evaluated at a single point within the
         # element in order for the derivatives to be consistent at all quadrature points
         loc = centroid!(self,  loc, ecoords)
-        updatecsmat!(self.mcsys, loc, J, fes.label[i]);
-        updatecsmat!(outputcsys, loc, J, fes.label[i]);
+        updatecsmat!(self.mcsys, loc, J, i, 0)
+        updatecsmat!(outputcsys, loc, J, i, 0)
         vol = 0.0; # volume of the element
         fill!(MeangradN, 0.0) # mean basis function gradients
         fill!(MeanN, 0.0) # mean basis function gradients
@@ -691,7 +691,7 @@ function infsup_gh(self::AbstractFEMMDeforLinearMS, assembler::A, geom::NodalFie
 		# NOTE: the coordinate system should be evaluated at a single point within the
 		# element in order for the derivatives to be consistent at all quadrature points
 		loc = centroid!(self,  loc, ecoords)
-		updatecsmat!(self.mcsys, loc, J, fes.label[i]);
+		updatecsmat!(self.mcsys, loc, J, i, 0)
 		vol = 0.0; # volume of the element
 		fill!(MeangradN, 0.0) # mean basis function gradients
 		for j = 1:npts # Loop over quadrature points
@@ -742,7 +742,7 @@ function infsup_sh(self::AbstractFEMMDeforLinearMS, assembler::A, geom::NodalFie
 		# NOTE: the coordinate system should be evaluated at a single point within the
 		# element in order for the derivatives to be consistent at all quadrature points
 		loc = centroid!(self,  loc, ecoords)
-		updatecsmat!(self.mcsys, loc, J, fes.label[i]);
+		updatecsmat!(self.mcsys, loc, J, i, 0)
 		vol = 0.0; # volume of the element
 		fill!(MeangradN, 0.0) # mean basis function gradients
 		for j = 1:npts # Loop over quadrature points
