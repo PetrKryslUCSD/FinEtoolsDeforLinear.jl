@@ -13,7 +13,7 @@ using FinEtools.FTypesModule: FInt, FFlt, FCplxFlt, FFltVec, FIntVec, FFltMat, F
 import FinEtools.FENodeSetModule: FENodeSet
 import FinEtools.FESetModule: AbstractFESet, nodesperelem, manifdim
 import FinEtools.IntegDomainModule: IntegDomain, integrationdata, Jacobiansurface
-import FinEtools.FieldModule: ndofs, gatherdofnums!, gathervalues_asmat!
+import FinEtools.FieldModule: ndofs, gatherdofnums!, gathervalues_asmat!, nalldofs
 import FinEtools.NodalFieldModule: NodalField
 import FinEtools.FEMMBaseModule: AbstractFEMM
 import FinEtools.AssemblyModule: AbstractSysvecAssembler, AbstractSysmatAssembler, SysmatAssemblerSparseSymm, startassembly!, assemble!, makematrix!
@@ -62,14 +62,14 @@ function surfacenormalspringstiffness(self::FEMMDeforWinkler, assembler::A,
     loc = zeros(FFlt, 1,sdim); # quadrature point location -- used as a buffer
     J = fill(zero(FFlt), sdim,mdim); # Jacobian matrix -- used as a buffer
     Nn = zeros(FFlt, Kedim); # column vector
-    startassembly!(assembler, Kedim, Kedim, nfes, u.nfreedofs, u.nfreedofs);
-    for i = 1:nfes # Loop over elements
+    startassembly!(assembler, Kedim^2 * nfes, nalldofs(u), nalldofs(u))
+    for i  in  1:nfes # Loop over elements
         gathervalues_asmat!(geom, ecoords, integdomain.fes.conn[i]);
         fill!(Ke, 0.0); # Initialize element matrix
-        for j = 1:npts # Loop over quadrature points
+        for j  in  1:npts # Loop over quadrature points
             locjac!(loc, J, ecoords, Ns[j], gradNparams[j])
             Jac = Jacobiansurface(integdomain, J, loc, integdomain.fes.conn[i], Ns[j]);
-            n = updatenormal!(surfacenormal, loc, J, integdomain.fes.label[i])
+            n = updatenormal!(surfacenormal, loc, J, i, j)
             for k= 1:nne
                 for r = 1:sdim
                     Nn[(k-1)*sdim+r] = n[r] * Ns[j][k];

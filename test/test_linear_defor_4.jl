@@ -339,6 +339,7 @@ mmmCookmstressisommm.test()
 
 module mmLE10expimpmm
 using FinEtools
+using FinEtools.AlgoBaseModule: solve!
 using FinEtoolsDeforLinear
 using FinEtools.MeshExportModule
 using FinEtools.MeshImportModule
@@ -693,7 +694,7 @@ function test()
     numberdofs!(u)
 
     eL1femm =  FEMMBase(IntegDomain(subset(bdryfes,topbfl), TriRule(3)))
-    function pfun(forceout::FVec{T}, XYZ::FFltMat, tangents::FFltMat, fe_label::FInt) where {T}
+    function pfun(forceout::FVec{T}, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) where {T}
         forceout .=  [0.0, 0.0, -qmagn]
         return forceout
     end
@@ -712,9 +713,8 @@ function test()
     femm = associategeometry!(femm, geom)
 
     K = stiffness(femm, geom, u)
-    K = cholesky(K)
-    U = K\(F2)
-    scattersysvec!(u, U[:])
+
+    u = solve!(u, K, F2)
 
     nl = selectnode(fens, box=[Ai,Ai,0,0,Thickness,Thickness],inflate=tolerance);
     thecorneru = zeros(FFlt,1,3)
@@ -803,7 +803,7 @@ try rm(AE.filename) catch end
     numberdofs!(u)
 
     eL1femm =  FEMMBase(IntegDomain(subset(bdryfes,topbfl), TriRule(3)))
-    # function pfun(forceout::FVec{T}, XYZ::FFltMat, tangents::FFltMat, fe_label::FInt) where {T}
+    # function pfun(forceout::FVec{T}, XYZ::FFltMat, tangents::FFltMat, feid::FInt) where {T}
     #     forceout .=  [0.0, 0.0, -qmagn]
     #     return forceout
     # end
@@ -822,9 +822,8 @@ try rm(AE.filename) catch end
     femm = associategeometry!(femm, geom)
 
     K = stiffness(femm, geom, u)
-    K = cholesky(K)
-    U = K\(F2)
-    scattersysvec!(u, U[:])
+
+    u = solve!(u, K, F2)
 
     nl = selectnode(fens, box=[Ai,Ai,0,0,Thickness,Thickness],inflate=tolerance);
     thecorneru = zeros(FFlt,1,3)

@@ -9,29 +9,29 @@ module FEMMDeforLinearIMModule
 __precompile__(true)
 
 using FinEtools.FTypesModule: FInt, FFlt, FCplxFlt, FFltVec, FIntVec, FFltMat, FIntMat, FMat, FVec, FDataDict
-import FinEtools.FENodeSetModule: FENodeSet
-import FinEtools.FESetModule: AbstractFESet, FESetH8, FESetT10, manifdim, nodesperelem, gradN!, bfun, bfundpar
-import FinEtools.IntegDomainModule: IntegDomain, integrationdata, Jacobianvolume
-import FinEtools.IntegRuleModule: GaussRule
-import FinEtoolsDeforLinear.FEMMDeforLinearBaseModule: AbstractFEMMDeforLinear
-import FinEtoolsDeforLinear.DeforModelRedModule: AbstractDeforModelRed, DeforModelRed3D
-import FinEtoolsDeforLinear.MatDeforLinearElasticModule: AbstractMatDeforLinearElastic, tangentmoduli!, update!, thermalstrain!
-import FinEtoolsDeforLinear.MatDeforElastIsoModule: MatDeforElastIso
-import FinEtools.FieldModule: ndofs, gatherdofnums!, gatherfixedvalues_asvec!, gathervalues_asvec!, gathervalues_asmat!
-import FinEtools.NodalFieldModule: NodalField
-import FinEtools.CSysModule: CSys, updatecsmat!, csmat
-import FinEtoolsDeforLinear.DeforModelRedModule: nstressstrain, nthermstrain, Blmat!, divmat, vgradmat
-import FinEtools.AssemblyModule: AbstractSysvecAssembler, AbstractSysmatAssembler, SysmatAssemblerSparseSymm, startassembly!, assemble!, makematrix!, makevector!, SysvecAssembler
+using FinEtools.FENodeSetModule: FENodeSet
+using FinEtools.FESetModule: AbstractFESet, FESetH8, FESetT10, manifdim, nodesperelem, gradN!, bfun, bfundpar
+using FinEtools.IntegDomainModule: IntegDomain, integrationdata, Jacobianvolume
+using FinEtools.IntegRuleModule: GaussRule
+using FinEtoolsDeforLinear.FEMMDeforLinearBaseModule: AbstractFEMMDeforLinear
+using FinEtools.DeforModelRedModule: AbstractDeforModelRed, DeforModelRed3D
+using FinEtoolsDeforLinear.MatDeforLinearElasticModule: AbstractMatDeforLinearElastic, tangentmoduli!, update!, thermalstrain!
+using FinEtoolsDeforLinear.MatDeforElastIsoModule: MatDeforElastIso
+using FinEtools.FieldModule: ndofs, gatherdofnums!, gatherfixedvalues_asvec!, gathervalues_asvec!, gathervalues_asmat!
+using FinEtools.NodalFieldModule: NodalField
+using FinEtools.CSysModule: CSys, updatecsmat!, csmat
+using FinEtools.DeforModelRedModule: nstressstrain, nthermstrain, blmat!, divmat, vgradmat
+using FinEtools.AssemblyModule: AbstractSysvecAssembler, AbstractSysmatAssembler, SysmatAssemblerSparseSymm, startassembly!, assemble!, makematrix!, makevector!, SysvecAssembler
 using FinEtools.MatrixUtilityModule: add_btdb_ut_only!, complete_lt!, loc!, jac!, locjac!
-import FinEtoolsDeforLinear.FEMMDeforLinearBaseModule: stiffness, nzebcloadsstiffness, mass, thermalstrainloads, inspectintegpoints
+import FinEtoolsDeforLinear.FEMMDeforLinearBaseModule: stiffness,  mass, thermalstrainloads, inspectintegpoints
 import FinEtools.FEMMBaseModule: associategeometry!
-import FinEtoolsDeforLinear.MatDeforModule: rotstressvec!
-import LinearAlgebra: mul!, Transpose, UpperTriangular
+using FinEtoolsDeforLinear.MatDeforModule: rotstressvec!
+using LinearAlgebra: mul!, Transpose, UpperTriangular
 using LinearAlgebra: Symmetric, cholesky, eigen
 At_mul_B!(C, A, B) = mul!(C, Transpose(A), B)
 A_mul_B!(C, A, B) = mul!(C, A, B)
-import LinearAlgebra: norm, qr, diag, dot, cond
-import Statistics: mean
+using LinearAlgebra: norm, qr, diag, dot, cond
+using Statistics: mean
 
 """
     FEMMDeforLinearIMH8{MR<:AbstractDeforModelRed, S<:FESetH8, F<:Function, M<:AbstractMatDeforLinearElastic} 
@@ -120,8 +120,8 @@ function imintegrationdata(nmodes, integration_rule)
     return reshape(Ns, 1, npts), reshape(gradNparams, 1, npts)
 end
 
-function imBlmat!(mr, imB, imNs, imgradN, loc0, csmat, nmodes)
-	Blmat!(mr, imB, imNs, imgradN, loc0, csmat);
+function imblmat!(mr, imB, imNs, imgradN, loc0, csmat, nmodes)
+	blmat!(mr, imB, imNs, imgradN, loc0, csmat);
 	if nmodes == 12
 		imB[1:3, 10] .= imgradN[4, 1]
 		imB[1:3, 11] .= imgradN[4, 2]
@@ -211,10 +211,10 @@ function stiffness(self::FEMMDeforLinearIMH8, assembler::A,
         	Jac = Jacobianvolume(self.integdomain, J, loc, fes.conn[i], Ns[j]);
         	At_mul_B!(csmatTJ, csmat(self.mcsys), J); # local Jacobian matrix
         	gradN!(fes, gradN, gradNparams[j], csmatTJ);
-        	Blmat!(self.mr, Bc, Ns[j], gradN, loc, csmat(self.mcsys));
+        	blmat!(self.mr, Bc, Ns[j], gradN, loc, csmat(self.mcsys));
         	B[:, 1:24] .= sqrt(Jac * w[j]) .* Bc
             gradN!(fes, imgradN, imgradNparams[j], csmatTJ0);
-        	imBlmat!(self.mr, imB, imNs[j], imgradN, loc0, csmat(self.mcsys), self.nmodes);
+        	imblmat!(self.mr, imB, imNs[j], imgradN, loc0, csmat(self.mcsys), self.nmodes);
         	B[:, 25:end] .= sqrt(Jac0 * w[j]) .* imB
         	add_btdb_ut_only!(elmat, B, 1.0, D, DB)
         end # Loop over quadrature points
@@ -227,63 +227,4 @@ function stiffness(self::FEMMDeforLinearIMH8, assembler::A,
     return makematrix!(assembler);
 end
 
-
-# """
-# nzebcloadsstiffness(self::AbstractFEMMDeforLinear,  assembler::A,
-#   geom::NodalField{FFlt},
-#   u::NodalField{T}) where {A<:AbstractSysvecAssembler, T<:Number}
-
-# Compute load vector for nonzero EBC for fixed displacement.
-# """
-# function nzebcloadsstiffness(self::FEMMDeforLinearIMH8,  assembler::A, geom::NodalField{FFlt}, u::NodalField{T}) where {A<:AbstractSysvecAssembler, T<:Number}
-#     fes = self.integdomain.fes
-#     npts,  Ns,  gradNparams,  w,  pc = integrationdata(self.integdomain);
-#     ecoords, dofnums, loc, J, csmatTJ, AllgradN, MeangradN, Jac, D, Dstab, B, DB, Bbar, elmat, elvec, elvecfix = _buffers2(self, geom, u, npts)
-#     realmat = self.material
-#     stabmat = self.stabilization_material
-#     tangentmoduli!(realmat, D, 0.0, 0.0, loc, 0)
-#     tangentmoduli!(stabmat, Dstab, 0.0, 0.0, loc, 0)
-#     startassembly!(assembler,  u.nfreedofs);
-#     for i = 1:count(fes) # Loop over elements
-#         gatherfixedvalues_asvec!(u, elvecfix, fes.conn[i]);# retrieve element displacement vector
-#         if norm(elvecfix, Inf) != 0.0   # Is the load nonzero?
-#             gathervalues_asmat!(geom, ecoords, fes.conn[i]);
-#             # NOTE: the coordinate system should be evaluated at a single point within the
-#             # element in order for the derivatives to be consistent at all quadrature points
-#             loc = centroid!(self,  loc, ecoords)
-#             updatecsmat!(self.mcsys, loc, J, fes.label[i]);
-#             vol = 0.0; # volume of the element
-#             fill!(MeangradN, 0.0) # mean basis function gradients
-#             for j = 1:npts # Loop over quadrature points
-#                 jac!(J, ecoords, gradNparams[j])
-#                 Jac[j] = Jacobianvolume(self.integdomain, J, loc, fes.conn[i], Ns[j]);
-#                 At_mul_B!(csmatTJ, csmat(self.mcsys), J); # local Jacobian matrix
-#                 gradN!(fes, AllgradN[j], gradNparams[j], csmatTJ);
-#                 dvol = Jac[j]*w[j]
-#                 MeangradN .= MeangradN .+ AllgradN[j]*dvol
-#                 vol = vol + dvol
-#             end # Loop over quadrature points
-#             MeangradN .= MeangradN/vol
-#             Blmat!(self.mr, Bbar, Ns[1], MeangradN, loc, csmat(self.mcsys));
-#             fill!(elmat,  0.0); # Initialize element matrix
-#             add_btdb_ut_only!(elmat, Bbar, vol, D, DB)
-#             add_btdb_ut_only!(elmat, Bbar, -self.phis[i]*vol, Dstab, DB)
-#             for j = 1:npts # Loop over quadrature points
-#                 Blmat!(self.mr, B, Ns[j], AllgradN[j], loc, csmat(self.mcsys));
-#                 add_btdb_ut_only!(elmat, B, self.phis[i]*Jac[j]*w[j], Dstab, DB)
-#             end # Loop over quadrature points
-#             complete_lt!(elmat)
-#             gatherdofnums!(u, dofnums, fes.conn[i]); # retrieve degrees of freedom
-#             A_mul_B!(elvec, elmat, elvecfix)
-#             assemble!(assembler,  -elvec,  dofnums); # assemble element load vector
-#         end
-#     end # Loop over elements
-#     return makevector!(assembler);
-# end
-
-# function nzebcloadsstiffness(self::FEMMDeforLinearIMH8, geom::NodalField{FFlt}, u::NodalField{T}) where {T<:Number}
-#     assembler = SysvecAssembler()
-#     return  nzebcloadsstiffness(self, assembler, geom, u);
-# end
-
-end
+end # module

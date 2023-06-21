@@ -1,11 +1,12 @@
 
 module mfiber_reinf_cant_yn_strong_Abaqus
 using FinEtools
+using FinEtools.AlgoBaseModule: solve!, matrix_blocked, vector_blocked
 using FinEtoolsDeforLinear
 using FinEtoolsDeforLinear.AlgoDeforLinearModule
 using Test
-import LinearAlgebra: Symmetric, cholesky
-import Statistics: mean
+using LinearAlgebra: Symmetric, cholesky
+using Statistics: mean
 function test()
 
 
@@ -77,7 +78,7 @@ material = MatDeforElastOrtho(MR,
 csmat = zeros(3, 3)
 rotmat3!(csmat, -45.0/180.0*pi*[0,1,0])
 
-function updatecs!(csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, fe_label::FInt)
+function updatecs!(csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt)
   copyto!(csmatout, csmat)
 end
 
@@ -97,8 +98,9 @@ applyebc!(u)
 # S = connectionmatrix(femm.femmbase, nnodes(geom))
 numberdofs!(u)
 
-function getshr!(forceout::FFltVec, XYZ::FFltMat, tangents::FFltMat, fe_label::FInt)
+function getshr!(forceout::FFltVec, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt)
   copyto!(forceout, q0*[0.0; 0.0; 1.0])
+  return forceout
 end
 
 Tracfemm = FEMMBase(IntegDomain(subset(bfes, sshearl), GaussRule(2, 3)))
@@ -109,14 +111,18 @@ fi = ForceIntensity(FFlt, 3, getshr!);
 # println("Traction loads")
 F =  distribloads(Tracfemm, geom, u, fi, 2);
 
+K_ff, K_fd = matrix_blocked(K, nfreedofs(u), nfreedofs(u))[(:ff, :fd)]
+
+F_f = vector_blocked(F, nfreedofs(u))[:f]
+U_d = gathersysvec(u, :d)
+
 # println("Factorization")
-K = (K + K')/2;
-K = cholesky(Symmetric(K))
+factor = cholesky(Symmetric(K_ff))
 # println("U = K\\F")
-U = K\F
+U_f = factor\F_f
 # # println("U = cg(K, F; tol=1e-3, maxiter=2000)")
 # U = cg(K, F; tol=1e-3, maxiter=2000)
-scattersysvec!(u, U[:])
+scattersysvec!(u, U_f)
 
 Tipl = selectnode(fens, box=[a a b b 0. 0.], inflate=tolerance)
 utip = mean(u.values[Tipl, 3])
@@ -166,9 +172,10 @@ mfiber_reinf_cant_yn_strong_Abaqus.test()
 
 module mmorthoballoonpenaltymm
 using FinEtools
+using FinEtools.AlgoBaseModule: solve!, matrix_blocked, vector_blocked
 using FinEtoolsDeforLinear
 using Test
-import LinearAlgebra: norm, cholesky, cross
+using LinearAlgebra: norm, cholesky, cross, Symmetric
 function test()
 
     # Orthotropic balloon inflation, axially symmetric model
@@ -217,7 +224,7 @@ function test()
     # direction.
 
     el1femm =  FEMMBase(IntegDomain(subset(bdryfes,icl), GaussRule(1, 3), true))
-    function pressureloading!(forceout::FFltVec, XYZ::FFltMat, tangents::FFltMat, fe_label::FInt)
+    function pressureloading!(forceout::FFltVec, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt)
       copyto!(forceout, XYZ/norm(XYZ)*p)
       return forceout
     end
@@ -241,6 +248,7 @@ function test()
     H = surfacenormalspringstiffness(xsfemm,  geom, u, springcoefficient, SurfaceNormal(3)) +
         surfacenormalspringstiffness(ysfemm,  geom, u, springcoefficient, SurfaceNormal(3))
     K =stiffness(femm, geom, u)
+
     U=  (K + H)\(F2)
     scattersysvec!(u,U[:])
 
@@ -264,11 +272,12 @@ mmorthoballoonpenaltymm.test()
 
 module mbar1
 using FinEtools
+using FinEtools.AlgoBaseModule: solve!, matrix_blocked, vector_blocked
 using FinEtoolsDeforLinear
 using FinEtools.FENodeSetModule
 using FinEtools.MeshExportModule
 using Test
-import LinearAlgebra: norm, cholesky, cross
+using LinearAlgebra: norm, cholesky, cross, Symmetric
 function test()
     Area = 2.0*phun("in^2")
     E = 30e6*phun("psi") # Young's modulus
@@ -336,11 +345,12 @@ mbar1.test()
 
 module mbar2
 using FinEtools
+using FinEtools.AlgoBaseModule: solve!, matrix_blocked, vector_blocked
 using FinEtoolsDeforLinear
 using FinEtools.FENodeSetModule
 using FinEtools.MeshExportModule
 using Test
-import LinearAlgebra: norm, cholesky, cross
+using LinearAlgebra: norm, cholesky, cross, Symmetric
 function test()
     Area = 1.5
     E = 1.0e7 # Young's modulus
@@ -387,9 +397,15 @@ function test()
     lfemm = FEMMBase(IntegDomain(FESetP1(reshape([6], 1,1)), PointRule()))
     F = F + distribloads(lfemm,  geom,  u,  fi,  3);
 
-    K = cholesky(K)
-    U=  K\F
-    scattersysvec!(u, U[:])
+    K_ff, K_fd = matrix_blocked(K, nfreedofs(u), nfreedofs(u))[(:ff, :fd)]
+
+    F_f = vector_blocked(F, nfreedofs(u))[:f]
+    U_d = gathersysvec(u, :d)
+
+    factor = cholesky(Symmetric(K_ff))
+    U_f = factor\F_f
+    scattersysvec!(u, U_f)
+
     @test norm(u.values  - [ 0.0         0.0
                               0.0         0.0
                               0.0213333   0.0408366
@@ -417,10 +433,11 @@ mbar2.test()
 
 module mmmLE10expiAbaqus2mmmm
 using FinEtools
+using FinEtools.AlgoBaseModule: solve!, matrix_blocked, vector_blocked
 using FinEtoolsDeforLinear
 using FinEtools.MeshExportModule
 using Test
-import LinearAlgebra: norm, cholesky, cross
+using LinearAlgebra: norm, cholesky, cross, Symmetric
 function test()
 
 
@@ -490,7 +507,7 @@ function test()
     numberdofs!(u)
 
     el1femm =  FEMMBase(IntegDomain(subset(bdryfes,topbfl), GaussRule(2, 2)))
-    function pfun(forceout::FVec{T}, XYZ::FFltMat, tangents::FFltMat, fe_label::FInt) where {T}
+    function pfun(forceout::FVec{T}, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) where {T}
         forceout .=  [0.0, 0.0, -qmagn]
         return forceout
     end
@@ -509,9 +526,15 @@ function test()
     femm = associategeometry!(femm, geom)
 
     K = stiffness(femm, geom, u)
-    K = cholesky(K)
-    U = K\(F2)
-    scattersysvec!(u, U[:])
+
+    K_ff, K_fd = matrix_blocked(K, nfreedofs(u), nfreedofs(u))[(:ff, :fd)]
+
+    F_f = vector_blocked(F2, nfreedofs(u))[:f]
+    U_d = gathersysvec(u, :d)
+
+    factor = cholesky(Symmetric(K_ff))
+    U_f = factor\F_f
+    scattersysvec!(u, U_f)
 
     nl = selectnode(fens, box=[Ai,Ai,0,0,Thickness,Thickness],inflate=tolerance);
     thecorneru = zeros(FFlt,1,3)
@@ -558,7 +581,7 @@ function test()
     ELASTIC(AE, E, nu)
     SECTION_CONTROLS(AE, "Hourglassctl", "HOURGLASS=ENHANCED")
     STEP_PERTURBATION_STATIC(AE)
-    BOUNDARY(AE, "ASSEM1.INSTNC1", u.is_fixed, u.fixed_values)
+    BOUNDARY(AE, "ASSEM1.INSTNC1", u.is_fixed, u.values)
     DLOAD(AE, "ASSEM1.INSTNC1.TractionElements", vec([0.0, 0.0, -qmagn]))
     END_STEP(AE)
     close(AE)
@@ -573,13 +596,14 @@ mmmLE10expiAbaqus2mmmm.test()
 
 module mplate_w_hole_RECT_MSH8m
 using FinEtools
+using FinEtools.AlgoBaseModule: solve!, matrix_blocked, vector_blocked
 using FinEtoolsDeforLinear
 using FinEtools.MeshExportModule
 # using DataFrames
 # using CSV
 using Test
-import LinearAlgebra: norm, cholesky, cross
-import Statistics: mean
+using LinearAlgebra: norm, cholesky, cross, Symmetric
+using Statistics: mean
 function test()
     E = 210000*phun("MEGA*PA");# 210e3 MPa
     nu = 0.3;
@@ -658,7 +682,7 @@ function test()
             bdryfes = meshboundary(fes);
             ixl = selectelem(fens, bdryfes, plane=[1.0, 0.0, 0.0, Re], thickness=tolerance);
             elxfemm =  FEMMBase(IntegDomain(subset(bdryfes,ixl), GaussRule(2, 2)))
-            function pfunx(forceout::FVec{T}, XYZ::FFltMat, tangents::FFltMat, fe_label::FInt) where {T}
+            function pfunx(forceout::FVec{T}, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) where {T}
                 forceout[1] = sigmaxx(XYZ)
                 forceout[2] = sigmaxy(XYZ)
                 forceout[3] = 0.0
@@ -668,7 +692,7 @@ function test()
             Fx = distribloads(elxfemm, geom, u, fi, 2);
             iyl = selectelem(fens, bdryfes, plane=[0.0, 1.0, 0.0, Re], thickness=tolerance);
             elyfemm =  FEMMBase(IntegDomain(subset(bdryfes,iyl), GaussRule(2, 2)))
-            function pfuny(forceout::FVec{T}, XYZ::FFltMat, tangents::FFltMat, fe_label::FInt) where {T}
+            function pfuny(forceout::FVec{T}, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) where {T}
                 forceout[1] = -sigmaxy(XYZ)
                 forceout[2] = sigmayy(XYZ)
                 forceout[3] = 0.0
@@ -687,9 +711,15 @@ function test()
             femm = associategeometry!(femm, geom)
 
             K = stiffness(femm, geom, u)
-            K = cholesky(K)
-            U = K\(Fx + Fy)
-            scattersysvec!(u, U[:])
+
+            K_ff, K_fd = matrix_blocked(K, nfreedofs(u), nfreedofs(u))[(:ff, :fd)]
+
+            F_f = vector_blocked((Fx + Fy), nfreedofs(u))[:f]
+            U_d = gathersysvec(u, :d)
+
+            factor = cholesky(Symmetric(K_ff))
+            U_f = factor\F_f
+            scattersysvec!(u, U_f)
 
             nlA = selectnode(fens, box=[Ri, Ri, 0.0, 0.0, 0.0, Thickness], inflate=tolerance);
             nlB = selectnode(fens, box=[0.0, 0.0, Ri, Ri, 0.0, Thickness], inflate=tolerance);
@@ -737,14 +767,15 @@ mplate_w_hole_RECT_MSH8m.test()
 
 module mplate_w_hole_RECT_H20m
 using FinEtools
+using FinEtools.AlgoBaseModule: solve!, matrix_blocked, vector_blocked
 using FinEtoolsDeforLinear
 using FinEtools.MeshExportModule
 using FinEtools.MeshImportModule: import_ABAQUS
 # using DataFrames
 # using CSV
 using Test
-import LinearAlgebra: norm, cholesky, cross
-import Statistics: mean
+using LinearAlgebra: norm, cholesky, cross, Symmetric
+using Statistics: mean
 function test()
     E = 210000*phun("MEGA*PA");# 210e3 MPa
     nu = 0.3;
@@ -836,7 +867,7 @@ function test()
             # ixl = selectelem(fens, bdryfes, plane=[1.0, 0.0, 0.0, Re], thickness=tolerance);
             ixl = selectelem(fens, bdryfes, box=[Re, Re, -Inf, +Inf, -Inf, +Inf], inflate = tolerance);
             elxfemm =  FEMMBase(IntegDomain(subset(bdryfes,ixl), GaussRule(2, 2)))
-            function pfunx(forceout::FVec{T}, XYZ::FFltMat, tangents::FFltMat, fe_label::FInt) where {T}
+            function pfunx(forceout::FVec{T}, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) where {T}
                 forceout[1] = sigmaxx(XYZ)
                 forceout[2] = sigmaxy(XYZ)
                 forceout[3] = 0.0
@@ -847,7 +878,7 @@ function test()
             # iyl = selectelem(fens, bdryfes, plane=[0.0, 1.0, 0.0, Re], thickness=tolerance);
             iyl = selectelem(fens, bdryfes, box=[-Inf, +Inf, Re, Re, -Inf, +Inf], inflate = tolerance);
             elyfemm =  FEMMBase(IntegDomain(subset(bdryfes,iyl), GaussRule(2, 2)))
-            function pfuny(forceout::FVec{T}, XYZ::FFltMat, tangents::FFltMat, fe_label::FInt) where {T}
+            function pfuny(forceout::FVec{T}, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) where {T}
                 forceout[1] = sigmaxy(XYZ)
                 forceout[2] = sigmayy(XYZ)
                 forceout[3] = 0.0
@@ -866,11 +897,18 @@ function test()
             femm = associategeometry!(femm, geom)
 
             K = stiffness(femm, geom, u)
-            K = cholesky(K)
-            U = K\(Fx + Fy)
-            scattersysvec!(u, U[:])
+
+            K_ff, K_fd = matrix_blocked(K, nfreedofs(u), nfreedofs(u))[(:ff, :fd)]
+
+            F_f = vector_blocked((Fx + Fy), nfreedofs(u))[:f]
+            U_d = gathersysvec(u, :d)
+
+            factor = cholesky(Symmetric(K_ff))
+            U_f = factor\F_f
+            scattersysvec!(u, U_f)
+
             # println("oof load = $(norm(Fx + Fy, 2))")
-            @test abs(norm(Fx + Fy, 2) - 883.437848042617) < 1.0e-2
+            @test abs(norm(F_f, 2) - 883.437848042617) < 1.0e-2
 
             nlA = selectnode(fens, box=[Ri, Ri, 0.0, 0.0, 0.0, 00.0], inflate=tolerance);
             pointu = zeros(FFlt,length(nlA),3)
@@ -930,11 +968,12 @@ mplate_w_hole_RECT_H20m.test()
 
 module mplate_w_hole_MST10m
 using FinEtools
+using FinEtools.AlgoBaseModule: solve!, matrix_blocked, vector_blocked
 using FinEtoolsDeforLinear
 using FinEtools.MeshExportModule
 using Test
-import LinearAlgebra: norm, cholesky, cross
-import Statistics: mean
+using LinearAlgebra: norm, cholesky, cross, Symmetric
+using Statistics: mean
 function test()
     E = 2.4*phun("MEGA*PA");# 210e3 MPa
     nu = 0.49995;
@@ -1021,7 +1060,7 @@ function test()
             applyebc!(u)
             numberdofs!(u)
             el1femm =  FEMMBase(IntegDomain(subset(bdryfes,icl), SimplexRule(2, 3)))
-            function pfun(forceout::FVec{T}, XYZ::FFltMat, tangents::FFltMat, fe_label::FInt) where {T}
+            function pfun(forceout::FVec{T}, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) where {T}
                 local r = sqrt(XYZ[1]^2 + XYZ[2]^2)
                 nx = XYZ[1]/r; ny = XYZ[2]/r
                 # local sx, sy, txy
@@ -1049,9 +1088,18 @@ function test()
             femm = associategeometry!(femm, geom)
 
             K = stiffness(femm, geom, u)
-            K = cholesky(K)
-            U = K\(F2)
-            scattersysvec!(u, U[:])
+
+            K_ff, K_fd = matrix_blocked(K, nfreedofs(u), nfreedofs(u))[(:ff, :fd)]
+            F_f = vector_blocked(F2, nfreedofs(u))[:f]
+            U_d = gathersysvec(u, :d)
+
+            # println("Factorization")
+            factor = cholesky(Symmetric(K_ff))
+            # println("U = K\\F")
+            U_f = factor\F_f
+            # # println("U = cg(K, F; tol=1e-3, maxiter=2000)")
+            # U = cg(K, F; tol=1e-3, maxiter=2000)
+            scattersysvec!(u, U_f)
 
             nlA = selectnode(fens, box=[Ri, Ri, 0.0, 0.0, 0.0, Thickness], inflate=tolerance);
             nlB = selectnode(fens, box=[0.0, 0.0, Ri, Ri, 0.0, Thickness], inflate=tolerance);

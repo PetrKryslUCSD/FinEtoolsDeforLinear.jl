@@ -13,7 +13,7 @@ import FinEtools.FENodeSetModule: FENodeSet
 import FinEtools.FESetModule: AbstractFESet, manifdim
 import FinEtools.IntegDomainModule: IntegDomain
 import FinEtoolsDeforLinear.FEMMDeforLinearBaseModule: AbstractFEMMDeforLinear
-import FinEtoolsDeforLinear.DeforModelRedModule: AbstractDeforModelRed, DeforModelRed2DAxisymm
+import FinEtools.DeforModelRedModule: AbstractDeforModelRed, DeforModelRed2DAxisymm
 import FinEtoolsDeforLinear.MatDeforLinearElasticModule: AbstractMatDeforLinearElastic
 import FinEtools.CSysModule: CSys
 

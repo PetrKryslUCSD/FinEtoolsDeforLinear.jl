@@ -8,13 +8,13 @@ module MatDeforElastOrthoModule
 __precompile__(true)
 
 using FinEtools.FTypesModule: FInt, FFlt, FCplxFlt, FFltVec, FIntVec, FFltMat, FIntMat, FMat, FVec, FDataDict
-import FinEtoolsDeforLinear.DeforModelRedModule: AbstractDeforModelRed, DeforModelRed3D, DeforModelRed2DStrain, DeforModelRed2DStress, DeforModelRed2DAxisymm, DeforModelRed1D, nstressstrain, nthermstrain
-import FinEtoolsDeforLinear.MatDeforModule: AbstractMatDefor, stressvtot!
-import FinEtoolsDeforLinear.MatDeforLinearElasticModule: AbstractMatDeforLinearElastic
-import LinearAlgebra: mul!
+using FinEtools.DeforModelRedModule: AbstractDeforModelRed, DeforModelRed3D, DeforModelRed2DStrain, DeforModelRed2DStress, DeforModelRed2DAxisymm, DeforModelRed1D, nstressstrain, nthermstrain
+using FinEtoolsDeforLinear.MatDeforModule: AbstractMatDefor, stressvtot!
+using FinEtoolsDeforLinear.MatDeforLinearElasticModule: AbstractMatDeforLinearElastic
+using LinearAlgebra: mul!
 At_mul_B!(C, A, B) = mul!(C, Transpose(A), B)
 A_mul_B!(C, A, B) = mul!(C, A, B)
-import LinearAlgebra: eigen, eigvals, rank, dot
+using LinearAlgebra: eigen, eigvals, rank, dot
 
 """
     MatDeforElastOrtho{MR<:AbstractDeforModelRed,  MTAN<:Function, MUPD<:Function, MTHS<:Function} <: AbstractMatDeforLinearElastic

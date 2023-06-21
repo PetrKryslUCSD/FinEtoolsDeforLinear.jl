@@ -1,6 +1,7 @@
 
 module mmLE11NAFEMSQ8algo2
 using FinEtools
+using FinEtools.AlgoBaseModule: solve!, matrix_blocked, vector_blocked
 using FinEtoolsDeforLinear
 using FinEtoolsDeforLinear.AlgoDeforLinearModule: linearstatics, exportdeformation,
 exportstress, exportstresselementwise
@@ -132,6 +133,7 @@ mmLE11NAFEMSQ8algo2.test()
 
 module sscratch_06112017
 using FinEtools
+using FinEtools.AlgoBaseModule: solve!, matrix_blocked, vector_blocked
 using FinEtoolsDeforLinear
 using Test
 import Statistics: mean
@@ -389,6 +391,7 @@ sscratch_06112017.test()
 module cookstress_1
 using Test
 using FinEtools
+using FinEtools.AlgoBaseModule: solve!, matrix_blocked, vector_blocked
 using FinEtoolsDeforLinear
 using FinEtools.MeshExportModule
 import LinearAlgebra: norm, cholesky, cross
@@ -428,16 +431,18 @@ function test()
   fi = ForceIntensity([0.0, +magn]);
   F2 = distribloads(el1femm,  geom,  u,  fi,  2);
 
-
   MR = DeforModelRed2DStress
   material = MatDeforElastIso(MR,  0.0, E, nu, 0.0)
 
   femm = FEMMDeforLinear(MR, IntegDomain(fes,  TriRule(1)),  material)
 
   K = stiffness(femm,  geom,  u)
-  K = cholesky(K)
-  U=  K\(F2)
-  scattersysvec!(u, U[:])
+
+  K_ff, K_fd = matrix_blocked(K, nfreedofs(u), nfreedofs(u))[(:ff, :fd)]
+  F_f = vector_blocked(F2, nfreedofs(u))[:f]
+
+  U_f =  K_ff\(F_f)
+  scattersysvec!(u, U_f)
 
   nl = selectnode(fens,  box=[Mid_edge[1], Mid_edge[1], Mid_edge[2], Mid_edge[2]], inflate=tolerance);
   theutip = zeros(FFlt, 1, 2)
@@ -458,6 +463,7 @@ cookstress_1.test()
 module scratch1_06092017
 
 using FinEtools
+using FinEtools.AlgoBaseModule: solve!, matrix_blocked, vector_blocked
 using FinEtoolsDeforLinear
 using Test
 
@@ -656,6 +662,7 @@ scratch1_06092017.test()
 module scratch2_06102017
 
 using FinEtools
+using FinEtools.AlgoBaseModule: solve!, matrix_blocked, vector_blocked
 using FinEtoolsDeforLinear
 using Test
 import Arpack: eigs
@@ -713,6 +720,7 @@ scratch2_06102017.test()
 module mxxxx1_06102017
 
 using FinEtools
+using FinEtools.AlgoBaseModule: solve!, matrix_blocked, vector_blocked
 using FinEtoolsDeforLinear
 using FinEtoolsDeforLinear.AlgoDeforLinearModule
 import Statistics: mean
@@ -845,6 +853,7 @@ mxxxx1_06102017.test()
 
 module mx_06112017
 using FinEtools
+using FinEtools.AlgoBaseModule: solve!, matrix_blocked, vector_blocked
 using FinEtoolsDeforLinear
 using Test
 import Statistics: mean
@@ -1051,8 +1060,14 @@ function test()
 
   ##
   # And  the solution for the free degrees of freedom is obtained.
-  U=  (K+H)\F
-  scattersysvec!(u, U[:])
+
+  K_ff, K_fd = matrix_blocked(K, nfreedofs(u), nfreedofs(u))[(:ff, :fd)]
+  H_ff, H_fd = matrix_blocked(H, nfreedofs(u), nfreedofs(u))[(:ff, :fd)]
+  F_f = vector_blocked(F, nfreedofs(u))[:f]
+  U_d = gathersysvec(u, :d)
+
+  U_f =  (K_ff+H_ff)\F_f
+  scattersysvec!(u, U_f)
 
 
   ##
@@ -1104,6 +1119,7 @@ mx_06112017.test()
 module my_06112017
 
 using FinEtools
+using FinEtools.AlgoBaseModule: solve!, matrix_blocked, vector_blocked
 using FinEtoolsDeforLinear
 using Test
 function test()
@@ -1184,8 +1200,12 @@ function test()
   K  = stiffness(femm, geom, u)
   F  =  thermalstrainloads(femm, geom, u, dT)
   #K = cholesky(K)
-  U =   K\F
-  scattersysvec!(u, U[:])
+
+  K_ff, K_fd = matrix_blocked(K, nfreedofs(u), nfreedofs(u))[(:ff, :fd)]
+  F_f = vector_blocked(F, nfreedofs(u))[:f]
+
+  U_f =  (K_ff)\F_f
+  scattersysvec!(u, U_f)
 
   nA  = selectnode(fens,box = FFlt[1.0  1.0 0.0 0.0], inflate = tolerance);
 

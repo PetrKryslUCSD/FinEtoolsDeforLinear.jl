@@ -56,6 +56,7 @@ mbaruniax2.test()
 
 module mTEST13H_in_fluid
 using FinEtools
+using FinEtools.AlgoBaseModule: matrix_blocked, vector_blocked
 using FinEtoolsDeforLinear
 using LinearAlgebra
 using Arpack
@@ -159,18 +160,27 @@ function TEST13H_hva()
     bdryfes = meshboundary(fes)
     topbfl = selectelem(fens, bdryfes, facing=true, direction=[0.0 0.0 1.0])
     el1femm =  FEMMBase(IntegDomain(subset(bdryfes,topbfl), GaussRule(2,2)))
-    function pfun(forceout::FVec{T}, XYZ::FFltMat, tangents::FFltMat, fe_label::FInt) where {T}
+    function pfun(forceout::FVec{T}, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) where {T}
         forceout .=  [0.0, 0.0, -qmagn]
         return forceout
     end
     fi = ForceIntensity(FFlt, 3, pfun);
     F = distribloads(el1femm, geom, u, fi, 2);
     
-    U1 = zeros(FCplxFlt, u.nfreedofs, length(frequencies))
+
+    K_ff = matrix_blocked(K, nfreedofs(u), nfreedofs(u))[:ff]
+    M_ff = matrix_blocked(M, nfreedofs(u), nfreedofs(u))[:ff]
+    D_ff = matrix_blocked(D, nfreedofs(u), nfreedofs(u))[:ff]
+    C_ff = matrix_blocked(C, nfreedofs(u), nfreedofs(u))[:ff]
+
+    F_f = vector_blocked(F, nfreedofs(u))[:f]
+    U_d = gathersysvec(u, :d)
+
+    U1 = zeros(FCplxFlt, nfreedofs(u), length(frequencies))
     for k = 1:length(frequencies)
         frequency = frequencies[k];
         omega = 2*pi*frequency;
-        U1[:, k] = (-omega^2*M + 1im*omega*(C+D) + K)\F;
+        U1[:, k] = (-omega^2*M_ff + 1im*omega*(C_ff+D_ff) + K_ff)\F_f;
     end
     
     midpoint = selectnode(fens, box=[L/2 L/2 L/2 L/2 0 0], inflate=tolerance);
@@ -196,6 +206,7 @@ end # module
 
 module mdistorted_block_infsup1
 using FinEtools
+using FinEtools.AlgoBaseModule: matrix_blocked, vector_blocked
 using FinEtoolsDeforLinear
 using FinEtoolsDeforLinear.AlgoDeforLinearModule
 using FinEtools.MeshExportModule
@@ -249,7 +260,11 @@ function distorted_block_infsup_T4()
         femm  =  FEMMDeforLinear(MR, IntegDomain(fes, TetRule(1)), material)
         Sh = infsup_sh(femm, geom, u);
 
-        lambda, modes = eigen(Matrix(Gh), Matrix(Sh));
+
+        G_ff = matrix_blocked(Gh, nfreedofs(u), nfreedofs(u))[:ff]
+        S_ff = matrix_blocked(Sh, nfreedofs(u), nfreedofs(u))[:ff]
+
+        lambda, modes = eigen(Matrix(G_ff), Matrix(S_ff));
 
         # @show lambda
         abslambda = real.(filter(y -> !isnan(y), lambda));

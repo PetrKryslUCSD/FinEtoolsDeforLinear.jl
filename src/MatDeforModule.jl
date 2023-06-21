@@ -8,8 +8,8 @@ module MatDeforModule
 __precompile__(true)
 
 using FinEtools.FTypesModule: FInt, FFlt, FCplxFlt, FFltVec, FIntVec, FFltMat, FIntMat, FMat, FVec, FDataDict
-import FinEtoolsDeforLinear.DeforModelRedModule: DeforModelRed3D, DeforModelRed2DStrain, DeforModelRed2DStress, DeforModelRed2DAxisymm, DeforModelRed1D
-import FinEtools.MatModule: AbstractMat
+using FinEtools.DeforModelRedModule: DeforModelRed3D, DeforModelRed2DStrain, DeforModelRed2DStress, DeforModelRed2DAxisymm, DeforModelRed1D
+using FinEtools.MatModule: AbstractMat
 using LinearAlgebra
 
 _RotationMatrix = Union{Array{T, 2}, Transpose{T, Array{T, 2}}} where {T}

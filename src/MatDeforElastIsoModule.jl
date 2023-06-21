@@ -3,13 +3,13 @@ module MatDeforElastIsoModule
 __precompile__(true)
 
 using FinEtools.FTypesModule: FInt, FFlt, FCplxFlt, FFltVec, FIntVec, FFltMat, FIntMat, FMat, FVec, FDataDict
-import FinEtoolsDeforLinear.DeforModelRedModule: AbstractDeforModelRed, DeforModelRed3D, DeforModelRed2DStrain, DeforModelRed2DStress, DeforModelRed2DAxisymm, DeforModelRed1DStrain, DeforModelRed1DStress, nstressstrain, nthermstrain
-import FinEtoolsDeforLinear.MatDeforModule: AbstractMatDefor, stressvtot!
-import FinEtoolsDeforLinear.MatDeforLinearElasticModule: AbstractMatDeforLinearElastic
-import LinearAlgebra: Transpose, Diagonal, mul!
+using FinEtools.DeforModelRedModule: AbstractDeforModelRed, DeforModelRed3D, DeforModelRed2DStrain, DeforModelRed2DStress, DeforModelRed2DAxisymm, DeforModelRed1DStrain, DeforModelRed1DStress, nstressstrain, nthermstrain
+using FinEtoolsDeforLinear.MatDeforModule: AbstractMatDefor, stressvtot!
+using FinEtoolsDeforLinear.MatDeforLinearElasticModule: AbstractMatDeforLinearElastic
+using LinearAlgebra: Transpose, Diagonal, mul!
 At_mul_B!(C, A, B) = mul!(C, Transpose(A), B)
 A_mul_B!(C, A, B) = mul!(C, A, B)
-import LinearAlgebra: eigen, eigvals, norm, cholesky, cross, dot
+using LinearAlgebra: eigen, eigvals, norm, cholesky, cross, dot
 
 
 """

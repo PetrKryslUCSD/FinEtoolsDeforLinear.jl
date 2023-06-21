@@ -18,30 +18,30 @@ module FEMMDeforLinearESNICEModule
 __precompile__(true)
 
 using FinEtools.FTypesModule: FInt, FFlt, FCplxFlt, FFltVec, FIntVec, FFltMat, FIntMat, FMat, FVec, FDataDict
-import FinEtools.FENodeSetModule: FENodeSet
-import FinEtools.FESetModule: AbstractFESet, FESetH8, FESetT4, manifdim, nodesperelem, gradN!
-import FinEtools.IntegDomainModule: IntegDomain, integrationdata, Jacobianvolume
-import FinEtoolsDeforLinear.FEMMDeforLinearBaseModule: AbstractFEMMDeforLinear
-import FinEtoolsDeforLinear.DeforModelRedModule: AbstractDeforModelRed, DeforModelRed3D
-import FinEtoolsDeforLinear.MatDeforLinearElasticModule: AbstractMatDeforLinearElastic, tangentmoduli!, update!, thermalstrain!
-import FinEtoolsDeforLinear.MatDeforElastIsoModule: MatDeforElastIso
-import FinEtools.FieldModule: ndofs, gatherdofnums!, gatherfixedvalues_asvec!, gathervalues_asvec!, gathervalues_asmat!
-import FinEtools.NodalFieldModule: NodalField, nnodes
-import FinEtools.CSysModule: CSys, updatecsmat!, csmat
-import FinEtools.FENodeToFEMapModule: FENodeToFEMap
-import FinEtoolsDeforLinear.DeforModelRedModule: nstressstrain, nthermstrain, Blmat!, divmat, vgradmat
-import FinEtools.AssemblyModule: AbstractSysvecAssembler, AbstractSysmatAssembler, SysmatAssemblerSparseSymm, startassembly!, assemble!, makematrix!, makevector!, SysvecAssembler
+using FinEtools.FENodeSetModule: FENodeSet
+using FinEtools.FESetModule: AbstractFESet, FESetH8, FESetT4, manifdim, nodesperelem, gradN!
+using FinEtools.IntegDomainModule: IntegDomain, integrationdata, Jacobianvolume
+using FinEtoolsDeforLinear.FEMMDeforLinearBaseModule: AbstractFEMMDeforLinear
+using FinEtools.DeforModelRedModule: AbstractDeforModelRed, DeforModelRed3D
+using FinEtoolsDeforLinear.MatDeforLinearElasticModule: AbstractMatDeforLinearElastic, tangentmoduli!, update!, thermalstrain!
+using FinEtoolsDeforLinear.MatDeforElastIsoModule: MatDeforElastIso
+using FinEtools.FieldModule: ndofs, gatherdofnums!, gatherfixedvalues_asvec!, gathervalues_asvec!, gathervalues_asmat!, nalldofs
+using FinEtools.NodalFieldModule: NodalField, nnodes
+using FinEtools.CSysModule: CSys, updatecsmat!, csmat
+using FinEtools.FENodeToFEMapModule: FENodeToFEMap
+using FinEtools.DeforModelRedModule: nstressstrain, nthermstrain, blmat!, divmat, vgradmat
+using FinEtools.AssemblyModule: AbstractSysvecAssembler, AbstractSysmatAssembler, SysmatAssemblerSparseSymm, startassembly!, assemble!, makematrix!, makevector!, SysvecAssembler
 using FinEtools.MatrixUtilityModule: add_btdb_ut_only!, complete_lt!, loc!, jac!, locjac!, adjugate3!
-import FinEtoolsDeforLinear.FEMMDeforLinearBaseModule: stiffness, nzebcloadsstiffness, mass, thermalstrainloads, inspectintegpoints
+import FinEtoolsDeforLinear.FEMMDeforLinearBaseModule: stiffness, mass, thermalstrainloads, inspectintegpoints
 import FinEtools.FEMMBaseModule: associategeometry!
-import FinEtoolsDeforLinear.MatDeforModule: rotstressvec!
-import FinEtools.MatModule: massdensity
-import LinearAlgebra: mul!, Transpose, UpperTriangular, eigvals, det
+using FinEtoolsDeforLinear.MatDeforModule: rotstressvec!
+using FinEtools.MatModule: massdensity
+using LinearAlgebra: mul!, Transpose, UpperTriangular, eigvals, det
 At_mul_B!(C, A, B) = mul!(C, Transpose(A), B)
 A_mul_B!(C, A, B) = mul!(C, A, B)
-import LinearAlgebra: norm, qr, diag, dot, cond, I, cross
-import Statistics: mean
-import StatsBase: geomean
+using LinearAlgebra: norm, qr, diag, dot, cond, I, cross
+using Statistics: mean
+using StatsBase: geomean
 
 """
     AbstractFEMMDeforLinearESNICE <: AbstractFEMMDeforLinear
@@ -233,7 +233,7 @@ function _computenodalbfungrads(self, geom)
             np = length(p);
             lnmap[p] .= 1:np;# now store the local numbers
             c = reshape(geom.values[thisnn, :], 1, ndofs(geom))
-            updatecsmat!(self.mcsys, c, J, 0);
+            updatecsmat!(self.mcsys, c, J, nix, 0);
             gradNavg = fill(0.0, np, ndofs(geom));# preallocate strain-displacement matrix
             Vpatch = 0.0;
             for k = 1:length(gl)
@@ -389,16 +389,16 @@ function stiffness(self::AbstractFEMMDeforLinearESNICE, assembler::A, geom::Noda
     tangentmoduli!(self.material, D, 0.0, 0.0, loc, 0)
     tangentmoduli!(self.stabilization_material, Dstab, 0.0, 0.0, loc, 0)
     elmatsizeguess = 4*nodesperelem(fes)*ndofs(u)
-    startassembly!(assembler, elmatsizeguess, elmatsizeguess, nnodes(u), u.nfreedofs, u.nfreedofs);
+    startassembly!(assembler, elmatsizeguess^2 *  nnodes(u), nalldofs(u), nalldofs(u))
     for nix = 1:length(self.nodalbasisfunctiongrad)
         gradN = self.nodalbasisfunctiongrad[nix].gradN
         patchconn = self.nodalbasisfunctiongrad[nix].patchconn
         Vpatch = self.nodalbasisfunctiongrad[nix].Vpatch
         c = reshape(geom.values[nix, :], 1, ndofs(geom))
-        updatecsmat!(self.mcsys, c, J, 0);
+        updatecsmat!(self.mcsys, c, J, nix, 0);
         nd = length(patchconn) * ndofs(u)
         Bnodal = fill(0.0, size(D, 1), nd)
-        Blmat!(self.mr, Bnodal, Ns[1], gradN, c, csmat(self.mcsys));
+        blmat!(self.mr, Bnodal, Ns[1], gradN, c, csmat(self.mcsys));
         elmat = fill(0.0, nd, nd) # Can we SPEED it UP?
         DB = fill(0.0, size(D, 1), nd)
         add_btdb_ut_only!(elmat, Bnodal, Vpatch, D, DB)
@@ -411,7 +411,7 @@ function stiffness(self::AbstractFEMMDeforLinearESNICE, assembler::A, geom::Noda
     Kn = makematrix!(assembler);
     dofnums, B, DB, elmat, elvec, elvecfix, gradN = _buffers3(self, geom, u)
     # OPTIMIZATION: switch to a single-point quadrature rule here
-    startassembly!(assembler, nodesperelem(fes)*ndofs(u), nodesperelem(fes)*ndofs(u), count(fes), u.nfreedofs, u.nfreedofs);
+    startassembly!(assembler, (nodesperelem(fes)*ndofs(u))^2 * count(fes), nalldofs(u), nalldofs(u))
     for i = 1:count(fes) # Loop over elements
         gathervalues_asmat!(geom, ecoords, fes.conn[i]);
         fill!(elmat,  0.0); # Initialize element matrix
@@ -422,10 +422,10 @@ function stiffness(self::AbstractFEMMDeforLinearESNICE, assembler::A, geom::Noda
             # stabilization factor is positive; if the element is so distorted
             # that its Jacobian is non-positive, skip the following step.
             if self.ephis[i] > 0  && Jac != 0.0
-                updatecsmat!(self.mcsys, loc, J, fes.label[i]);
+                updatecsmat!(self.mcsys, loc, J, i, j)
                 At_mul_B!(csmatTJ, csmat(self.mcsys), J); # local Jacobian matrix
                 gradN!(fes, gradN, gradNparams[j], csmatTJ);
-                Blmat!(self.mr, B, Ns[j], gradN, loc, csmat(self.mcsys));
+                blmat!(self.mr, B, Ns[j], gradN, loc, csmat(self.mcsys));
                 add_btdb_ut_only!(elmat, B, self.ephis[i]*Jac*w[j], Dstab, DB)
             end
         end # Loop over quadrature points
@@ -439,23 +439,6 @@ end
 function stiffness(self::AbstractFEMMDeforLinearESNICE, geom::NodalField{FFlt},  u::NodalField{T}) where {T<:Number}
     assembler = SysmatAssemblerSparseSymm();
     return stiffness(self, assembler, geom, u);
-end
-
-
-"""
-nzebcloadsstiffness(self::AbstractFEMMDeforLinear,  assembler::A,
-  geom::NodalField{FFlt},
-  u::NodalField{T}) where {A<:AbstractSysvecAssembler, T<:Number}
-
-Compute load vector for nonzero EBC for fixed displacement.
-"""
-function nzebcloadsstiffness(self::AbstractFEMMDeforLinearESNICE,  assembler::A, geom::NodalField{FFlt}, u::NodalField{T}) where {A<:AbstractSysvecAssembler, T<:Number}
-    error("Not implemented yet")
-end
-
-function nzebcloadsstiffness(self::AbstractFEMMDeforLinearESNICE, geom::NodalField{FFlt}, u::NodalField{T}) where {T<:Number}
-    assembler = SysvecAssembler()
-    return  nzebcloadsstiffness(self, assembler, geom, u);
 end
 
 """
@@ -521,7 +504,7 @@ function inspectintegpoints(self::AbstractFEMMDeforLinearESNICE, geom::NodalFiel
     		updatecsmat!(self.mcsys, loc, J, nix);
     		nd = length(patchconn) * ndofs(u)
     		Bnodal = fill(0.0, size(D, 1), nd)
-    		Blmat!(self.mr, Bnodal, Ns[1], nodalgradN, loc, csmat(self.mcsys));
+    		blmat!(self.mr, Bnodal, Ns[1], nodalgradN, loc, csmat(self.mcsys));
     		updatecsmat!(outputcsys, loc, J, nix); # Update output coordinate system
     		# Quadrature point quantities
     		A_mul_B!(qpstrain, Bnodal, ue); # strain in material coordinates
@@ -535,10 +518,10 @@ function inspectintegpoints(self::AbstractFEMMDeforLinearESNICE, geom::NodalFiel
     		outtot .+= -self.nphis[nix].*out
     		pci = findfirst(cx -> cx == nix, fes.conn[i]);# at which node are we?
     		locjac!(loc, J, geom.values, fes.conn[i], Ns[pci], gradNparams[pci])
-    		updatecsmat!(self.mcsys, loc, J, fes.label[i]);
+    		updatecsmat!(self.mcsys, loc, J, i, j)
     		At_mul_B!(csmatTJ, csmat(self.mcsys), J); # local Jacobian matrix
     		gradN!(fes, gradN, gradNparams[pci], csmatTJ);
-    		Blmat!(self.mr, B, Ns[pci], gradN, loc, csmat(self.mcsys));
+    		blmat!(self.mr, B, Ns[pci], gradN, loc, csmat(self.mcsys));
     		gathervalues_asvec!(u, eue, fes.conn[i]);# retrieve element displacements
     		A_mul_B!(qpstrain, B, eue); # strain in material coordinates
     		out = update!(self.stabilization_material, qpstress, out, vec(qpstrain), qpthstrain, t, dt, loc, nix, quantity)

@@ -10,16 +10,16 @@ module FEMMDeforSurfaceDampingModule
 __precompile__(true)
 
 using FinEtools.FTypesModule: FInt, FFlt, FCplxFlt, FFltVec, FIntVec, FFltMat, FIntMat, FMat, FVec, FDataDict
-import FinEtools.FENodeSetModule: FENodeSet
-import FinEtools.FESetModule: AbstractFESet, nodesperelem, manifdim
-import FinEtools.IntegDomainModule: IntegDomain, integrationdata, Jacobiansurface
-import FinEtools.FieldModule: ndofs, gatherdofnums!, gathervalues_asmat!
-import FinEtools.NodalFieldModule: NodalField 
-import FinEtools.FEMMBaseModule: AbstractFEMM
-import FinEtools.AssemblyModule: AbstractSysvecAssembler, AbstractSysmatAssembler, SysmatAssemblerSparseSymm, startassembly!, assemble!, makematrix!
-import FinEtools.MatrixUtilityModule: add_nnt_ut_only!, complete_lt!, locjac!
-import FinEtools.SurfaceNormalModule: SurfaceNormal, updatenormal!
-import LinearAlgebra: norm, cross
+using FinEtools.FENodeSetModule: FENodeSet
+using FinEtools.FESetModule: AbstractFESet, nodesperelem, manifdim
+using FinEtools.IntegDomainModule: IntegDomain, integrationdata, Jacobiansurface
+using FinEtools.FieldModule: ndofs, gatherdofnums!, gathervalues_asmat!, nalldofs
+using FinEtools.NodalFieldModule: NodalField
+using FinEtools.FEMMBaseModule: AbstractFEMM
+using FinEtools.AssemblyModule: AbstractSysvecAssembler, AbstractSysmatAssembler, SysmatAssemblerSparseSymm, startassembly!, assemble!, makematrix!
+using FinEtools.MatrixUtilityModule: add_nnt_ut_only!, complete_lt!, locjac!
+using FinEtools.SurfaceNormalModule: SurfaceNormal, updatenormal!
+using LinearAlgebra: norm, cross
 
 """
     FEMMDeforSurfaceDamping{S<:AbstractFESet, F<:Function} <: AbstractFEMM
@@ -57,14 +57,14 @@ function dampingABC(self::FEMMDeforSurfaceDamping, assembler::A,
     Nn = zeros(FFlt, Cedim); # column vector
     dofnums = zeros(FInt, Cedim); # degree of freedom array -- used as a buffer
     # Prepare assembler and temporaries
-    startassembly!(assembler, Cedim, Cedim, nfes, u.nfreedofs, u.nfreedofs);
-    for i = 1:nfes # loop over finite elements
+    startassembly!(assembler, Cedim^2 * nfes, nalldofs(u), nalldofs(u))
+    for i  in eachindex(fes)  # loop over finite elements
         gathervalues_asmat!(geom, ecoords, fes.conn[i]);
         fill!(Ce, 0.0); # Initialize element damping matrix
-        for j = 1:npts # loop over quadrature points
+        for j  in  1:npts # loop over quadrature points
             locjac!(loc, J, ecoords, Ns[j], gradNparams[j])
             Jac = Jacobiansurface(self.integdomain, J, loc, fes.conn[i], Ns[j]);
-            n = updatenormal!(surfacenormal, loc, J, self.integdomain.fes.label[i]);
+            n = updatenormal!(surfacenormal, loc, J, i, j)
             for k = 1:nne
                 Nn[(k-1)*ndn+1:k*ndn] = n * Ns[j][k]
             end

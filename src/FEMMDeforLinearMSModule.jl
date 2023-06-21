@@ -9,27 +9,27 @@ module FEMMDeforLinearMSModule
 __precompile__(true)
 
 using FinEtools.FTypesModule: FInt, FFlt, FCplxFlt, FFltVec, FIntVec, FFltMat, FIntMat, FMat, FVec, FDataDict
-import FinEtools.FENodeSetModule: FENodeSet
-import FinEtools.FESetModule: AbstractFESet, FESetH8, FESetT10, manifdim, nodesperelem, gradN!
-import FinEtools.IntegDomainModule: IntegDomain, integrationdata, Jacobianvolume
-import FinEtoolsDeforLinear.FEMMDeforLinearBaseModule: AbstractFEMMDeforLinear
-import FinEtoolsDeforLinear.DeforModelRedModule: AbstractDeforModelRed, DeforModelRed3D
-import FinEtoolsDeforLinear.MatDeforLinearElasticModule: AbstractMatDeforLinearElastic, tangentmoduli!, update!, thermalstrain!
-import FinEtoolsDeforLinear.MatDeforElastIsoModule: MatDeforElastIso
-import FinEtools.FieldModule: ndofs, gatherdofnums!, gatherfixedvalues_asvec!, gathervalues_asvec!, gathervalues_asmat!
-import FinEtools.NodalFieldModule: NodalField
-import FinEtools.CSysModule: CSys, updatecsmat!, csmat
-import FinEtoolsDeforLinear.DeforModelRedModule: nstressstrain, nthermstrain, Blmat!, divmat, vgradmat
-import FinEtools.AssemblyModule: AbstractSysvecAssembler, AbstractSysmatAssembler, SysmatAssemblerSparseSymm, startassembly!, assemble!, makematrix!, makevector!, SysvecAssembler
+using FinEtools.FENodeSetModule: FENodeSet
+using FinEtools.FESetModule: AbstractFESet, FESetH8, FESetT10, manifdim, nodesperelem, gradN!
+using FinEtools.IntegDomainModule: IntegDomain, integrationdata, Jacobianvolume
+using FinEtoolsDeforLinear.FEMMDeforLinearBaseModule: AbstractFEMMDeforLinear
+using FinEtools.DeforModelRedModule: AbstractDeforModelRed, DeforModelRed3D
+using FinEtoolsDeforLinear.MatDeforLinearElasticModule: AbstractMatDeforLinearElastic, tangentmoduli!, update!, thermalstrain!
+using FinEtoolsDeforLinear.MatDeforElastIsoModule: MatDeforElastIso
+using FinEtools.FieldModule: ndofs, gatherdofnums!, gatherfixedvalues_asvec!, gathervalues_asvec!, gathervalues_asmat!, nalldofs
+using FinEtools.NodalFieldModule: NodalField
+using FinEtools.CSysModule: CSys, updatecsmat!, csmat
+using FinEtools.DeforModelRedModule: nstressstrain, nthermstrain, blmat!, divmat, vgradmat
+using FinEtools.AssemblyModule: AbstractSysvecAssembler, AbstractSysmatAssembler, SysmatAssemblerSparseSymm, startassembly!, assemble!, makematrix!, makevector!, SysvecAssembler
 using FinEtools.MatrixUtilityModule: add_btdb_ut_only!, complete_lt!, loc!, jac!, locjac!
-import FinEtoolsDeforLinear.FEMMDeforLinearBaseModule: stiffness, nzebcloadsstiffness, mass, thermalstrainloads, inspectintegpoints
+import FinEtoolsDeforLinear.FEMMDeforLinearBaseModule: stiffness, mass, thermalstrainloads, inspectintegpoints
 import FinEtools.FEMMBaseModule: associategeometry!
-import FinEtoolsDeforLinear.MatDeforModule: rotstressvec!
-import LinearAlgebra: mul!, Transpose, UpperTriangular
+using FinEtoolsDeforLinear.MatDeforModule: rotstressvec!
+using LinearAlgebra: mul!, Transpose, UpperTriangular
 At_mul_B!(C, A, B) = mul!(C, Transpose(A), B)
 A_mul_B!(C, A, B) = mul!(C, A, B)
-import LinearAlgebra: norm, qr, diag, dot, cond
-import Statistics: mean
+using LinearAlgebra: norm, qr, diag, dot, cond
+using Statistics: mean
 
 """
     AbstractFEMMDeforLinearMS <: AbstractFEMMDeforLinear
@@ -198,12 +198,12 @@ function associategeometry!(self::F,  geom::NodalField{FFlt}) where {F<:FEMMDefo
     npts,  Ns,  gradNparams,  w,  pc = integrationdata(self.integdomain);
     ecoords, loc, J, csmatTJ, gradN = _buffers1(self, geom, npts)
     self.phis = fill(zero(FFlt), count(fes))
-    for i = 1:count(fes) # Loop over elements
+    for i  in  1:count(fes) # Loop over elements
         gathervalues_asmat!(geom, ecoords, fes.conn[i]);
         # NOTE: the coordinate system should be evaluated at a single point within the
         # element in order for the derivatives to be consistent at all quadrature points
         loc = centroid!(self,  loc, ecoords)
-        updatecsmat!(self.mcsys, loc, J, fes.label[i]);
+        updatecsmat!(self.mcsys, loc, J, i, 0)
         for j = 1:npts # Loop over quadrature points
             jac!(J, ecoords, gradNparams[j])
             At_mul_B!(csmatTJ, csmat(self.mcsys), J); # local Jacobian matrix
@@ -235,7 +235,7 @@ function associategeometry!(self::F,  geom::NodalField{FFlt}) where {F<:FEMMDefo
         # NOTE: the coordinate system should be evaluated at a single point within the
         # element in order for the derivatives to be consistent at all quadrature points
         loc = centroid!(self,  loc, ecoords)
-        updatecsmat!(self.mcsys, loc, J, fes.label[i]);
+        updatecsmat!(self.mcsys, loc, J, i, 0)
         for j = 1:npts # Loop over quadrature points
             jac!(J, ecoords, gradNparams[j])
             At_mul_B!(csmatTJ, csmat(self.mcsys), J); # local Jacobian matrix
@@ -265,14 +265,13 @@ function stiffness(self::AbstractFEMMDeforLinearMS, assembler::A,
     stabmat = self.stabilization_material
     tangentmoduli!(realmat, D, 0.0, 0.0, loc, 0)
     tangentmoduli!(stabmat, Dstab, 0.0, 0.0, loc, 0)
-    startassembly!(assembler, size(elmat, 1), size(elmat, 2), count(fes),
-    u.nfreedofs, u.nfreedofs);
+    startassembly!(assembler, prod(size(elmat)) * count(fes), nalldofs(u), nalldofs(u));
     for i = 1:count(fes) # Loop over elements
         gathervalues_asmat!(geom, ecoords, fes.conn[i]);
         # NOTE: the coordinate system should be evaluated at a single point within the
         # element in order for the derivatives to be consistent at all quadrature points
         loc = centroid!(self,  loc, ecoords)
-        updatecsmat!(self.mcsys, loc, J, fes.label[i]);
+        updatecsmat!(self.mcsys, loc, J, i, 0)
         vol = 0.0; # volume of the element
         fill!(MeangradN, 0.0) # mean basis function gradients
         for j = 1:npts # Loop over quadrature points
@@ -285,12 +284,12 @@ function stiffness(self::AbstractFEMMDeforLinearMS, assembler::A,
             vol = vol + dvol
         end # Loop over quadrature points
         MeangradN .= MeangradN/vol
-        Blmat!(self.mr, Bbar, Ns[1], MeangradN, loc, csmat(self.mcsys));
+        blmat!(self.mr, Bbar, Ns[1], MeangradN, loc, csmat(self.mcsys));
         fill!(elmat,  0.0); # Initialize element matrix
         add_btdb_ut_only!(elmat, Bbar, vol, D, DB)
         add_btdb_ut_only!(elmat, Bbar, -self.phis[i]*vol, Dstab, DB)
         for j = 1:npts # Loop over quadrature points
-            Blmat!(self.mr, B, Ns[j], AllgradN[j], loc, csmat(self.mcsys));
+            blmat!(self.mr, B, Ns[j], AllgradN[j], loc, csmat(self.mcsys));
             add_btdb_ut_only!(elmat, B, self.phis[i]*Jac[j]*w[j], Dstab, DB)
         end # Loop over quadrature points
         complete_lt!(elmat)
@@ -324,7 +323,7 @@ function nzebcloadsstiffness(self::AbstractFEMMDeforLinearMS,  assembler::A, geo
             # NOTE: the coordinate system should be evaluated at a single point within the
             # element in order for the derivatives to be consistent at all quadrature points
             loc = centroid!(self,  loc, ecoords)
-            updatecsmat!(self.mcsys, loc, J, fes.label[i]);
+            updatecsmat!(self.mcsys, loc, J, i, 0)
             vol = 0.0; # volume of the element
             fill!(MeangradN, 0.0) # mean basis function gradients
             for j = 1:npts # Loop over quadrature points
@@ -337,12 +336,12 @@ function nzebcloadsstiffness(self::AbstractFEMMDeforLinearMS,  assembler::A, geo
                 vol = vol + dvol
             end # Loop over quadrature points
             MeangradN .= MeangradN/vol
-            Blmat!(self.mr, Bbar, Ns[1], MeangradN, loc, csmat(self.mcsys));
+            blmat!(self.mr, Bbar, Ns[1], MeangradN, loc, csmat(self.mcsys));
             fill!(elmat,  0.0); # Initialize element matrix
             add_btdb_ut_only!(elmat, Bbar, vol, D, DB)
             add_btdb_ut_only!(elmat, Bbar, -self.phis[i]*vol, Dstab, DB)
             for j = 1:npts # Loop over quadrature points
-                Blmat!(self.mr, B, Ns[j], AllgradN[j], loc, csmat(self.mcsys));
+                blmat!(self.mr, B, Ns[j], AllgradN[j], loc, csmat(self.mcsys));
                 add_btdb_ut_only!(elmat, B, self.phis[i]*Jac[j]*w[j], Dstab, DB)
             end # Loop over quadrature points
             complete_lt!(elmat)
@@ -395,8 +394,8 @@ function _iip_meanonly(self::AbstractFEMMDeforLinearMS, geom::NodalField{FFlt}, 
         # NOTE: the coordinate system should be evaluated at a single point within the
         # element in order for the derivatives to be consistent at all quadrature points
         loc = centroid!(self,  loc, ecoords)
-        updatecsmat!(self.mcsys, loc, J, fes.label[i]);
-        updatecsmat!(outputcsys, loc, J, fes.label[i]);
+        updatecsmat!(self.mcsys, loc, J, i, 0)
+        updatecsmat!(outputcsys, loc, J, i, 0)
         vol = 0.0; # volume of the element
         fill!(MeangradN, 0.0) # mean basis function gradients
         fill!(MeanN, 0.0) # mean basis function gradients
@@ -411,7 +410,7 @@ function _iip_meanonly(self::AbstractFEMMDeforLinearMS, geom::NodalField{FFlt}, 
             vol = vol + dvol
         end # Loop over quadrature points
         MeangradN .= MeangradN/vol
-        Blmat!(self.mr, Bbar, MeanN, MeangradN, loc, csmat(self.mcsys));
+        blmat!(self.mr, Bbar, MeanN, MeangradN, loc, csmat(self.mcsys));
         MeanN .= MeanN/vol
         qpdT = dot(vec(dTe), vec(MeanN));# Quadrature point temperature increment
         # Quadrature point quantities
@@ -466,8 +465,8 @@ function _iip_extrapmean(self::AbstractFEMMDeforLinearMS, geom::NodalField{FFlt}
         # NOTE: the coordinate system should be evaluated at a single point within the
         # element in order for the derivatives to be consistent at all quadrature points
         loc = centroid!(self,  loc, ecoords)
-        updatecsmat!(self.mcsys, loc, J, fes.label[i]);
-        updatecsmat!(outputcsys, loc, J, fes.label[i]);
+        updatecsmat!(self.mcsys, loc, J, i, 0)
+        updatecsmat!(outputcsys, loc, J, i, 0)
         vol = 0.0; # volume of the element
         fill!(MeangradN, 0.0) # mean basis function gradients
         fill!(MeanN, 0.0) # mean basis function gradients
@@ -482,7 +481,7 @@ function _iip_extrapmean(self::AbstractFEMMDeforLinearMS, geom::NodalField{FFlt}
             vol = vol + dvol
         end # Loop over quadrature points
         MeangradN .= MeangradN/vol
-        Blmat!(self.mr, Bbar, MeanN, MeangradN, loc, csmat(self.mcsys));
+        blmat!(self.mr, Bbar, MeanN, MeangradN, loc, csmat(self.mcsys));
         MeanN .= MeanN/vol
         qpdT = dot(vec(dTe), vec(MeanN));# Quadrature point temperature increment
         # Quadrature point quantities
@@ -547,8 +546,8 @@ function _iip_extraptrend(self::AbstractFEMMDeforLinearMS, geom::NodalField{FFlt
         # NOTE: the coordinate system should be evaluated at a single point within the
         # element in order for the derivatives to be consistent at all quadrature points
         loc = centroid!(self,  loc, ecoords)
-        updatecsmat!(self.mcsys, loc, J, fes.label[i]);
-        updatecsmat!(outputcsys, loc, J, fes.label[i]);
+        updatecsmat!(self.mcsys, loc, J, i, 0)
+        updatecsmat!(outputcsys, loc, J, i, 0)
         vol = 0.0; # volume of the element
         fill!(MeangradN, 0.0) # mean basis function gradients
         fill!(MeanN, 0.0) # mean basis function gradients
@@ -563,7 +562,7 @@ function _iip_extraptrend(self::AbstractFEMMDeforLinearMS, geom::NodalField{FFlt
             vol = vol + dvol
         end # Loop over quadrature points
         MeangradN .= MeangradN/vol
-        Blmat!(self.mr, Bbar, MeanN, MeangradN, loc, csmat(self.mcsys));
+        blmat!(self.mr, Bbar, MeanN, MeangradN, loc, csmat(self.mcsys));
         MeanN .= MeanN/vol
         qpdT = dot(vec(dTe), vec(MeanN));# Quadrature point temperature increment
         # Quadrature point quantities
@@ -586,7 +585,7 @@ function _iip_extraptrend(self::AbstractFEMMDeforLinearMS, geom::NodalField{FFlt
         for j = 1:npts # Loop over quadrature points (STABILIZATION material)
             At_mul_B!(sqploc, Ns[j], ecoords);# Quadrature point location
             A[j, 1:3] .= vec(sqploc - loc);
-            Blmat!(self.mr, B, Ns[j], AllgradN[j], sqploc, csmat(self.mcsys));
+            blmat!(self.mr, B, Ns[j], AllgradN[j], sqploc, csmat(self.mcsys));
             qpdT = dot(vec(dTe), vec(Ns[j]));# Quadrature point temperature increment
             #  Quadrature point quantities
             A_mul_B!(qpstrain, B, ue); # strain in material coordinates
@@ -692,7 +691,7 @@ function infsup_gh(self::AbstractFEMMDeforLinearMS, assembler::A, geom::NodalFie
 		# NOTE: the coordinate system should be evaluated at a single point within the
 		# element in order for the derivatives to be consistent at all quadrature points
 		loc = centroid!(self,  loc, ecoords)
-		updatecsmat!(self.mcsys, loc, J, fes.label[i]);
+		updatecsmat!(self.mcsys, loc, J, i, 0)
 		vol = 0.0; # volume of the element
 		fill!(MeangradN, 0.0) # mean basis function gradients
 		for j = 1:npts # Loop over quadrature points
@@ -743,7 +742,7 @@ function infsup_sh(self::AbstractFEMMDeforLinearMS, assembler::A, geom::NodalFie
 		# NOTE: the coordinate system should be evaluated at a single point within the
 		# element in order for the derivatives to be consistent at all quadrature points
 		loc = centroid!(self,  loc, ecoords)
-		updatecsmat!(self.mcsys, loc, J, fes.label[i]);
+		updatecsmat!(self.mcsys, loc, J, i, 0)
 		vol = 0.0; # volume of the element
 		fill!(MeangradN, 0.0) # mean basis function gradients
 		for j = 1:npts # Loop over quadrature points

@@ -8,21 +8,22 @@ module AlgoDeforLinearModule
 __precompile__(true)
 
 using FinEtools.FTypesModule: FInt, FFlt, FCplxFlt, FFltVec, FIntVec, FFltMat, FIntMat, FMat, FVec, FDataDict
-import FinEtools.AlgoBaseModule: dcheck!
-import Arpack: eigs
-import SparseArrays: spzeros
-import LinearAlgebra: mul!
+using FinEtools.AlgoBaseModule: dcheck!
+using Arpack: eigs
+using SparseArrays: spzeros
+using LinearAlgebra: mul!
 my_A_mul_B!(C, A, B) = mul!(C, A, B)
-import FinEtools.FieldModule: AbstractField, ndofs, setebc!, numberdofs!, applyebc!, scattersysvec!
-import FinEtools.NodalFieldModule: NodalField, nnodes
+using FinEtools.FieldModule: AbstractField, ndofs, setebc!, numberdofs!, applyebc!, scattersysvec!, nalldofs, nfreedofs, gathersysvec
+using FinEtools.NodalFieldModule: NodalField, nnodes
 import FinEtools.FEMMBaseModule: associategeometry!, distribloads, fieldfromintegpoints, elemfieldfromintegpoints
-import FinEtoolsDeforLinear.FEMMDeforLinearBaseModule: stiffness, mass, nzebcloadsstiffness, thermalstrainloads, inspectintegpoints
-import FinEtoolsDeforLinear.FEMMDeforLinearMSModule: stiffness, mass, nzebcloadsstiffness, thermalstrainloads, inspectintegpoints
-import FinEtoolsDeforLinear.DeforModelRedModule: stresscomponentmap
-import FinEtools.ForceIntensityModule: ForceIntensity
-import FinEtools.MeshModificationModule: meshboundary
-import FinEtools.MeshExportModule.VTK: vtkexportmesh
-import LinearAlgebra: eigen, qr, dot, cholesky
+using FinEtoolsDeforLinear.FEMMDeforLinearBaseModule: stiffness, mass, thermalstrainloads, inspectintegpoints
+using FinEtoolsDeforLinear.FEMMDeforLinearMSModule: stiffness, mass, thermalstrainloads, inspectintegpoints
+using FinEtools.DeforModelRedModule: stresscomponentmap
+using FinEtools.AlgoBaseModule: matrix_blocked, vector_blocked
+using FinEtools.ForceIntensityModule: ForceIntensity
+using FinEtools.MeshModificationModule: meshboundary
+using FinEtools.MeshExportModule.VTK: vtkexportmesh
+using LinearAlgebra: eigen, qr, dot, cholesky
 
 """
     AlgoDeforLinearModule.linearstatics(modeldata::FDataDict)
@@ -80,7 +81,7 @@ function linearstatics(modeldata::FDataDict)
     #      node_list = list of node numbers involved in the MPC,
     #      dof_list= numbers of degrees of freedom for the nodes above,
     #      umultipliers=multipliers for the nodes above,
-    #      penfact=the penalty factor to multiply  the constraint matrix,
+    #      pe1act=the penalty factor to multiply  the constraint matrix,
     #          The MPC looks like this: sum_i m_i u_{dof(i),node(i)} =0
     #          where m_i is the multiplier.
 
@@ -131,14 +132,15 @@ function linearstatics(modeldata::FDataDict)
     end
 
     # Number the equations
-    numberdofs!(u)           #,Renumbering_options); # NOT DONE <<<<<<<<<<<<<<<<<
+    numberdofs!(u)           #,Renumbering_options); # NOT DONE
+
     modeldata["timing"]["essential_bcs"] = time() - tstart
 
     tstart = time()
     # Initialize the heat loads vector
-    F = zeros(FFlt,u.nfreedofs);
+    F = zeros(FFlt,nalldofs(u));
     # Construct the system stiffness matrix
-    K = spzeros(u.nfreedofs,u.nfreedofs); # (all zeros, for the moment)
+    K = spzeros(nalldofs(u),nalldofs(u)); # (all zeros, for the moment)
     regions = get(()->error("Must get region list!"), modeldata, "regions")
     for i = 1:length(regions)
         region = regions[i]
@@ -148,27 +150,7 @@ function linearstatics(modeldata::FDataDict)
         femm = associategeometry!(femm, geom);
         # Add up all the conductivity matrices for all the regions
         K = K + stiffness(femm, geom, u);
-        # Loads due to the essential boundary conditions on the displacement field
-        essential_bcs = get(modeldata, "essential_bcs", nothing);
-        if (essential_bcs != nothing) # there was at least one EBC applied
-            F = F + nzebcloadsstiffness(femm, geom, u);
-        end
     end
-    modeldata["timing"]["stiffness"] = time() - tstart
-
-    # # Process the body load
-    # body_load = get(modeldata, "body_load", nothing);
-    # if (body_load  !=nothing)
-    #     for j=1:length(model_data.body_load)
-    #         body_load =model_data.body_load{j};
-    #         femm = femm_deformation_linear (struct ('material',[],...
-    #             'fes',body_load.fes,...
-    #             'integration_rule',body_load.integration_rule));
-    #         fi= force_intensity(struct('magn',body_load.force));
-    #         F = F + distrib_loads(femm, sysvec_assembler, geom, u, fi, 3);
-    #     end
-    #     clear body_load fi  femm
-    # end
 
     tstart = time()
     # Process the traction boundary condition
@@ -216,6 +198,32 @@ function linearstatics(modeldata::FDataDict)
     end
     modeldata["timing"]["temperature_change"] = time() - tstart
 
+    K_ff, K_fd = matrix_blocked(K, nfreedofs(u), nfreedofs(u))[(:ff, :fd)]
+    F_f = vector_blocked(F, nfreedofs(u))[:f]
+    U_d = gathersysvec(u, :d)
+
+    # Loads due to the essential boundary conditions on the displacement field
+    essential_bcs = get(modeldata, "essential_bcs", nothing);
+    if (essential_bcs != nothing) # there was at least one EBC applied
+        F_f = F_f - K_fd * U_d
+    end
+
+    modeldata["timing"]["stiffness"] = time() - tstart
+
+    # # Process the body load
+    # body_load = get(modeldata, "body_load", nothing);
+    # if (body_load  !=nothing)
+    #     for j=1:length(model_data.body_load)
+    #         body_load =model_data.body_load{j};
+    #         femm = femm_deformation_linear (struct ('material',[],...
+    #             'fes',body_load.fes,...
+    #             'integration_rule',body_load.integration_rule));
+    #         fi= force_intensity(struct('magn',body_load.force));
+    #         F = F + distrib_loads(femm, sysvec_assembler, geom, u, fi, 3);
+    #     end
+    #     clear body_load fi  femm
+    # end
+
     # # Process the nodal force boundary condition
     # if (isfield(model_data.boundary_conditions, 'nodal_force' ))
     #     for j=1:length(model_data.boundary_conditions.nodal_force)
@@ -238,7 +246,7 @@ function linearstatics(modeldata::FDataDict)
     #             dofnums(kx)=u.dofnums(mpc.node_list(kx),mpc.dof_list(kx));
     #         end
     #         # Now call the utility function to calculate the constraint matrix
-    #         [Kmpc,Fmpc]=apply_penalty_mpc(u.nfreedofs,dofnums,mpc.umultipliers,0.0,mpc.penfact);
+    #         [Kmpc,Fmpc]=apply_penalty_mpc(nalldofs(u),dofnums,mpc.umultipliers,0.0,mpc.penfact);
     #         K = K + Kmpc;
     #         F = F + Fmpc;
     #     end
@@ -247,11 +255,11 @@ function linearstatics(modeldata::FDataDict)
 
     tstart = time()
     # Solve the system of linear algebraic equations
-    K = cholesky(K);
-    U = K\F;
-    scattersysvec!(u, U[:])
+    U_f = K_ff\F_f;
+    scattersysvec!(u, U_f)
     modeldata["timing"]["solution"] = time() - tstart
 
+    U = gathersysvec(u, :a)
 
     # Update the model data
     setindex!(modeldata, geom, "geom");
@@ -661,10 +669,10 @@ function modal(modeldata::FDataDict)
     end
 
     # Number the equations
-    numberdofs!(u)           #,Renumbering_options); # NOT DONE <<<<<<<<<<<<<<<<<
+    numberdofs!(u)           #,Renumbering_options); # NOT DONE
 
     # Construct the system stiffness matrix
-    K = spzeros(u.nfreedofs,u.nfreedofs); # (all zeros, for the moment)
+    K = spzeros(nalldofs(u),nalldofs(u)); # (all zeros, for the moment)
     regions = get(()->error("Must get region list!"), modeldata, "regions")
     for i = 1:length(regions)
         region = regions[i]
@@ -681,7 +689,7 @@ function modal(modeldata::FDataDict)
     end
 
     # Construct the system mass matrix
-    M = spzeros(u.nfreedofs,u.nfreedofs); # (all zeros, for the moment)
+    M = spzeros(nalldofs(u),nalldofs(u)); # (all zeros, for the moment)
     regions = get(()->error("Must get region list!"), modeldata, "regions")
     for i = 1:length(regions)
         region = regions[i]
@@ -710,10 +718,13 @@ function modal(modeldata::FDataDict)
     # if ( status ~= 0 ) error('Choleski factorization failed'), end
     # clear K; # Not needed anymore
     # mAt= mA';
-    # [W,Omega]= eigs(@(bv)mAt\(mA\bv), u.nfreedofs, M, neigvs, 'SM', evopts);
+    # [W,Omega]= eigs(@(bv)mAt\(mA\bv), nalldofs(u), M, neigvs, 'SM', evopts);
     #          [W,Omega]= eigen(full(K+omega_shift*M), full(M));
 
-    d, v, nconv = eigs(K+omega_shift*M, M; nev=neigvs, which=:SM)
+    K_ff = matrix_blocked(K, nfreedofs(u), nfreedofs(u))[:ff]
+    M_ff = matrix_blocked(M, nfreedofs(u), nfreedofs(u))[:ff]
+
+    d, v, nconv = eigs(K_ff + omega_shift*M_ff, M_ff; nev=neigvs, which=:SM)
     #    Subtract the mass-shifting Angular frequency
     broadcast!(+, d, d, -omega_shift);
 
