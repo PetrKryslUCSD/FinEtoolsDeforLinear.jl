@@ -63,8 +63,9 @@ function THICK_plate_2dir_strong_MST10_conv()
             material = MatDeforElastOrtho(MR, 0.0, E1, E2, E3, nu12, nu13, nu23, G12, G13, G23, CTE1, CTE2, CTE3)
 
             # The material coordinate system function is defined as:
-            function updatecs!(csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, fe_label::FInt)
-                rotmat3!(csmatout, angles[fe_label]/180.0*pi* [0.0; 0.0; 1.0]);
+            function _updatecs!(csmatout::FFltMat, layer::FInt)
+                rotmat3!(csmatout, angles[layer]/180.0*pi* [0.0; 0.0; 1.0]);
+                csmatout
             end
 
             # The volume integrals are evaluated using this rule
@@ -74,7 +75,9 @@ function THICK_plate_2dir_strong_MST10_conv()
             regions = FDataDict[]
             for layer = 1:nLayers
                 rls = selectelem(fens, fes, label =  layer)
-                push!(regions, FDataDict("femm"=>FEMMDeforLinearMST10(MR, IntegDomain(subset(fes, rls), gr), CSys(3, 3, updatecs!), material)))
+                push!(regions, FDataDict("femm"=>FEMMDeforLinearMST10(MR, IntegDomain(subset(fes, rls), gr), CSys(3, 3,
+                            (csmatout, XYZ, tangents, feid, qpid) -> _updatecs!(csmatout, layer)), material)
+                    ))
             end
 
             # The essential boundary conditions: clamped face
@@ -85,7 +88,7 @@ function THICK_plate_2dir_strong_MST10_conv()
 
             # The traction boundary condition is applied at the free face opposite the clamped face.
             bfes = meshboundary(fes)
-            function pfun(forceout::FVec{T}, XYZ::FFltMat, tangents::FFltMat, fe_label::FInt) where {T}
+            function pfun(forceout::FVec{T}, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) where {T}
                 forceout[1] = 0.0
                 forceout[2] = 0.0
                 forceout[3] = -q0
