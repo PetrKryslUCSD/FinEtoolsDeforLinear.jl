@@ -1,7 +1,7 @@
 module ss_beam_examples
 
 using FinEtools
-using FinEtools.AlgoBaseModule: evalconvergencestudy
+using FinEtools.AlgoBaseModule: evalconvergencestudy, solve!
 using FinEtoolsDeforLinear
 using FinEtoolsDeforLinear.AlgoDeforLinearModule: linearstatics, exportstresselementwise, exportstress
 using Statistics: mean
@@ -18,8 +18,9 @@ magn = 1.0;
 uzex =-5/384*magn*W*L^4/(E*W*H^3/12);
 n = 8 #
 
-function getfrcL!(forceout::FFltVec, XYZ::FFltMat, tangents::FFltMat, fe_label::FInt)
+function getfrcL!(forceout::FFltVec, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt)
     copyto!(forceout, [0.0; 0.0; -magn])
+    forceout
 end
 
 function test_h8()
@@ -43,7 +44,7 @@ function test_h8()
     # Material orientation matrix
     csmat = [i==j ? one(FFlt) : zero(FFlt) for i=1:3, j=1:3]
 
-    function updatecs!(csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, fe_label::FInt)
+    function updatecs!(csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, feid::FInt)
         copyto!(csmatout, csmat)
     end
 
@@ -70,9 +71,7 @@ function test_h8()
     
     associategeometry!(femm, geom)
     K = stiffness(femm, geom, u)
-    K=cholesky(K)
-    U = K\(F2)
-    scattersysvec!(u,U[:])
+    u = solve!(u, K, F2)
     
     utip = minimum(u.values[:, 3])
     println("Deflection: $(utip), compared to $(uzex)")
@@ -114,7 +113,7 @@ function test_h20r()
     # Material orientation matrix
     csmat = [i==j ? one(FFlt) : zero(FFlt) for i=1:3, j=1:3]
 
-    function updatecs!(csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, fe_label::FInt)
+    function updatecs!(csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, feid::FInt)
         copyto!(csmatout, csmat)
     end
 
@@ -141,9 +140,7 @@ function test_h20r()
     
     associategeometry!(femm, geom)
     K = stiffness(femm, geom, u)
-    K=cholesky(K)
-    U = K\(F2)
-    scattersysvec!(u,U[:])
+    u = solve!(u, K, F2)
     
     utip = minimum(u.values[:, 3])
     println("Deflection: $(utip), compared to $(uzex)")

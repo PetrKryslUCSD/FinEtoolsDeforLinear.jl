@@ -53,13 +53,16 @@ function Z_laminate_u_ss()
     G12s, G13s, G23s,
     0.0, 0.0, 0.0)
 
-    function updatecs!(csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, fe_label::FInt)
-        rotmat3!(csmatout, angles[fe_label]/180 .* pi .* [0.;0.;1.]);
+    function _updatecs!(csmatout::FFltMat, feid::FInt, labels)
+        rotmat3!(csmatout, angles[labels[feid]]/180.0*pi* [0.0; 0.0; 1.0]);
+        csmatout
     end
 
     gr = GaussRule(3, 3)
 
-    region = FDataDict("femm"=>FEMMDeforLinear(MR, IntegDomain(fes, gr), CSys(3, 3, updatecs!), laminamaterial))
+    region = FDataDict("femm"=>FEMMDeforLinear(MR, IntegDomain(fes, gr), CSys(3, 3,
+                            (csmatout, XYZ, tangents, feid, qpid) -> _updatecs!(csmatout, feid, fes.label)), laminamaterial)
+                    )
 
     lx0 = selectnode(fens, box=[0.0 0.0 -Inf Inf -Inf Inf], inflate=tolerance)
     lxa = selectnode(fens, box=[a a -Inf Inf -Inf Inf], inflate=tolerance)

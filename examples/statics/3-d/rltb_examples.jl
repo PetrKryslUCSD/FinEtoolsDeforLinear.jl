@@ -1,6 +1,6 @@
 module rltb_examples
 using FinEtools
-using FinEtools.AlgoBaseModule: evalconvergencestudy
+using FinEtools.AlgoBaseModule: evalconvergencestudy, solve!
 using FinEtoolsDeforLinear
 using FinEtoolsDeforLinear.AlgoDeforLinearModule: linearstatics, exportstresselementwise, exportstress
 using Statistics: mean
@@ -20,8 +20,9 @@ CTE = 0.0
 mult = 8
 n = 3 #
 
-function getfrcL!(forceout::FFltVec, XYZ::FFltMat, tangents::FFltMat, fe_label::FInt)
+function getfrcL!(forceout::FFltVec, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt)
     copyto!(forceout, [0.0; 0.0; magn])
+    return forceout
 end
 
 function rltb_H8_by_hand()
@@ -45,8 +46,9 @@ function rltb_H8_by_hand()
     # Material orientation matrix
     csmat = [i==j ? one(FFlt) : zero(FFlt) for i=1:3, j=1:3]
 
-    function updatecs!(csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, fe_label::FInt)
+    function updatecs!(csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt)
         copyto!(csmatout, csmat)
+        return csmatout
     end
 
     femm = FEMMDeforLinear(MR, IntegDomain(fes, GaussRule(3, 2)), material)
@@ -69,10 +71,8 @@ function rltb_H8_by_hand()
     @show sum(F2)
     associategeometry!(femm, geom)
     K = stiffness(femm, geom, u)
-    K=cholesky(K)
-    U = K\(F2)
-    scattersysvec!(u,U[:])
-    @show length(U)
+    u = solve!(u, K, F2)
+
     Tipl = selectnode(fens, box=[0 W L L 0 H], inflate=htol)
     utip = mean(u.values[Tipl, 3], dims=1)
     println("Deflection: $(utip), compared to $(uzex)")
@@ -115,7 +115,7 @@ function rltb_H20_by_hand()
     # Material orientation matrix
     csmat = [i==j ? one(FFlt) : zero(FFlt) for i=1:3, j=1:3]
 
-    function updatecs!(csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, fe_label::FInt)
+    function updatecs!(csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, feid::FInt)
         copyto!(csmatout, csmat)
     end
 
@@ -139,10 +139,8 @@ function rltb_H20_by_hand()
     @show sum(F2)
     associategeometry!(femm, geom)
     K = stiffness(femm, geom, u)
-    K=cholesky(K)
-    U = K\(F2)
-    scattersysvec!(u,U[:])
-    @show length(U)
+    u = solve!(u, K, F2)
+
     Tipl = selectnode(fens, box=[0 W L L 0 H], inflate=htol)
     utip = mean(u.values[Tipl, 3], dims=1)
     println("Deflection: $(utip), compared to $(uzex)")
