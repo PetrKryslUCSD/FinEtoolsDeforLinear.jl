@@ -58,7 +58,7 @@ function bend_hex_spectrum_full()
 
 		femm = FEMMDeforLinear(MR, IntegDomain(fes, GaussRule(3, 2)), material)
 
-		vol = integratefunction(femm, geom, x -> 1.0, 3)
+		vol = integratefunction(femm, geom, x -> 1.0; m=3)
 
 		associategeometry!(femm, geom)
 		K = stiffness(femm, geom, u)
@@ -68,18 +68,18 @@ function bend_hex_spectrum_full()
 		File =  "bend_hex_spectrum_full.vtk"
 		vectors = [("ev_$(idx)_$(round(D.values[idx] * 10000) / 10000)", deepcopy(scattersysvec!(u, D.vectors[:,idx]).values)) for idx in 1:length(D.values)] 
 		vtkexportmesh(File, fens, fes;  vectors=vectors)
-		@async run(`"paraview.exe" $File`)
+		# @async run(`"paraview.exe" $File`)
 
 		savecsv("bend_hex_spectrum_full-aspect=$(aspect).csv", eigenvalues = vec(D.values))
-		# @pgf _a = SemiLogYAxis({
-		#     xlabel = "Mode [ND]",
-		#     ylabel = "Generalized stiffness [N/m]",
-		#     grid="major",
-		#     legend_pos  = "south east",
-		#     title = "Hexahedron spectrum, \\aspect=$(aspect)"
-		# },
-		# Plot({"red", mark="triangle"}, Table([:x => vec(7:size(K, 1)), :y => vec(D.values[7:end])])), LegendEntry("FEA"))
-		# display(_a)
+		@pgf _a = SemiLogYAxis({
+		    xlabel = "Mode [ND]",
+		    ylabel = "Generalized stiffness [N/m]",
+		    grid="major",
+		    legend_pos  = "south east",
+		    title = "Hexahedron spectrum, aspect=$(aspect)"
+		},
+		Plot({"red", mark="triangle"}, Table([:x => vec(7:size(K, 1)), :y => vec(D.values[7:end])])), LegendEntry("FEA"))
+		display(_a)
 
 		true
 	end
@@ -103,7 +103,7 @@ function bend_hex_spectrum_underintegrated()
 
 		femm = FEMMDeforLinear(MR, IntegDomain(fes, GaussRule(3, 1)), material)
 
-		vol = integratefunction(femm, geom, x -> 1.0, 3)
+		vol = integratefunction(femm, geom, x -> 1.0; m=3)
 
 		associategeometry!(femm, geom)
 		K = stiffness(femm, geom, u)
@@ -139,7 +139,7 @@ function bend_hex_spectrum_ms()
 
 		femm = FEMMDeforLinearMSH8(MR, IntegDomain(fes, GaussRule(3, 2)), material)
 
-		vol = integratefunction(femm, geom, x -> 1.0, 3)
+		vol = integratefunction(femm, geom, x -> 1.0; m=3)
 
 		associategeometry!(femm, geom)
 
@@ -148,7 +148,15 @@ function bend_hex_spectrum_ms()
 		D = eigen(Matrix(K))
 
 		savecsv("bend_hex_spectrum_ms-aspect=$(aspect).csv", eigenvalues = vec(D.values))
-
+        @pgf _a = SemiLogYAxis({
+            xlabel = "Mode [ND]",
+            ylabel = "Generalized stiffness [N/m]",
+            grid="major",
+            legend_pos  = "south east",
+            title = "Hexahedron spectrum, aspect=$(aspect)"
+        },
+        Plot({"red", mark="triangle"}, Table([:x => vec(7:size(K, 1)), :y => vec(D.values[7:end])])), LegendEntry("MS"))
+        display(_a)
 		# File =  "bend_hex_spectrum_ms.vtk"
 		# vectors = [("ev_$(idx)_$(round(D.values[idx] * 10000) / 10000)", deepcopy(scattersysvec!(u, D.vectors[:,idx]).values)) for idx in 1:length(D.values)] 
 		# vtkexportmesh(File, fens, fes;  vectors=vectors)
@@ -177,7 +185,7 @@ function bend_hex_spectrum_im()
 
 		femm = FEMMDeforLinearIMH8(MR, IntegDomain(fes, GaussRule(3, 2)), material, 9)
 
-		vol = integratefunction(femm, geom, x -> 1.0, 3)
+		vol = integratefunction(femm, geom, x -> 1.0; m=3)
 
 		associategeometry!(femm, geom)
 
@@ -186,7 +194,15 @@ function bend_hex_spectrum_im()
 		D = eigen(Matrix(K))
 
 		savecsv("bend_hex_spectrum_im-aspect=$(aspect).csv", eigenvalues = vec(D.values))
-
+        @pgf _a = SemiLogYAxis({
+            xlabel = "Mode [ND]",
+            ylabel = "Generalized stiffness [N/m]",
+            grid="major",
+            legend_pos  = "south east",
+            title = "Hexahedron spectrum, aspect=$(aspect)"
+        },
+        Plot({"red", mark="triangle"}, Table([:x => vec(7:size(K, 1)), :y => vec(D.values[7:end])])), LegendEntry("IM"))
+        display(_a)
 		# File =  "bend_hex_spectrum_im.vtk"
 		# vectors = [("ev_$(idx)_$(round(D.values[idx] * 10000) / 10000)", deepcopy(scattersysvec!(u, D.vectors[:,idx]).values)) for idx in 1:length(D.values)] 
 		# vtkexportmesh(File, fens, fes;  vectors=vectors)
