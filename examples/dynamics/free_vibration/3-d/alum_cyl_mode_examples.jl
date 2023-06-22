@@ -1,5 +1,6 @@
 module alum_cyl_mode_examples
 using FinEtools
+using FinEtools.AlgoBaseModule: solve!, matrix_blocked, vector_blocked
 using FinEtools.MeshExportModule
 using FinEtoolsDeforLinear
 using FinEtoolsDeforLinear.FEMMDeforLinearESNICEModule
@@ -105,7 +106,9 @@ function alum_cyl_modal_t4()
     associategeometry!(femm,  geom)
     K  = stiffness(femm, geom, u)
     M = mass(femm, geom, u)
-    d,v,nev,nconv = eigs(Symmetric(K+OmegaShift*M), Symmetric(M); nev=neigvs, which=:SM, explicittransform=:none)
+    K_ff = matrix_blocked(K, nfreedofs(u), nfreedofs(u))[:ff]
+    M_ff = matrix_blocked(M, nfreedofs(u), nfreedofs(u))[:ff]
+    d,v,nev,nconv = eigs(Symmetric(K_ff+OmegaShift*M_ff), Symmetric(M_ff); nev=neigvs, which=:SM, explicittransform=:none)
     d = d .- OmegaShift;
     fs = real(sqrt.(complex(d)))/(2*pi)
     println("alum_cyl_modal_t4")
@@ -132,7 +135,9 @@ function alum_cyl_modal_t10()
     associategeometry!(femm,  geom)
     K  = stiffness(femm, geom, u)
     M = mass(femm, geom, u)
-    d,v,nev,nconv = eigs(Symmetric(K+OmegaShift*M), Symmetric(M); nev=neigvs, which=:SM, explicittransform=:none)
+    K_ff = matrix_blocked(K, nfreedofs(u), nfreedofs(u))[:ff]
+    M_ff = matrix_blocked(M, nfreedofs(u), nfreedofs(u))[:ff]
+    d,v,nev,nconv = eigs(Symmetric(K_ff+OmegaShift*M_ff), Symmetric(M_ff); nev=neigvs, which=:SM, explicittransform=:none)
     d = d .- OmegaShift;
     fs = real(sqrt.(complex(d)))/(2*pi)
     println("alum_cyl_modal_t10")
@@ -157,7 +162,9 @@ function alum_cyl_modal_esnicet4()
     associategeometry!(femm,  geom; stabilization_parameters=(2.0, 3.0))
     K  = stiffness(femm, geom, u)
     M = mass(femm, geom, u)
-    d,v,nev,nconv = eigs(Symmetric(K+OmegaShift*M), Symmetric(M); nev=neigvs, which=:SM, explicittransform=:none)
+    K_ff = matrix_blocked(K, nfreedofs(u), nfreedofs(u))[:ff]
+    M_ff = matrix_blocked(M, nfreedofs(u), nfreedofs(u))[:ff]
+    d,v,nev,nconv = eigs(Symmetric(K_ff+OmegaShift*M_ff), Symmetric(M_ff); nev=neigvs, which=:SM, explicittransform=:none)
     d = d .- OmegaShift;
     fs = real(sqrt.(complex(d)))/(2*pi)
     println("alum_cyl_modal_esnicet4")
@@ -184,7 +191,9 @@ function alum_cyl_modal_h20()
     associategeometry!(femm,  geom)
     K  = stiffness(femm, geom, u)
     M = mass(femm, geom, u)
-    d,v,nev,nconv = eigs(Symmetric(K+OmegaShift*M), Symmetric(M); nev=neigvs, which=:SM, explicittransform=:none)
+    K_ff = matrix_blocked(K, nfreedofs(u), nfreedofs(u))[:ff]
+    M_ff = matrix_blocked(M, nfreedofs(u), nfreedofs(u))[:ff]
+    d,v,nev,nconv = eigs(Symmetric(K_ff+OmegaShift*M_ff), Symmetric(M_ff); nev=neigvs, which=:SM, explicittransform=:none)
     d = d .- OmegaShift;
     fs = real(sqrt.(complex(d)))/(2*pi)
     println("alum_cyl_modal_h20")
@@ -217,7 +226,9 @@ function alum_cyl_mode_t4()
     associategeometry!(femm,  geom)
     K  = stiffness(femm, geom, u)
     M = mass(femm, geom, u)
-    d,v,nev,nconv = eigs(Symmetric(K+OmegaShift*M), Symmetric(M); nev=neigvs, which=:SM, explicittransform=:none)
+    K_ff = matrix_blocked(K, nfreedofs(u), nfreedofs(u))[:ff]
+    M_ff = matrix_blocked(M, nfreedofs(u), nfreedofs(u))[:ff]
+    d,v,nev,nconv = eigs(Symmetric(K_ff+OmegaShift*M_ff), Symmetric(M_ff); nev=neigvs, which=:SM, explicittransform=:none)
     d = d .- OmegaShift;
     fs = real(sqrt.(complex(d)))/(2*pi)
     println("Eigenvalues: $fs [Hz]")
@@ -245,7 +256,9 @@ function alum_cyl_mode_nice_t4()
     associategeometry!(femm,  geom)
     K  = stiffness(femm, geom, u)
     M = mass(femm, geom, u)
-    d,v,nev,nconv = eigs(Symmetric(K+OmegaShift*M), Symmetric(M); nev=neigvs, which=:SM, explicittransform=:none)
+    K_ff = matrix_blocked(K, nfreedofs(u), nfreedofs(u))[:ff]
+    M_ff = matrix_blocked(M, nfreedofs(u), nfreedofs(u))[:ff]
+    d,v,nev,nconv = eigs(Symmetric(K_ff+OmegaShift*M_ff), Symmetric(M_ff); nev=neigvs, which=:SM, explicittransform=:none)
     d = d .- OmegaShift;
     fs = real(sqrt.(complex(d)))/(2*pi)
     println("Eigenvalues: $fs [Hz]")
@@ -272,7 +285,9 @@ function alum_cyl_mode_esnice_t4()
     associategeometry!(femm,  geom)
     K  = stiffness(femm, geom, u)
     M = mass(femm, geom, u)
-    d,v,nev,nconv = eigs(Symmetric(K+OmegaShift*M), Symmetric(M); nev=neigvs, which=:SM, explicittransform=:none)
+    K_ff = matrix_blocked(K, nfreedofs(u), nfreedofs(u))[:ff]
+    M_ff = matrix_blocked(M, nfreedofs(u), nfreedofs(u))[:ff]
+    d,v,nev,nconv = eigs(Symmetric(K_ff+OmegaShift*M_ff), Symmetric(M_ff); nev=neigvs, which=:SM, explicittransform=:none)
     d = d .- OmegaShift;
     fs = real(sqrt.(complex(d)))/(2*pi)
     println("Eigenvalues: $fs [Hz]")
@@ -453,10 +468,10 @@ end # function allrun
 @info "All examples may be executed with "
 println("using .$(@__MODULE__); $(@__MODULE__).allrun()")
 
-alum_cyl_modal_h20()
-alum_cyl_modal_t10()
-alum_cyl_modal_t4()
-alum_cyl_modal_esnicet4()
+# alum_cyl_modal_h20()
+# alum_cyl_modal_t10()
+# alum_cyl_modal_t4()
+# alum_cyl_modal_esnicet4()
 
 end # module 
 nothing
