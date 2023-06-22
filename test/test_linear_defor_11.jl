@@ -71,6 +71,7 @@ function alum_cyl_mode_esnice_t4()
     u = NodalField(zeros(size(fens.xyz,1),3)) # displacement field
     
     numberdofs!(u)
+    # println("Number of degrees of freedom: $(nfreedofs(u))")
     
     material = MatDeforElastIso(MR, rho, E, nu, 0.0)
     
@@ -100,11 +101,7 @@ function alum_cyl_mode_esnice_h8()
     neigvs = 15
 
     MR = DeforModelRed3D
-    output = import_ABAQUS(joinpath(@__DIR__, "alum_cyl.inp"))
-    fens, fes = output["fens"], output["fesets"][1]
-    fens.xyz .*= phun("mm") # The input is provided in SI(mm) units
-    fens, fes = T10toT4(fens, fes)
-    fens, fes = T4toH8(fens, fes)
+    fens, fes = H8cylindern(radius, 4*radius, 7, 28)
 
     geom = NodalField(fens.xyz)
     u = NodalField(zeros(size(fens.xyz,1),3)) # displacement field
@@ -121,9 +118,9 @@ function alum_cyl_mode_esnice_h8()
     d,v,nev,nconv = eigs(Symmetric(K+OmegaShift*M), Symmetric(M); nev=neigvs, which=:SM, explicittransform=:none)
     d = d .- OmegaShift;
     fs = real(sqrt.(complex(d)))/(2*pi)
-    # println("Eigenvalues: $fs [Hz]")
+    println("Eigenvalues: $fs [Hz]")
     # @show     v' * M * v
-    @test norm(fs - [0.00000e+00, 0.00000e+00, 0.00000e+00, 1.02484e-05, 1.38347e-04, 1.72393e-04, 2.54056e+03, 2.54114e+03, 2.55861e+03, 4.09613e+03, 4.68338e+03, 4.68405e+03, 5.11106e+03, 6.82434e+03, 6.82487e+03,]) < 0.01
+    @test norm(fs - [0.00000e+00, 0.00000e+00, 0.00000e+00, 0.00000e+00, 0.00000e+00, 0.00000e+00, 2.55691e+03, 2.55691e+03, 2.56007e+03, 4.09870e+03, 4.68757e+03, 4.68757e+03, 5.10331e+03, 6.81594e+03, 6.81594e+03]) < 0.001 * norm(fs)
 
 
     true
