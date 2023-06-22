@@ -1,6 +1,6 @@
 module NAFEMS_examples
 using FinEtools
-using FinEtools
+using FinEtools.AlgoBaseModule: solve!, matrix_blocked, vector_blocked
 using FinEtoolsDeforLinear
 using FinEtoolsDeforLinear.AlgoDeforLinearModule
 using LinearAlgebra
@@ -128,7 +128,7 @@ function NAFEMS_TEST13H_vib()
     setebc!(u, nl, true, 3)
     applyebc!(u)
     numberdofs!(u)
-    println("nfreedofs = $(u.nfreedofs)")
+    println("nfreedofs = $(nfreedofs(u))")
     
     material=MatDeforElastIso(MR, rho, E, nu, 0.0)
     
