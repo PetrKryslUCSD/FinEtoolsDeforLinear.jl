@@ -17,7 +17,7 @@ using FinEtoolsDeforLinear.FEMMDeforLinearBaseModule: AbstractFEMMDeforLinear
 using FinEtools.DeforModelRedModule: AbstractDeforModelRed, DeforModelRed3D
 using FinEtoolsDeforLinear.MatDeforLinearElasticModule: AbstractMatDeforLinearElastic, tangentmoduli!, update!, thermalstrain!
 using FinEtoolsDeforLinear.MatDeforElastIsoModule: MatDeforElastIso
-using FinEtools.FieldModule: ndofs, gatherdofnums!, gatherfixedvalues_asvec!, gathervalues_asvec!, gathervalues_asmat!
+using FinEtools.FieldModule: ndofs, gatherdofnums!, gatherfixedvalues_asvec!, gathervalues_asvec!, gathervalues_asmat!, nalldofs
 using FinEtools.NodalFieldModule: NodalField
 using FinEtools.CSysModule: CSys, updatecsmat!, csmat
 using FinEtools.DeforModelRedModule: nstressstrain, nthermstrain, blmat!, divmat, vgradmat
@@ -194,14 +194,14 @@ function stiffness(self::FEMMDeforLinearIMH8, assembler::A,
     imNs, imgradNparams = imintegrationdata(self.nmodes, self.integdomain.integration_rule);
     ecoords, dofnums, loc, J, csmatTJ, loc0, J0, csmatTJ0, gradN, gradN0, imgradN, D, B, DB, Bc, imB, elmatc, elmat = _buffers2(self, geom, u)
     tangentmoduli!(self.material, D, 0.0, 0.0, loc, 0)
-    startassembly!(assembler, size(elmatc, 1), size(elmatc, 2), count(fes), u.nfreedofs, u.nfreedofs);
+    startassembly!(assembler, size(elmatc, 1)*size(elmatc, 2)*count(fes), nalldofs(u), nalldofs(u));
     for i = 1:count(fes) # Loop over elements
         gathervalues_asmat!(geom, ecoords, fes.conn[i]);
         # NOTE: the coordinate system should be evaluated at a single point within the
         # element in order for the derivatives to be consistent at all quadrature points
         # Centroid data
         locjac!(loc0, J0, ecoords, Ns0[1], gradNparams0[1])
-        updatecsmat!(self.mcsys, loc0, J0, fes.label[i]);
+        updatecsmat!(self.mcsys, loc0, J0, i, 0)
         Jac0 = Jacobianvolume(self.integdomain, J0, loc0, fes.conn[i], Ns0[1]);
         At_mul_B!(csmatTJ0, csmat(self.mcsys), J0); # local Jacobian matrix
         gradN!(fes, gradN0, gradNparams0[1], csmatTJ0);
