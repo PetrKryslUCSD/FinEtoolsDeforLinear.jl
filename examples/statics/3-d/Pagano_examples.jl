@@ -66,8 +66,9 @@ function Pagano_3lay_cyl_bend_MST10_conv()
                 CTE1, CTE2, CTE3)
 
                 # The material coordinate system function is defined as:
-                function updatecs!(csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, fe_label::FInt)
-                    rotmat3!(csmatout, angles[fe_label]/180.0*pi* [0.0; 0.0; 1.0]);
+                function _updatecs!(csmatout::FFltMat, layer::FInt)
+                    rotmat3!(csmatout, angles[layer]/180.0*pi* [0.0; 0.0; 1.0]);
+                    csmatout
                 end
 
                 # The vvolume integrals are evaluated using this rule
@@ -77,7 +78,10 @@ function Pagano_3lay_cyl_bend_MST10_conv()
                 regions = FDataDict[]
                 for layer = 1:nLayers
                     rls = selectelem(fens, fes, label =  layer)
-                    push!(regions, FDataDict("femm"=>FEMMDeforLinearMST10(MR, IntegDomain(subset(fes, rls), gr), CSys(3, 3, updatecs!), skinmaterial)))
+                    push!(regions, FDataDict("femm"=>FEMMDeforLinearMST10(MR,
+                        IntegDomain(subset(fes, rls), gr), CSys(3, 3,
+                            (csmatout, XYZ, tangents, feid, qpid) -> _updatecs!(csmatout, layer)), skinmaterial)
+                    ))
                 end
 
                 # The essential boundary conditions are applied to enforce the plane strain constraint.
@@ -92,7 +96,7 @@ function Pagano_3lay_cyl_bend_MST10_conv()
 
                 # The traction boundary condition is applied at the top of the plate.
                 bfes = meshboundary(fes)
-                function pfun(forceout::FVec{T}, XYZ::FFltMat, tangents::FFltMat, fe_label::FInt) where {T}
+                function pfun(forceout::FVec{T}, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) where {T}
                     forceout[1] = 0.0
                     forceout[2] = 0.0
                     forceout[3] = -q0*sin(pi*XYZ[1]/L)
@@ -252,8 +256,9 @@ function Pagano_3lay_cyl_bend_H8_conv()
                 CTE1, CTE2, CTE3)
 
                 # The material coordinate system function is defined as:
-                function updatecs!(csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, fe_label::FInt)
-                    rotmat3!(csmatout, angles[fe_label]/180.0*pi* [0.0; 0.0; 1.0]);
+                function _updatecs!(csmatout::FFltMat, layer::FInt)
+                    rotmat3!(csmatout, angles[layer]/180.0*pi* [0.0; 0.0; 1.0]);
+                    csmatout
                 end
 
                 # The vvolume integrals are evaluated using this rule
@@ -263,7 +268,9 @@ function Pagano_3lay_cyl_bend_H8_conv()
                 regions = FDataDict[]
                 for layer = 1:nLayers
                     rls = selectelem(fens, fes, label =  layer)
-                    push!(regions, FDataDict("femm"=>FEMMDeforLinear(MR, IntegDomain(subset(fes, rls), gr), CSys(3, 3, updatecs!), skinmaterial)))
+                    push!(regions, FDataDict("femm"=>FEMMDeforLinear(MR, IntegDomain(subset(fes, rls), gr), CSys(3, 3,
+                            (csmatout, XYZ, tangents, feid, qpid) -> _updatecs!(csmatout, layer)), skinmaterial)
+                    ))
                 end
 
                 # The essential boundary conditions are applied to enforce the plane strain constraint.
@@ -278,7 +285,7 @@ function Pagano_3lay_cyl_bend_H8_conv()
 
                 # The traction boundary condition is applied at the top of the plate.
                 bfes = meshboundary(fes)
-                function pfun(forceout::FVec{T}, XYZ::FFltMat, tangents::FFltMat, fe_label::FInt) where {T}
+                function pfun(forceout::FVec{T}, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) where {T}
                     forceout[1] = 0.0
                     forceout[2] = 0.0
                     forceout[3] = -q0*sin(pi*XYZ[1]/L)
@@ -435,8 +442,9 @@ function Pagano_3lay_cyl_bend_MSH8_conv()
                 CTE1, CTE2, CTE3)
 
                 # The material coordinate system function is defined as:
-                function updatecs!(csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, fe_label::FInt)
-                    rotmat3!(csmatout, angles[fe_label]/180.0*pi* [0.0; 0.0; 1.0]);
+                function _updatecs!(csmatout::FFltMat, layer::FInt)
+                    rotmat3!(csmatout, angles[layer]/180.0*pi* [0.0; 0.0; 1.0]);
+                    csmatout
                 end
 
                 # The vvolume integrals are evaluated using this rule
@@ -446,7 +454,9 @@ function Pagano_3lay_cyl_bend_MSH8_conv()
                 regions = FDataDict[]
                 for layer = 1:nLayers
                     rls = selectelem(fens, fes, label =  layer)
-                    push!(regions, FDataDict("femm"=>FEMMDeforLinearMSH8(MR, IntegDomain(subset(fes, rls), gr), CSys(3, 3, updatecs!), skinmaterial)))
+                    push!(regions, FDataDict("femm"=>FEMMDeforLinearMSH8(MR, IntegDomain(subset(fes, rls), gr), CSys(3, 3,
+                            (csmatout, XYZ, tangents, feid, qpid) -> _updatecs!(csmatout, layer)), skinmaterial)
+                    ))
                 end
 
                 # The essential boundary conditions are applied to enforce the plane strain constraint.
@@ -461,7 +471,7 @@ function Pagano_3lay_cyl_bend_MSH8_conv()
 
                 # The traction boundary condition is applied at the top of the plate.
                 bfes = meshboundary(fes)
-                function pfun(forceout::FVec{T}, XYZ::FFltMat, tangents::FFltMat, fe_label::FInt) where {T}
+                function pfun(forceout::FVec{T}, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) where {T}
                     forceout[1] = 0.0
                     forceout[2] = 0.0
                     forceout[3] = -q0*sin(pi*XYZ[1]/L)
@@ -616,8 +626,9 @@ function Pagano_3lay_cyl_bend_T10_conv()
                 CTE1, CTE2, CTE3)
 
                 # The material coordinate system function is defined as:
-                function updatecs!(csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, fe_label::FInt)
-                    rotmat3!(csmatout, angles[fe_label]/180.0*pi* [0.0; 0.0; 1.0]);
+                function _updatecs!(csmatout::FFltMat, layer::FInt)
+                    rotmat3!(csmatout, angles[layer]/180.0*pi* [0.0; 0.0; 1.0]);
+                    csmatout
                 end
 
                 # The vvolume integrals are evaluated using this rule
@@ -627,7 +638,9 @@ function Pagano_3lay_cyl_bend_T10_conv()
                 regions = FDataDict[]
                 for layer = 1:nLayers
                     rls = selectelem(fens, fes, label =  layer)
-                    push!(regions, FDataDict("femm"=>FEMMDeforLinear(MR, IntegDomain(subset(fes, rls), gr), CSys(3, 3, updatecs!), skinmaterial)))
+                    push!(regions, FDataDict("femm"=>FEMMDeforLinear(MR, IntegDomain(subset(fes, rls), gr), CSys(3, 3,
+                            (csmatout, XYZ, tangents, feid, qpid) -> _updatecs!(csmatout, layer)), skinmaterial)
+                    ))
                 end
 
                 # The essential boundary conditions are applied to enforce the plane strain constraint.
@@ -642,7 +655,7 @@ function Pagano_3lay_cyl_bend_T10_conv()
 
                 # The traction boundary condition is applied at the top of the plate.
                 bfes = meshboundary(fes)
-                function pfun(forceout::FVec{T}, XYZ::FFltMat, tangents::FFltMat, fe_label::FInt) where {T}
+                function pfun(forceout::FVec{T}, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) where {T}
                     forceout[1] = 0.0
                     forceout[2] = 0.0
                     forceout[3] = -q0*sin(pi*XYZ[1]/L)
