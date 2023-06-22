@@ -1,5 +1,6 @@
 module LE1NAFEMS_examples
 using FinEtools
+using FinEtools.AlgoBaseModule: solve!
 using FinEtoolsDeforLinear
 using FinEtoolsDeforLinear.AlgoDeforLinearModule
 using FinEtools.MeshExportModule
@@ -106,7 +107,7 @@ function LE1NAFEMS_MSH8()
 
 
     el1femm =  FEMMBase(IntegDomain(subset(bdryfes,icl), GaussRule(2, 2)))
-    function pfun(forceout::FVec{T}, XYZ::FFltMat, tangents::FFltMat, fe_label::FInt) where {T}
+    function pfun(forceout::FVec{T}, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) where {T}
         pt= [2.75/3.25*XYZ[1], 3.25/2.75*XYZ[2], 0.0]
         forceout .=    vec(p*pt/norm(pt));
         return forceout
@@ -126,9 +127,7 @@ function LE1NAFEMS_MSH8()
     femm = associategeometry!(femm, geom)
 
     K = stiffness(femm, geom, u)
-    K = cholesky(K)
-    U = K\(F2)
-    scattersysvec!(u, U[:])
+    u = solve!(u, K, F2)
 
     nl = selectnode(fens, box=[2.0, 2.0, 0.0, 0.0, 0.0, 0.0],inflate=tolerance);
     thecorneru = zeros(FFlt,1,3)
@@ -212,7 +211,7 @@ function LE1NAFEMS_MSH8_convergence()
 
 
             el1femm =  FEMMBase(IntegDomain(subset(bdryfes,icl), GaussRule(2, 2)))
-            function pfun(forceout::FVec{T}, XYZ::FFltMat, tangents::FFltMat, fe_label::FInt) where {T}
+            function pfun(forceout::FVec{T}, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) where {T}
                 pt= [2.75/3.25*XYZ[1], 3.25/2.75*XYZ[2], 0.0]
                 forceout .=    vec(p*pt/norm(pt));
                 return forceout
@@ -232,9 +231,7 @@ function LE1NAFEMS_MSH8_convergence()
             femm = associategeometry!(femm, geom)
 
             K = stiffness(femm, geom, u)
-            K = cholesky(K)
-            U = K\(F2)
-            scattersysvec!(u, U[:])
+            u = solve!(u, K, F2)
 
             nl = selectnode(fens, box=[2.0, 2.0, 0.0, 0.0, 0.0, Thickness], inflate=tolerance);
             thecorneru = zeros(FFlt,length(nl),3)
@@ -303,7 +300,7 @@ function LE1NAFEMS_MSH8_export()
 
 
     el1femm =  FEMMBase(IntegDomain(subset(bdryfes,icl), GaussRule(2, 2)))
-    function pfun(forceout::FVec{T}, XYZ::FFltMat, tangents::FFltMat, fe_label::FInt) where {T}
+    function pfun(forceout::FVec{T}, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) where {T}
         pt= [2.75/3.25*XYZ[1], 3.25/2.75*XYZ[2], 0.0]
         forceout .=    vec(p*pt/norm(pt));
         return forceout
@@ -323,9 +320,7 @@ function LE1NAFEMS_MSH8_export()
     femm = associategeometry!(femm, geom)
 
     K = stiffness(femm, geom, u)
-    K = cholesky(K)
-    U = K\(F2)
-    scattersysvec!(u, U[:])
+    u = solve!(u, K, F2)
 
     nl = selectnode(fens, box=[2.0, 2.0, 0.0, 0.0, 0.0, 0.0],inflate=tolerance);
     thecorneru = zeros(FFlt,1,3)
@@ -395,7 +390,7 @@ function LE1NAFEMS_MST10_convergence()
 
 
             el1femm =  FEMMBase(IntegDomain(subset(bdryfes,icl), TriRule(3)))
-            function pfun(forceout::FVec{T}, XYZ::FFltMat, tangents::FFltMat, fe_label::FInt) where {T}
+            function pfun(forceout::FVec{T}, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) where {T}
                 pt= [2.75/3.25*XYZ[1], 3.25/2.75*XYZ[2], 0.0]
                 forceout .=    vec(p*pt/norm(pt));
                 return forceout
@@ -415,9 +410,7 @@ function LE1NAFEMS_MST10_convergence()
             femm = associategeometry!(femm, geom)
 
             K = stiffness(femm, geom, u)
-            K = cholesky(K)
-            U = K\(F2)
-            scattersysvec!(u, U[:])
+            u = solve!(u, K, F2)
 
             nl = selectnode(fens, box=[2.0, 2.0, 0.0, 0.0, 0.0, Thickness], inflate=tolerance);
             thecorneru = zeros(FFlt,length(nl),3)
@@ -491,7 +484,7 @@ function LE1NAFEMS_MST10_one()
 
 
             el1femm =  FEMMBase(IntegDomain(subset(bdryfes,icl), TriRule(3)))
-            function pfun(forceout::FVec{T}, XYZ::FFltMat, tangents::FFltMat, fe_label::FInt) where {T}
+            function pfun(forceout::FVec{T}, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) where {T}
                 pt= [2.75/3.25*XYZ[1], 3.25/2.75*XYZ[2], 0.0]
                 forceout .=    vec(p*pt/norm(pt));
                 return forceout
@@ -511,9 +504,7 @@ function LE1NAFEMS_MST10_one()
             femm = associategeometry!(femm, geom)
 
             K = stiffness(femm, geom, u)
-            K = cholesky(K)
-            U = K\(F2)
-            scattersysvec!(u, U[:])
+            u = solve!(u, K, F2)
 
             nl = selectnode(fens, box=[2.0, 2.0, 0.0, 0.0, 0.0, Thickness], inflate=tolerance);
             thecorneru = zeros(FFlt,length(nl),3)
@@ -617,7 +608,7 @@ function LE1NAFEMS_MST10_stresses_nodal()
             numberdofs!(u)
 
             el1femm =  FEMMBase(IntegDomain(subset(bdryfes,icl), TriRule(3)))
-            function pfun(forceout::FVec{T}, XYZ::FFltMat, tangents::FFltMat, fe_label::FInt) where {T}
+            function pfun(forceout::FVec{T}, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) where {T}
                 pt= [2.75/3.25*XYZ[1], 3.25/2.75*XYZ[2], 0.0]
                 forceout .=    vec(p*pt/norm(pt));
                 return forceout
@@ -637,9 +628,7 @@ function LE1NAFEMS_MST10_stresses_nodal()
             femm = associategeometry!(femm, geom)
 
             K = stiffness(femm, geom, u)
-            K = cholesky(K)
-            U = K\(F2)
-            scattersysvec!(u, U[:])
+            u = solve!(u, K, F2)
 
             nl = selectnode(fens, box=[2.0, 2.0, 0.0, 0.0, 0.0, Thickness], inflate=tolerance);
             thecorneru = zeros(FFlt,length(nl),3)
@@ -730,7 +719,7 @@ function LE1NAFEMS_MST10_S_convergence()
 
 
             el1femm =  FEMMBase(IntegDomain(subset(bdryfes,icl), TriRule(3)))
-            function pfun(forceout::FVec{T}, XYZ::FFltMat, tangents::FFltMat, fe_label::FInt) where {T}
+            function pfun(forceout::FVec{T}, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) where {T}
                 pt= [2.75/3.25*XYZ[1], 3.25/2.75*XYZ[2], 0.0]
                 forceout .=    vec(p*pt/norm(pt));
                 return forceout
@@ -750,9 +739,7 @@ function LE1NAFEMS_MST10_S_convergence()
             femm = associategeometry!(femm, geom)
 
             K = stiffness(femm, geom, u)
-            K = cholesky(K)
-            U = K\(F2)
-            scattersysvec!(u, U[:])
+            u = solve!(u, K, F2)
 
             nl = selectnode(fens, box=[2.0, 2.0, 0.0, 0.0, 0.0, Thickness], inflate=tolerance);
             thecorneru = zeros(FFlt,length(nl),3)
@@ -821,7 +808,7 @@ function LE1NAFEMS_T10_stresses_nodal()
 
 
         el1femm =  FEMMBase(IntegDomain(subset(bdryfes,icl), TriRule(3)))
-        function pfun(forceout::FVec{T}, XYZ::FFltMat, tangents::FFltMat, fe_label::FInt) where {T}
+        function pfun(forceout::FVec{T}, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) where {T}
             pt= [2.75/3.25*XYZ[1], 3.25/2.75*XYZ[2], 0.0]
             forceout .=    vec(p*pt/norm(pt));
             return forceout
@@ -841,9 +828,7 @@ function LE1NAFEMS_T10_stresses_nodal()
         femm = associategeometry!(femm, geom)
 
         K = stiffness(femm, geom, u)
-        K = cholesky(K)
-        U = K\(F2)
-        scattersysvec!(u, U[:])
+        u = solve!(u, K, F2)
 
         nl = selectnode(fens, box=[2.0, 2.0, 0.0, 0.0, 0.0, Thickness], inflate=tolerance);
         thecorneru = zeros(FFlt,length(nl),3)
