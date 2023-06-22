@@ -5,7 +5,7 @@ using FinEtoolsDeforLinear.AlgoDeforLinearModule
 using FinEtools.AlgoBaseModule: evalconvergencestudy
 using FinEtoolsDeforLinear.AlgoDeforLinearModule: linearstatics, exportstresselementwise, exportstress
 using Statistics: mean
-using LinearAlgebra: Symmetric, cholesky, eigen
+using LinearAlgebra: Symmetric, cholesky, eigen, norm
 
 # Isotropic material
 E = 1.0;
@@ -28,7 +28,7 @@ xyzperturbation = [
 # xyzperturbation[:, 2] .= Lambda1 ./ 10.0
 # xyzperturbation[:, 3] .= Gamma1 ./ 20.0
 
-mesh() = (FinEtools.FENodeSetModule.FENodeSet([
+mesh(alpha = 0) = (FinEtools.FENodeSetModule.FENodeSet([
 	0.0 0.0 0.0; 
 	1.0 0.0 0.0; 
 	1.0 1.0 0.0; 	
@@ -37,7 +37,7 @@ mesh() = (FinEtools.FENodeSetModule.FENodeSet([
 	1.0 0.0 1.0; 
 	1.0 1.0 1.0
 	0.0 1.0 1.0; 
-	]), FinEtools.FESetModule.FESetH8(reshape([1, 2, 3, 4, 5, 6, 7, 8], 1, 8)))
+	] + alpha * xyzperturbation), FinEtools.FESetModule.FESetH8(reshape([1, 2, 3, 4, 5, 6, 7, 8], 1, 8)))
 
 function single_hex_perfect_cube()
 	fens,fes = mesh()
@@ -140,7 +140,70 @@ function single_hex_ms()
 
 end # single_hex_ms
 
+function single_hex_full_scaling()
+    fens,fes = mesh(1.0)
+    @show fens.xyz
+
+    MR = DeforModelRed3D
+    material = MatDeforElastIso(MR, E, nu)
+
+    geom = NodalField(fens.xyz)
+    u = NodalField(zeros(size(fens.xyz,1), 3)) # displacement field
+    applyebc!(u)
+    numberdofs!(u)
+
+    femm = FEMMDeforLinear(MR, IntegDomain(fes, GaussRule(3, 2)), material)
+
+    # @show vol = integratefunction(femm, geom, x -> 1.0, 3)
+
+    associategeometry!(femm, geom)
+    K = stiffness(femm, geom, u)
+    K1 = Matrix(K)
+
+    fens,fes = mesh(1.0)
+    fens.xyz .*= 10
+    geom = NodalField(fens.xyz)
+    associategeometry!(femm, geom)
+    K = stiffness(femm, geom, u)
+    K10 = Matrix(K)
+
+    @show norm(K1 - K10) / norm(K1)
+
+    fens,fes = mesh(1.0)
+    fens.xyz .*= 1
+    geom = NodalField(fens.xyz)
+    associategeometry!(femm, geom)
+    K = stiffness(femm, geom, u)
+    K1b = Matrix(K)
+
+    @show norm(K1 - K1b) / norm(K1)
+
+    fens,fes = mesh(1.0)
+    fens.xyz .*= 2
+    geom = NodalField(fens.xyz)
+    associategeometry!(femm, geom)
+    K = stiffness(femm, geom, u)
+    K2 = Matrix(K)
+
+    @show norm(K1 - K2) / norm(K1)
+
+    fens,fes = mesh(1.0)
+    fens.xyz .*= 200
+    geom = NodalField(fens.xyz)
+    associategeometry!(femm, geom)
+    K = stiffness(femm, geom, u)
+    K200 = Matrix(K)
+
+    @show norm(K1 - K200) / norm(K1)
+
+    true
+
+end # single_hex_full
+
 function allrun()
+    println("#####################################################")
+    println("# single_hex_full_scaling ")
+    single_hex_full_scaling()
 	println("#####################################################")
 	println("# single_hex_perfect_cube ")
 	single_hex_perfect_cube()
