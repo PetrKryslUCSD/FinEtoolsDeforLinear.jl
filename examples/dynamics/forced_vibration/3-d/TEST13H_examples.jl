@@ -1,5 +1,6 @@
 module TEST13H_examples
 using FinEtools
+using FinEtools.AlgoBaseModule: solve!, matrix_blocked, vector_blocked
 using FinEtoolsDeforLinear
 using LinearAlgebra
 using Arpack
@@ -71,7 +72,7 @@ function TEST13H_hva()
     setebc!(u, nl, true, 3)
     applyebc!(u)
     numberdofs!(u)
-    println("nfreedofs = $(u.nfreedofs)")
+    println("nfreedofs = $(nfreedofs(u))")
     
     material = MatDeforElastIso(MR, rho, E, nu, 0.0)
     
@@ -81,6 +82,10 @@ function TEST13H_hva()
     femm = FEMMDeforLinear(MR, IntegDomain(fes, GaussRule(3,3)), material)
     M = mass(femm, geom, u)
     C = Rayleigh_mass*M + Rayleigh_stiffness*K
+
+    K_ff = matrix_blocked(K, nfreedofs(u), nfreedofs(u))[:ff]
+    M_ff = matrix_blocked(M, nfreedofs(u), nfreedofs(u))[:ff]
+    C_ff = matrix_blocked(C, nfreedofs(u), nfreedofs(u))[:ff]
     
     # if true
     #     t0 = time()
@@ -94,24 +99,26 @@ function TEST13H_hva()
     bdryfes = meshboundary(fes)
     topbfl = selectelem(fens, bdryfes, facing=true, direction=[0.0 0.0 1.0])
     el1femm =  FEMMBase(IntegDomain(subset(bdryfes,topbfl), GaussRule(2,2)))
-    function pfun(forceout::FVec{T}, XYZ::FFltMat, tangents::FFltMat, fe_label::FInt) where {T}
+    function pfun(forceout::FVec{T}, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) where {T}
         forceout .=  [0.0, 0.0, -qmagn]
         return forceout
     end
     fi = ForceIntensity(FFlt, 3, pfun);
     F = distribloads(el1femm, geom, u, fi, 2);
+
+    F_f = vector_blocked(F, nfreedofs(u))[:f]
     
-    U1 = zeros(FCplxFlt, u.nfreedofs, length(frequencies))
+    U_f = zeros(FCplxFlt, nfreedofs(u), length(frequencies))
     for k = 1:length(frequencies)
         frequency = frequencies[k];
         omega = 2*pi*frequency;
-        U1[:, k] = (-omega^2*M + 1im*omega*C + K)\F;
+        U_f[:, k] = (-omega^2*M_ff + 1im*omega*C_ff + K_ff)\F_f;
     end
     
     midpoint = selectnode(fens, box=[L/2 L/2 L/2 L/2 0 0], inflate=tolerance);
     midpointdof = u.dofnums[midpoint, 3]
     
-    umidAmpl = abs.(U1[midpointdof, :])/phun("MM")
+    umidAmpl = abs.(U_f[midpointdof, :])/phun("MM")
     @pgf _a = SemiLogXAxis({
         xlabel = "Frequency [Hz]",
         ylabel = "Midpoint  displacement amplitude [mm]",
@@ -122,8 +129,8 @@ function TEST13H_hva()
     Plot({"red", mark="triangle"}, Table([:x => vec(frequencies), :y => vec(umidAmpl)])), LegendEntry("FEA"))
     display(_a)
     
-    umidReal = real.(U1[midpointdof, :])/phun("MM")
-    umidImag = imag.(U1[midpointdof, :])/phun("MM")
+    umidReal = real.(U_f[midpointdof, :])/phun("MM")
+    umidImag = imag.(U_f[midpointdof, :])/phun("MM")
     @pgf _a = SemiLogXAxis({
         xlabel = "Frequency [Hz]",
         ylabel = "Displacement amplitude [mm]",
