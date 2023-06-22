@@ -106,21 +106,25 @@ function Meyer_Piening_sandwich()
     CTE1, CTE2, CTE3)
 
     # The material coordinate system function is defined as:
-    function updatecs!(csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, fe_label::FInt)
-        rotmat3!(csmatout, angles[fe_label]/180.0*pi* [0.0; 0.0; 1.0]);
+    function _updatecs!(csmatout::FFltMat, feid::FInt, label)
+        rotmat3!(csmatout, angles[label]/180.0*pi* [0.0; 0.0; 1.0]);
+        csmatout
     end
+
 
     # The vvolume integrals are evaluated using this rule
     gr = GaussRule(3, 2)
 
-    # We will create two regions, one for the skin,
-    # and one for the core.
-    rls = selectelem(fens, fes, label = 1)
-    botskinregion = FDataDict("femm"=>FEMMDeforLinearMSH8(MR, IntegDomain(subset(fes, rls), gr), CSys(3, 3, updatecs!), skinmaterial))
-    rls = selectelem(fens, fes, label = 3)
-    topskinregion = FDataDict("femm"=>FEMMDeforLinearMSH8(MR, IntegDomain(subset(fes, rls), gr), CSys(3, 3, updatecs!), skinmaterial))
-    rlc = selectelem(fens, fes, label = 2)
-    coreregion = FDataDict("femm"=>FEMMDeforLinearMSH8(MR, IntegDomain(subset(fes, rlc), gr), CSys(3, 3, updatecs!), corematerial))
+    # We will create three regions, two for the skin, and one for the core.
+    rfes = subset(fes, selectelem(fens, fes, label = 1))
+    botskinregion = FDataDict("femm"=>FEMMDeforLinearMSH8(MR, IntegDomain(rfes, gr), CSys(3, 3, (csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) ->
+        _updatecs!(csmatout, feid, 1)), skinmaterial))
+    rfes = subset(fes, selectelem(fens, fes, label = 3))
+    topskinregion = FDataDict("femm"=>FEMMDeforLinearMSH8(MR, IntegDomain(rfes, gr), CSys(3, 3, (csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) ->
+        _updatecs!(csmatout, feid, 3)), skinmaterial))
+    rfes = subset(fes, selectelem(fens, fes, label = 2))
+    coreregion = FDataDict("femm"=>FEMMDeforLinearMSH8(MR, IntegDomain(rfes, gr), CSys(3, 3, (csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) ->
+        _updatecs!(csmatout, feid, 2)), corematerial))
 
     # File =  "Meyer_Piening_sandwich-r1.vtk"
     # vtkexportmesh(File, skinregion["femm"].integdomain.fes.conn, fens.xyz, FinEtools.MeshExportModule.H8)
@@ -348,21 +352,24 @@ function Meyer_Piening_sandwich_H20()
     CTE1, CTE2, CTE3)
 
     # The material coordinate system function is defined as:
-    function updatecs!(csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, fe_label::FInt)
-        rotmat3!(csmatout, angles[fe_label]/180.0*pi* [0.0; 0.0; 1.0]);
-    end
+        function _updatecs!(csmatout::FFltMat, feid::FInt, label)
+            rotmat3!(csmatout, angles[label]/180.0*pi* [0.0; 0.0; 1.0]);
+            csmatout
+        end
 
     # The volume integrals are evaluated using this rule
     gr = GaussRule(3, 3)
 
-    # We will create two regions, one for the skin,
-    # and one for the core.
-    rls = selectelem(fens, fes, label = 1)
-    botskinregion = FDataDict("femm"=>FEMMDeforLinear(MR, IntegDomain(subset(fes, rls), gr), CSys(3, 3, updatecs!), skinmaterial))
-    rls = selectelem(fens, fes, label = 3)
-    topskinregion = FDataDict("femm"=>FEMMDeforLinear(MR, IntegDomain(subset(fes, rls), gr), CSys(3, 3, updatecs!), skinmaterial))
-    rlc = selectelem(fens, fes, label = 2)
-    coreregion = FDataDict("femm"=>FEMMDeforLinear(MR, IntegDomain(subset(fes, rlc), gr), CSys(3, 3, updatecs!), corematerial))
+    # We will create three regions, two for the skin, and one for the core.
+    rfes = subset(fes, selectelem(fens, fes, label = 1))
+    botskinregion = FDataDict("femm"=>FEMMDeforLinear(MR, IntegDomain(rfes, gr), CSys(3, 3, (csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) ->
+        _updatecs!(csmatout, feid, 1)), skinmaterial))
+    rfes = subset(fes, selectelem(fens, fes, label = 3))
+    topskinregion = FDataDict("femm"=>FEMMDeforLinear(MR, IntegDomain(rfes, gr), CSys(3, 3, (csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) ->
+        _updatecs!(csmatout, feid, 3)), skinmaterial))
+    rfes = subset(fes, selectelem(fens, fes, label = 2))
+    coreregion = FDataDict("femm"=>FEMMDeforLinear(MR, IntegDomain(rfes, gr), CSys(3, 3, (csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) ->
+        _updatecs!(csmatout, feid, 2)), corematerial))
 
     # File =  "Meyer_Piening_sandwich-r1.vtk"
     # vtkexportmesh(File, skinregion["femm"].integdomain.fes.conn, fens.xyz, FinEtools.MeshExportModule.H8)
@@ -595,21 +602,25 @@ function Meyer_Piening_sandwich_H8()
     CTE1, CTE2, CTE3)
 
     # The material coordinate system function is defined as:
-    function updatecs!(csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, fe_label::FInt)
-        rotmat3!(csmatout, angles[fe_label]/180.0*pi* [0.0; 0.0; 1.0]);
-    end
+        function _updatecs!(csmatout::FFltMat, feid::FInt, label)
+            rotmat3!(csmatout, angles[label]/180.0*pi* [0.0; 0.0; 1.0]);
+            csmatout
+        end
 
     # The vvolume integrals are evaluated using this rule
     gr = GaussRule(3, 2)
 
-    # We will create two regions, one for the skin,
-    # and one for the core.
-    rls = selectelem(fens, fes, label = 1)
-    botskinregion = FDataDict("femm"=>FEMMDeforLinear(MR, IntegDomain(subset(fes, rls), gr), CSys(3, 3, updatecs!), skinmaterial))
-    rls = selectelem(fens, fes, label = 3)
-    topskinregion = FDataDict("femm"=>FEMMDeforLinear(MR, IntegDomain(subset(fes, rls), gr), CSys(3, 3, updatecs!), skinmaterial))
-    rlc = selectelem(fens, fes, label = 2)
-    coreregion = FDataDict("femm"=>FEMMDeforLinear(MR, IntegDomain(subset(fes, rlc), gr), CSys(3, 3, updatecs!), corematerial))
+    # We will create three regions, two for the skin, and one for the core.
+    rfes = subset(fes, selectelem(fens, fes, label = 1))
+    botskinregion = FDataDict("femm"=>FEMMDeforLinear(MR, IntegDomain(rfes, gr), CSys(3, 3, (csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) ->
+        _updatecs!(csmatout, feid, 1)), skinmaterial))
+    rfes = subset(fes, selectelem(fens, fes, label = 3))
+    topskinregion = FDataDict("femm"=>FEMMDeforLinear(MR, IntegDomain(rfes, gr), CSys(3, 3, (csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) ->
+        _updatecs!(csmatout, feid, 3)), skinmaterial))
+    rfes = subset(fes, selectelem(fens, fes, label = 2))
+    coreregion = FDataDict("femm"=>FEMMDeforLinear(MR, IntegDomain(rfes, gr), CSys(3, 3, (csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) ->
+        _updatecs!(csmatout, feid, 2)), corematerial))
+
 
     # File =  "Meyer_Piening_sandwich-r1.vtk"
     # vtkexportmesh(File, skinregion["femm"].integdomain.fes.conn, fens.xyz, FinEtools.MeshExportModule.H8)
@@ -840,21 +851,25 @@ function Meyer_Piening_sandwich_MSH8()
     CTE1, CTE2, CTE3)
 
     # The material coordinate system function is defined as:
-    function updatecs!(csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, fe_label::FInt)
-        rotmat3!(csmatout, angles[fe_label]/180.0*pi* [0.0; 0.0; 1.0]);
-    end
+        function _updatecs!(csmatout::FFltMat, feid::FInt, label)
+            rotmat3!(csmatout, angles[label]/180.0*pi* [0.0; 0.0; 1.0]);
+            csmatout
+        end
 
     # The vvolume integrals are evaluated using this rule
     gr = GaussRule(3, 2)
 
-    # We will create two regions, one for the skin,
-    # and one for the core.
-    rls = selectelem(fens, fes, label = 1)
-    botskinregion = FDataDict("femm"=>FEMMDeforLinearMSH8(MR, IntegDomain(subset(fes, rls), gr), CSys(3, 3, updatecs!), skinmaterial))
-    rls = selectelem(fens, fes, label = 3)
-    topskinregion = FDataDict("femm"=>FEMMDeforLinearMSH8(MR, IntegDomain(subset(fes, rls), gr), CSys(3, 3, updatecs!), skinmaterial))
-    rlc = selectelem(fens, fes, label = 2)
-    coreregion = FDataDict("femm"=>FEMMDeforLinearMSH8(MR, IntegDomain(subset(fes, rlc), gr), CSys(3, 3, updatecs!), corematerial))
+    # We will create three regions, two for the skin, and one for the core.
+    rfes = subset(fes, selectelem(fens, fes, label = 1))
+    botskinregion = FDataDict("femm"=>FEMMDeforLinearMSH8(MR, IntegDomain(rfes, gr), CSys(3, 3, (csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) ->
+        _updatecs!(csmatout, feid, 1)), skinmaterial))
+    rfes = subset(fes, selectelem(fens, fes, label = 3))
+    topskinregion = FDataDict("femm"=>FEMMDeforLinearMSH8(MR, IntegDomain(rfes, gr), CSys(3, 3, (csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) ->
+        _updatecs!(csmatout, feid, 3)), skinmaterial))
+    rfes = subset(fes, selectelem(fens, fes, label = 2))
+    coreregion = FDataDict("femm"=>FEMMDeforLinearMSH8(MR, IntegDomain(rfes, gr), CSys(3, 3, (csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) ->
+        _updatecs!(csmatout, feid, 2)), corematerial))
+
 
     # File =  "Meyer_Piening_sandwich-r1.vtk"
     # vtkexportmesh(File, skinregion["femm"].integdomain.fes.conn, fens.xyz, FinEtools.MeshExportModule.H8)
@@ -1089,21 +1104,25 @@ function Meyer_Piening_sandwich_MST10()
     CTE1, CTE2, CTE3)
 
     # The material coordinate system function is defined as:
-    function updatecs!(csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, fe_label::FInt)
-        rotmat3!(csmatout, angles[fe_label]/180.0*pi* [0.0; 0.0; 1.0]);
-    end
+        function _updatecs!(csmatout::FFltMat, feid::FInt, label)
+            rotmat3!(csmatout, angles[label]/180.0*pi* [0.0; 0.0; 1.0]);
+            csmatout
+        end
 
     # The volume integrals are evaluated using this rule
     gr = SimplexRule(3, 4)
 
-    # We will create two regions, one for the skin,
-    # and one for the core.
-    rls = selectelem(fens, fes, label = 1)
-    botskinregion = FDataDict("femm"=>FEMMDeforLinearMST10(MR, IntegDomain(subset(fes, rls), gr), CSys(3, 3, updatecs!), skinmaterial))
-    rls = selectelem(fens, fes, label = 3)
-    topskinregion = FDataDict("femm"=>FEMMDeforLinearMST10(MR, IntegDomain(subset(fes, rls), gr), CSys(3, 3, updatecs!), skinmaterial))
-    rlc = selectelem(fens, fes, label = 2)
-    coreregion = FDataDict("femm"=>FEMMDeforLinearMST10(MR, IntegDomain(subset(fes, rlc), gr), CSys(3, 3, updatecs!), corematerial))
+    # We will create three regions, two for the skin, and one for the core.
+    rfes = subset(fes, selectelem(fens, fes, label = 1))
+    botskinregion = FDataDict("femm"=>FEMMDeforLinearMST10(MR, IntegDomain(rfes, gr), CSys(3, 3, (csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) ->
+        _updatecs!(csmatout, feid, 1)), skinmaterial))
+    rfes = subset(fes, selectelem(fens, fes, label = 3))
+    topskinregion = FDataDict("femm"=>FEMMDeforLinearMST10(MR, IntegDomain(rfes, gr), CSys(3, 3, (csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) ->
+        _updatecs!(csmatout, feid, 3)), skinmaterial))
+    rfes = subset(fes, selectelem(fens, fes, label = 2))
+    coreregion = FDataDict("femm"=>FEMMDeforLinearMST10(MR, IntegDomain(rfes, gr), CSys(3, 3, (csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) ->
+        _updatecs!(csmatout, feid, 2)), corematerial))
+
 
     # File =  "Meyer_Piening_sandwich-r1.vtk"
     # vtkexportmesh(File, botskinregion["femm"].integdomain.fes.conn, fens.xyz,
@@ -1345,21 +1364,25 @@ function Meyer_Piening_sandwich_MST10_timing()
     CTE1, CTE2, CTE3)
 
     # The material coordinate system function is defined as:
-    function updatecs!(csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, fe_label::FInt)
-        rotmat3!(csmatout, angles[fe_label]/180.0*pi* [0.0; 0.0; 1.0]);
-    end
+        function _updatecs!(csmatout::FFltMat, feid::FInt, label)
+            rotmat3!(csmatout, angles[label]/180.0*pi* [0.0; 0.0; 1.0]);
+            csmatout
+        end
 
     # The volume integrals are evaluated using this rule
     gr = SimplexRule(3, 4)
 
-    # We will create two regions, one for the skin,
-    # and one for the core.
-    rls = selectelem(fens, fes, label = 1)
-    botskinregion = FDataDict("femm"=>FEMMDeforLinearMST10(MR, IntegDomain(subset(fes, rls), gr), CSys(3, 3, updatecs!), skinmaterial))
-    rls = selectelem(fens, fes, label = 3)
-    topskinregion = FDataDict("femm"=>FEMMDeforLinearMST10(MR, IntegDomain(subset(fes, rls), gr), CSys(3, 3, updatecs!), skinmaterial))
-    rlc = selectelem(fens, fes, label = 2)
-    coreregion = FDataDict("femm"=>FEMMDeforLinearMST10(MR, IntegDomain(subset(fes, rlc), gr), CSys(3, 3, updatecs!), corematerial))
+    # We will create three regions, two for the skin, and one for the core.
+    rfes = subset(fes, selectelem(fens, fes, label = 1))
+    botskinregion = FDataDict("femm"=>FEMMDeforLinearMST10(MR, IntegDomain(rfes, gr), CSys(3, 3, (csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) ->
+        _updatecs!(csmatout, feid, 1)), skinmaterial))
+    rfes = subset(fes, selectelem(fens, fes, label = 3))
+    topskinregion = FDataDict("femm"=>FEMMDeforLinearMST10(MR, IntegDomain(rfes, gr), CSys(3, 3, (csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) ->
+        _updatecs!(csmatout, feid, 3)), skinmaterial))
+    rfes = subset(fes, selectelem(fens, fes, label = 2))
+    coreregion = FDataDict("femm"=>FEMMDeforLinearMST10(MR, IntegDomain(rfes, gr), CSys(3, 3, (csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) ->
+        _updatecs!(csmatout, feid, 2)), corematerial))
+
 
     # File =  "Meyer_Piening_sandwich-r1.vtk"
     # vtkexportmesh(File, botskinregion["femm"].integdomain.fes.conn, fens.xyz,
@@ -1607,21 +1630,24 @@ function Meyer_Piening_sandwich_T10_timing()
     CTE1, CTE2, CTE3)
 
     # The material coordinate system function is defined as:
-    function updatecs!(csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, fe_label::FInt)
-        rotmat3!(csmatout, angles[fe_label]/180.0*pi* [0.0; 0.0; 1.0]);
-    end
+        function _updatecs!(csmatout::FFltMat, feid::FInt, label)
+            rotmat3!(csmatout, angles[label]/180.0*pi* [0.0; 0.0; 1.0]);
+            csmatout
+        end
 
     # The volume integrals are evaluated using this rule
     gr = SimplexRule(3, 4)
 
-    # We will create two regions, one for the skin,
-    # and one for the core.
-    rls = selectelem(fens, fes, label = 1)
-    botskinregion = FDataDict("femm"=>FEMMDeforLinear(MR, IntegDomain(subset(fes, rls), gr), CSys(3, 3, updatecs!), skinmaterial))
-    rls = selectelem(fens, fes, label = 3)
-    topskinregion = FDataDict("femm"=>FEMMDeforLinear(MR, IntegDomain(subset(fes, rls), gr), CSys(3, 3, updatecs!), skinmaterial))
-    rlc = selectelem(fens, fes, label = 2)
-    coreregion = FDataDict("femm"=>FEMMDeforLinear(MR, IntegDomain(subset(fes, rlc), gr), CSys(3, 3, updatecs!), corematerial))
+    # We will create three regions, two for the skin, and one for the core.
+    rfes = subset(fes, selectelem(fens, fes, label = 1))
+    botskinregion = FDataDict("femm"=>FEMMDeforLinearMST10(MR, IntegDomain(rfes, gr), CSys(3, 3, (csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) ->
+        _updatecs!(csmatout, feid, 1)), skinmaterial))
+    rfes = subset(fes, selectelem(fens, fes, label = 3))
+    topskinregion = FDataDict("femm"=>FEMMDeforLinearMST10(MR, IntegDomain(rfes, gr), CSys(3, 3, (csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) ->
+        _updatecs!(csmatout, feid, 3)), skinmaterial))
+    rfes = subset(fes, selectelem(fens, fes, label = 2))
+    coreregion = FDataDict("femm"=>FEMMDeforLinearMST10(MR, IntegDomain(rfes, gr), CSys(3, 3, (csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) ->
+        _updatecs!(csmatout, feid, 2)), corematerial))
 
     # File =  "Meyer_Piening_sandwich-r1.vtk"
     # vtkexportmesh(File, botskinregion["femm"].integdomain.fes.conn, fens.xyz,
