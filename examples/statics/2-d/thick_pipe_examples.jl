@@ -1,5 +1,6 @@
 module thick_pipe_examples
 using FinEtools
+using FinEtools.AlgoBaseModule: solve!, matrix_blocked, vector_blocked
 using FinEtoolsDeforLinear
 using PGFPlotsX
 using Statistics
@@ -137,9 +138,8 @@ function thick_pipe_axi()
     femm = FEMMDeforLinear(MR, IntegDomain(fes, GaussRule(2, 2), axisymmetric), material)
 
     K = stiffness(femm, geom, u)
-    #K=cholesky(K)
-    U =  K\(F2)
-    scattersysvec!(u,U[:])
+
+    u = solve!(u, K, F2)
 
     # Transfer the solution of the displacement to the nodes on the
     # internal cylindrical surface and convert to
@@ -408,7 +408,7 @@ function thick_pipe_ps()
     # direction.
 
     el1femm =  FEMMBase(IntegDomain(subset(bdryfes,bcl), GaussRule(1, 3)))
-    function pressureloading!(forceout::FFltVec, XYZ::FFltMat, tangents::FFltMat, fe_label::FInt)
+    function pressureloading!(forceout::FFltVec, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt)
         copyto!(forceout, XYZ/norm(XYZ)*press)
         return forceout
     end
@@ -421,9 +421,8 @@ function thick_pipe_ps()
     femm = FEMMDeforLinear(MR, IntegDomain(fes, GaussRule(2, 2)), material)
 
     K =stiffness(femm, geom, u)
-    #K=cholesky(K)
-    U=  K\(F2)
-    scattersysvec!(u, U[:])
+
+    u = solve!(u, K, F2)
 
     # Transfer the solution of the displacement to the nodes on the
     # internal cylindrical surface and convert to
@@ -467,10 +466,10 @@ function thick_pipe_ps()
         end
         Rm=outputRm(xq)
         tm=zeros(FFlt,3,3)
-        stress4vto3x3t!(tm, out);# stress in global XYZ
+        stressvtot!(MR, tm, out);# stress in global XYZ
         tpm = Rm'*tm*Rm;#  stress matrix in cylindrical coordinates
         sp=zeros(FFlt,6)
-        stress3x3tto6v!(sp, tpm);# stress vector in cylindr. coord.
+        stressttov!(MR, sp, tpm);# stress vector in cylindr. coord.
         push!(idat.r,norm(xq))
         push!(idat.s,sp[idat.c])
         return idat
@@ -638,7 +637,7 @@ function thick_pipe_ps_T6()
     # direction.
 
     el1femm =  FEMMBase(IntegDomain(subset(bdryfes,bcl), GaussRule(1, 3)))
-    function pressureloading!(forceout::FFltVec, XYZ::FFltMat, tangents::FFltMat, fe_label::FInt)
+    function pressureloading!(forceout::FFltVec, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt)
         copyto!(forceout, XYZ/norm(XYZ)*press)
         return forceout
     end
@@ -651,9 +650,8 @@ function thick_pipe_ps_T6()
     femm = FEMMDeforLinear(MR, IntegDomain(fes, TriRule(3)), material)
 
     K =stiffness(femm, geom, u)
-    #K=cholesky(K)
-    U=  K\(F2)
-    scattersysvec!(u, U[:])
+
+    u = solve!(u, K, F2)
 
     # Transfer the solution of the displacement to the nodes on the
     # internal cylindrical surface and convert to
@@ -697,10 +695,10 @@ function thick_pipe_ps_T6()
         end
         Rm=outputRm(xq)
         tm=zeros(FFlt,3,3)
-        stress4vto3x3t!(tm, out);# stress in global XYZ
+        stressvtot!(MR, tm, out);# stress in global XYZ
         tpm = Rm'*tm*Rm;#  stress matrix in cylindrical coordinates
         sp=zeros(FFlt,6)
-        stress3x3tto6v!(sp, tpm);# stress vector in cylindr. coord.
+        stressttov!(MR, sp, tpm);# stress vector in cylindr. coord.
         push!(idat.r,norm(xq))
         push!(idat.s,sp[idat.c])
         return idat
@@ -740,4 +738,8 @@ function allrun()
     return true
 end # function allrun
 
+@info "All examples may be executed with "
+println("using .$(@__MODULE__); $(@__MODULE__).allrun()")
+
 end # module thick_pipe_examples
+nothing

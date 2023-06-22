@@ -1,5 +1,6 @@
 module orthoballoon_examples
 using FinEtools
+using FinEtools.AlgoBaseModule: solve!, matrix_blocked, vector_blocked
 using FinEtoolsDeforLinear
 using LinearAlgebra
 
@@ -57,13 +58,13 @@ function orthoballoon()
 
     applyebc!(u)
     numberdofs!(u)
-    println("Number of degrees of freedom = $(u.nfreedofs)")
+    println("Number of degrees of freedom = $(nfreedofs(u))")
 
     # The traction boundary condition is applied in the radial
     # direction.
 
     el1femm =  FEMMBase(IntegDomain(subset(bdryfes,icl), GaussRule(1, 3), true))
-    function pressureloading!(forceout::FFltVec, XYZ::FFltMat, tangents::FFltMat, fe_label::FInt)
+    function pressureloading!(forceout::FFltVec, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt)
         copyto!(forceout, XYZ/norm(XYZ)*p)
         return forceout
     end
@@ -76,8 +77,7 @@ function orthoballoon()
     femm = FEMMDeforLinear(MR, IntegDomain(fes, GaussRule(2, 2), true), material)
 
     K =stiffness(femm, geom, u)
-    U=  K\(F2)
-    scattersysvec!(u,U[:])
+    u = solve!(u, K, F2)
 
     # Produce a plot of the radial stress component in the cylindrical
     # coordinate system. Note that this is the usual representation of
@@ -136,13 +136,13 @@ function orthoballoon_penalty()
     # No EBC
     applyebc!(u)
     numberdofs!(u)
-    println("Number of degrees of freedom = $(u.nfreedofs)")
+    println("Number of degrees of freedom = $(nfreedofs(u))")
 
     # The traction boundary condition is applied in the radial
     # direction.
 
     el1femm =  FEMMBase(IntegDomain(subset(bdryfes,icl), GaussRule(1, 3), true))
-    function pressureloading!(forceout::FFltVec, XYZ::FFltMat, tangents::FFltMat, fe_label::FInt)
+    function pressureloading!(forceout::FFltVec, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt)
         copyto!(forceout, XYZ/norm(XYZ)*p)
         return forceout
     end
@@ -166,8 +166,8 @@ function orthoballoon_penalty()
     H = surfacenormalspringstiffness(xsfemm,  geom, u, springcoefficient, SurfaceNormal(3)) +
     surfacenormalspringstiffness(ysfemm,  geom, u, springcoefficient, SurfaceNormal(3))
     K =stiffness(femm, geom, u)
-    U=  (K + H)\(F2)
-    scattersysvec!(u,U[:])
+
+    u = solve!(u, K+H, F2)
 
     # Produce a plot of the radial stress component in the cylindrical
     # coordinate system. Note that this is the usual representation of
@@ -194,4 +194,8 @@ function allrun()
     return true
 end # function allrun
 
+@info "All examples may be executed with "
+println("using .$(@__MODULE__); $(@__MODULE__).allrun()")
+
 end # module orthoballoon_examples
+nothing

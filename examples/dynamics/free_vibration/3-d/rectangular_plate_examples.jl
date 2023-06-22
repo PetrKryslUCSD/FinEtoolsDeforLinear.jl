@@ -4,7 +4,7 @@ using FinEtools
 using FinEtools.MeshImportModule
 using FinEtools.MeshExportModule
 using FinEtoolsDeforLinear
-using FinEtoolsDeforLinear.AlgoDeforLinearModule: ssit
+using SubSIt
 using LinearAlgebra: dot
 using Arpack
 using LinearAlgebra

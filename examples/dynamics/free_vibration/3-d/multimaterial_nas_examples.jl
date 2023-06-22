@@ -29,8 +29,8 @@ function multimaterial_nas()
 
     numberdofs!(u)
 
-    K = spzeros(u.nfreedofs, u.nfreedofs)
-    M = spzeros(u.nfreedofs, u.nfreedofs)
+    K = spzeros(nalldofs(u), nalldofs(u))
+    M = spzeros(nalldofs(u), nalldofs(u))
     allfes = nothing
     for i in 1:length(fesets)
         pid = pids[i]

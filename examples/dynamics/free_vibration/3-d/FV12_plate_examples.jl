@@ -4,7 +4,7 @@ using FinEtools
 using FinEtools.MeshImportModule
 using FinEtools.MeshExportModule
 using FinEtoolsDeforLinear
-using FinEtoolsDeforLinear.AlgoDeforLinearModule: ssit
+using SubSIt
 using LinearAlgebra: dot
 using Arpack
 using LinearAlgebra
@@ -54,7 +54,7 @@ function FV12_plate_esnice()
     vtkexportmesh(File, connasarray(fes), fens.xyz, FinEtools.MeshExportModule.VTK.T4; vectors = vectors)
     @async run(`"paraview.exe" $File`)
 
-    d,v,nconv = ssit(K+OmegaShift*M, M; nev=neigvs)
+    d,v,nconv = SubSIt.ssit(K+OmegaShift*M, M; nev=neigvs)
     d = d .- OmegaShift;
     fs = real(sqrt.(complex(d)))/(2*pi)
     println("Eigenvalues: $fs [Hz]")

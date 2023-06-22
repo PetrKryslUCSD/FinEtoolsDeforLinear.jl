@@ -1,9 +1,11 @@
 module trunc_cyl_shell_examples
 using FinEtools
+using FinEtools.AlgoBaseModule: solve!, matrix_blocked, vector_blocked
 using FinEtoolsDeforLinear
 using FinEtoolsDeforLinear.AlgoDeforLinearModule
 using LinearAlgebra
 using Arpack
+using SubSIt
 
 function trunc_cyl_shell()
     println("""
@@ -51,6 +53,8 @@ function trunc_cyl_shell()
     K =stiffness(femm, geom, u)
     femm = FEMMDeforLinear(MR, IntegDomain(fes, GaussRule(3,3)), material)
     M =mass(femm, geom, u)
+    K_ff = matrix_blocked(K, nfreedofs(u), nfreedofs(u))[:ff]
+    M_ff = matrix_blocked(M, nfreedofs(u), nfreedofs(u))[:ff]
 
 
     # eigs returns the nev requested eigenvalues in d, the corresponding Ritz vectors
@@ -59,7 +63,7 @@ function trunc_cyl_shell()
     # well as the final residual vector resid.
 
     if true
-        d,v,nev,nconv = eigs(K+OmegaShift*M, M; nev=neigvs, which=:SM)
+        d,v,nev,nconv = eigs(Symmetric(K_ff+OmegaShift*M_ff), Symmetric(M_ff); nev=neigvs, which=:SM, explicittransform=:none)
         d = d .- OmegaShift;
         fs = real(sqrt.(complex(d)))/(2*pi)
         println("Eigenvalues: $fs [Hz]")
@@ -71,11 +75,11 @@ function trunc_cyl_shell()
     end
 
     if true
-        solver = AlgoDeforLinearModule.ssit
-        v0 = rand(size(K,1), 2*neigvs)
+        solver = SubSIt.ssit
+        v0 = rand(size(K_ff,1), 2*neigvs)
         tol = 1.0e-2
         maxiter = 20
-        lamb, v, nconv, niter, nmult, lamberr = solver(K + OmegaShift.*M, M; nev=neigvs, v0=v0, tol=tol, maxiter=maxiter)
+        lamb, v, nconv, niter, lamberr = solver(K_ff + OmegaShift.*M_ff, M_ff; nev=neigvs, X=v0, tol=tol, maxiter=maxiter)
         if nconv < neigvs
             println("NOT converged")
         end
