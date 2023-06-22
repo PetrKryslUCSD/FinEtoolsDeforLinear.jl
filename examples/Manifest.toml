@@ -2,7 +2,7 @@
 
 julia_version = "1.9.0"
 manifest_format = "2.0"
-project_hash = "23709a3878dfe637364144a33291b8b450abd0fd"
+project_hash = "e7cf4eb1568e21ff24ecb4b9bf5e55b38b3b3fbb"
 
 [[deps.AMD]]
 deps = ["Libdl", "LinearAlgebra", "SparseArrays", "Test"]
@@ -125,8 +125,6 @@ version = "0.1.12"
 [[deps.CoNCMOR]]
 deps = ["FinEtools", "LinearAlgebra", "SparseArrays", "StaticArrays", "Statistics", "Test"]
 git-tree-sha1 = "7bb7d3f1463cdcb7045092a635768ae79ca9717b"
-repo-rev = "master"
-repo-url = "https://github.com/PetrKryslUCSD/CoNCMOR.jl.git"
 uuid = "3a989f29-cff0-4f1c-87be-5dcdd41bd240"
 version = "0.4.0"
 
