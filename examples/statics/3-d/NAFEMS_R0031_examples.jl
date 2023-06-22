@@ -99,8 +99,9 @@ function NAFEMS_R0031_1()
     CTE1, CTE2, CTE3)
 
     # The material coordinate system function is defined as:
-    function updatecs!(csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, fe_label::FInt)
-        rotmat3!(csmatout, angles[fe_label]/180.0*pi* [0.0; 0.0; 1.0]);
+    function _updatecs!(csmatout::FFltMat, feid, labels)
+        rotmat3!(csmatout, angles[labels[feid]]/180.0*pi* [0.0; 0.0; 1.0]);
+        csmatout
     end
 
     # The vvolume integrals are evaluated using this rule
@@ -108,12 +109,12 @@ function NAFEMS_R0031_1()
 
     # We will create two regions, one for the layers with 0°  orientation,
     # and one for the layers with 90° orientation.
-    rl1 = vcat(selectelem(fens, fes, label = 1), selectelem(fens, fes, label = 3),
-    selectelem(fens, fes, label = 5), selectelem(fens, fes, label = 7))
-    rl2 = vcat(selectelem(fens, fes, label = 2), selectelem(fens, fes, label = 4),
-    selectelem(fens, fes, label = 6))
-    region1 = FDataDict("femm"=>FEMMDeforLinearMSH8(MR, IntegDomain(subset(fes, rl1), gr), CSys(3, 3, updatecs!), material))
-    region2 = FDataDict("femm"=>FEMMDeforLinearMSH8(MR, IntegDomain(subset(fes, rl2), gr), CSys(3, 3, updatecs!), material))
+    rl1 = vcat(selectelem(fens, fes, label = 1), selectelem(fens, fes, label = 3),    selectelem(fens, fes, label = 5), selectelem(fens, fes, label = 7))
+    rfes1 = subset(fes, rl1)
+    region1 = FDataDict("femm"=>FEMMDeforLinearMSH8(MR, IntegDomain(rfes1, gr), CSys(3, 3, (csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) -> _updatecs!(csmatout, feid, rfes1.label)), material))
+    rl2 = vcat(selectelem(fens, fes, label = 2), selectelem(fens, fes, label = 4),    selectelem(fens, fes, label = 6))
+    rfes2 = subset(fes, rl2)
+    region2 = FDataDict("femm"=>FEMMDeforLinearMSH8(MR, IntegDomain(rfes2, gr), CSys(3, 3, (csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) -> _updatecs!(csmatout, feid, rfes2.label)), material))
 
     # File =  "NAFEMS-R0031-1-plate-r1.vtk"
     # vtkexportmesh(File, region1["femm"].integdomain.fes.conn, fens.xyz, FinEtools.MeshExportModule.H8)
@@ -344,21 +345,22 @@ function NAFEMS_R0031_1_H20()
     CTE1, CTE2, CTE3)
 
     # The material coordinate system function is defined as:
-    function updatecs!(csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, fe_label::FInt)
-        rotmat3!(csmatout, angles[fe_label]/180.0*pi* [0.0; 0.0; 1.0]);
-    end
+    function _updatecs!(csmatout::FFltMat, feid, labels)
+            rotmat3!(csmatout, angles[labels[feid]]/180.0*pi* [0.0; 0.0; 1.0]);
+            csmatout
+        end
 
     # The vvolume integrals are evaluated using this rule
     gr = GaussRule(3, 3)
 
     # We will create two regions, one for the layers with 0°  orientation,
     # and one for the layers with 90° orientation.
-    rl1 = vcat(selectelem(fens, fes, label = 1), selectelem(fens, fes, label = 3),
-    selectelem(fens, fes, label = 5), selectelem(fens, fes, label = 7))
-    rl2 = vcat(selectelem(fens, fes, label = 2), selectelem(fens, fes, label = 4),
-    selectelem(fens, fes, label = 6))
-    region1 = FDataDict("femm"=>FEMMDeforLinear(MR, IntegDomain(subset(fes, rl1), gr), CSys(3, 3, updatecs!), material))
-    region2 = FDataDict("femm"=>FEMMDeforLinear(MR, IntegDomain(subset(fes, rl2), gr), CSys(3, 3, updatecs!), material))
+    rl1 = vcat(selectelem(fens, fes, label = 1), selectelem(fens, fes, label = 3),    selectelem(fens, fes, label = 5), selectelem(fens, fes, label = 7))
+    rfes1 = subset(fes, rl1)
+    region1 = FDataDict("femm"=>FEMMDeforLinear(MR, IntegDomain(rfes1, gr), CSys(3, 3, (csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) -> _updatecs!(csmatout, feid, rfes1.label)), material))
+    rl2 = vcat(selectelem(fens, fes, label = 2), selectelem(fens, fes, label = 4),    selectelem(fens, fes, label = 6))
+    rfes2 = subset(fes, rl2)
+    region2 = FDataDict("femm"=>FEMMDeforLinear(MR, IntegDomain(rfes2, gr), CSys(3, 3, (csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) -> _updatecs!(csmatout, feid, rfes2.label)), material))
 
     # File =  "NAFEMS-R0031-1-plate-r1.vtk"
     # vtkexportmesh(File, region1["femm"].integdomain.fes.conn, fens.xyz, FinEtools.MeshExportModule.H8)
@@ -504,8 +506,9 @@ function NAFEMS_R0031_2_both()
         csmatout[:, 1] = cross(csmatout[:, 2], csmatout[:, 3])
     end
 
-    function updatecs!(csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, fe_label::FInt)
+    function updatecs!(csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt)
         cylcs!(csmatout, XYZ)
+        csmatout
     end
 
     gr = GaussRule(3, 3)
@@ -523,10 +526,11 @@ function NAFEMS_R0031_2_both()
     ey0 = FDataDict( "displacement"=>  0.0, "component"=> 2, "node_list"=>ly0 )
     ez0 = FDataDict( "displacement"=>  0.0, "component"=> 3, "node_list"=>lz0 )
 
-    function getpr!(forceout::FFltVec, XYZ::FFltMat, tangents::FFltMat, fe_label::FInt)
+    function getpr!(forceout::FFltVec, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt)
         csmatout = zeros(3, 3)
         cylcs!(csmatout, XYZ)
         copy!(forceout, q0*csmatout[:, 3])
+        return forceout
     end
 
     Trac = FDataDict("traction_vector"=>getpr!, "femm"=>FEMMBase(IntegDomain(subset(bfes, intl), GaussRule(2, 3))))
@@ -611,25 +615,24 @@ function NAFEMS_R0031_2_pressure()
     innermaterial = MatDeforElastIso(MR,
     0.0, E, nu, CTE)
 
-    function cylcs!(csmatout::FFltMat, XYZ::FFltMat)
+    function _cylcs!(csmatout::FFltMat, XYZ::FFltMat)
         csmatout[:, 2] = [0.0 0.0 1.0]
         radial = XYZ; radial[3] = 0.0
         csmatout[:, 3] = radial/norm(radial)
         csmatout[:, 1] = cross(csmatout[:, 2], csmatout[:, 3])
+        return csmatout
     end
 
-    function updatecs!(csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, fe_label::FInt)
-        cylcs!(csmatout, XYZ)
+    function updatecs!(csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt)
+        return _cylcs!(csmatout, XYZ)
     end
 
     gr = GaussRule(3, 3)
 
     rli = selectelem(fens, fes, label=1)
-    innerregion = FDataDict("femm"=>FEMMDeforLinear(MR,
-    IntegDomain(subset(fes, rli), gr), innermaterial))
+    innerregion = FDataDict("femm"=>FEMMDeforLinear(MR,    IntegDomain(subset(fes, rli), gr), innermaterial))
     rle = selectelem(fens, fes, label=2)
-    outerregion = FDataDict("femm"=>FEMMDeforLinear(MR,
-    IntegDomain(subset(fes, rle), gr), CSys(3, 3, updatecs!), outermaterial))
+    outerregion = FDataDict("femm"=>FEMMDeforLinear(MR,    IntegDomain(subset(fes, rle), gr), CSys(3, 3, updatecs!), outermaterial))
 
     lx0 = selectnode(fens, box=[0.0 0.0 -Inf Inf -Inf Inf], inflate=tolerance)
     ly0 = selectnode(fens, box=[-Inf Inf 0.0 0.0 -Inf Inf], inflate=tolerance)
@@ -639,10 +642,11 @@ function NAFEMS_R0031_2_pressure()
     ey0 = FDataDict( "displacement"=>  0.0, "component"=> 2, "node_list"=>ly0 )
     ez0 = FDataDict( "displacement"=>  0.0, "component"=> 3, "node_list"=>lz0 )
 
-    function getpr!(forceout::FFltVec, XYZ::FFltMat, tangents::FFltMat, fe_label::FInt)
+    function getpr!(forceout::FFltVec, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt)
         csmatout = zeros(3, 3)
-        cylcs!(csmatout, XYZ)
+        _cylcs!(csmatout, XYZ)
         copy!(forceout, q0*csmatout[:, 3])
+        return forceout
     end
 
     Trac = FDataDict("traction_vector"=>getpr!, "femm"=>FEMMBase(IntegDomain(subset(bfes, intl), GaussRule(2, 3))))
