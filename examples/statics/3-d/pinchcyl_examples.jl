@@ -1,5 +1,6 @@
 module pinchcyl_examples
 using FinEtools
+using FinEtools.AlgoBaseModule: solve!, matrix_blocked, vector_blocked
 using FinEtoolsDeforLinear
 using FinEtoolsDeforLinear.AlgoDeforLinearModule
 using FinEtools.MeshExportModule
@@ -59,7 +60,7 @@ function pinchcyl_h8_full()
 
   		K = stiffness(femm, geom, u)
 
-  		scattersysvec!(u, K\F)
+  		u = solve!(u, K, F)
 
   		u0z = mean(u.values[loadnl, 3]);
   		println("Deflection under the load: $(round((u0z / uzex)* 100000)/100000*100) %")
@@ -117,7 +118,7 @@ function pinchcyl_h8_uri()
 
   		K = stiffness(femm, geom, u)
 
-  		scattersysvec!(u, K\F)
+  		u = solve!(u, K, F)
 
   		u0z = mean(u.values[cnl, 3]);
   		println("Deflection under the load: $(round((u0z / analyt_sol)* 100000)/100000*100) %")
@@ -175,7 +176,7 @@ function pinchcyl_h8_ms()
 
       		K = stiffness(femm, geom, u)
 
-      		scattersysvec!(u, K\F)
+      		u = solve!(u, K, F)
 
       		u0z = mean(u.values[loadnl, 3]);
       		println("Deflection under the load: $(round((u0z / uzex)* 100000)/100000*100) %")
@@ -308,7 +309,7 @@ function pinchcyl_h20r()
 
       		K = stiffness(femm, geom, u)
 
-      		scattersysvec!(u, K\F)
+      		u = solve!(u, K, F)
 
       		u0z = mean(u.values[loadnl, 3]);
       		println("Deflection under the load: $(round((u0z / uzex)* 100000)/100000*100) %")
@@ -366,7 +367,7 @@ function pinchcyl_h20()
 
       		K = stiffness(femm, geom, u)
 
-      		scattersysvec!(u, K\F)
+      		u = solve!(u, K, F)
 
       		u0z = mean(u.values[loadnl, 3]);
       		println("Deflection under the load: $(round((u0z / uzex)* 100000)/100000*100) %")
@@ -424,7 +425,7 @@ function pinchcyl_t10_ms()
 
       		K = stiffness(femm, geom, u)
 
-      		scattersysvec!(u, K\F)
+      		u = solve!(u, K, F)
 
       		u0z = mean(u.values[loadnl, 3]);
       		println("Deflection under the load: $(round((u0z / uzex)* 100000)/100000*100) %")
@@ -482,7 +483,7 @@ function pinchcyl_t10()
 
       		K = stiffness(femm, geom, u)
 
-      		scattersysvec!(u, K\F)
+      		u = solve!(u, K, F)
 
       		u0z = mean(u.values[loadnl, 3]);
       		println("Deflection under the load: $(round((u0z / uzex)* 100000)/100000*100) %")
@@ -508,6 +509,13 @@ function allrun()
     println("#####################################################")
     println("# pinchcyl_h8_ms ")
     pinchcyl_h8_ms()
+    println("#####################################################")
+    println("# pinchcyl_t10_ms ")
+    pinchcyl_t10_ms()
+    println("#####################################################")
+    println("# pinchcyl_h20r ")
+    pinchcyl_h20r()
+
     return true
 end # function allrun
 
