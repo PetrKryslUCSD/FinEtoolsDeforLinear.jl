@@ -452,6 +452,44 @@ end
 
 # end # alum_cyl_modes_msh8_algo
 
+function alum_cyl_mode_esnice_h8()
+
+    E = 70000*phun("MPa");
+    nu = 0.33;
+    rho = 2700*phun("KG/M^3");
+    radius = 0.5*phun("ft");
+    OmegaShift = (10.0*2*pi)^2;
+
+    MR = DeforModelRed3D
+    output = import_ABAQUS(joinpath(@__DIR__, "alum_cyl.inp"))
+    fens, fes = output["fens"], output["fesets"][1]
+    fens.xyz .*= phun("mm") # The input is provided in SI(mm) units
+    fens, fes = T10toT4(fens, fes)
+    fens, fes = T4toH8(fens, fes)
+
+    geom = NodalField(fens.xyz)
+    u = NodalField(zeros(size(fens.xyz,1),3)) # displacement field
+
+    numberdofs!(u)
+
+    material = MatDeforElastIso(MR, rho, E, nu, 0.0)
+
+    femm = FEMMDeforLinearESNICEH8(MR, IntegDomain(fes, NodalTensorProductRule(3)), material)
+    associategeometry!(femm,  geom)
+    K  = stiffness(femm, geom, u)
+    M = mass(femm, geom, u)
+    d,v,nev,nconv = eigs(Symmetric(K+OmegaShift*M), Symmetric(M); nev=neigvs, which=:SM, explicittransform=:none)
+    d = d .- OmegaShift;
+    fs = real(sqrt.(complex(d)))/(2*pi)
+    println("Eigenvalues: $fs [Hz]")
+    # @show     v' * M * v
+    # @test norm(fs - [0.00000e+00, 0.00000e+00, 0.00000e+00, 5.54160e-06, 8.64750e-05, 1.18749e-04, 2.49815e+03, 2.49888e+03, 2.51331e+03, 4.08265e+03, 4.58599e+03, 4.58642e+03, 4.98701e+03, 6.64802e+03, 6.64848e+03, 6.67904e+03, 6.68216e+03, 6.77789e+03, 6.78059e+03, 6.79936e+03, 6.80400e+03, 7.38167e+03, 7.45600e+03, 7.47771e+03]) < 0.01
+
+
+    true
+
+end # alum_cyl_modes
+
 function allrun()
     println("#####################################################") 
     println("# alum_cyl_mode_nice_t4 ")
@@ -462,6 +500,9 @@ function allrun()
     println("#####################################################") 
     println("# alum_cyl_mode_esnice_t4 ")
     alum_cyl_mode_esnice_t4()
+    println("#####################################################")
+    println("# alum_cyl_mode_esnice_h8 ")
+    alum_cyl_mode_esnice_h8()
     return true
 end # function allrun
 
