@@ -122,7 +122,7 @@ function TEST13H_hva()
     fens,fes  = H8block(L, L, t, nL, nL, nt)
     
     geom = NodalField(fens.xyz)
-    u = NodalField(zeros(FCplxFlt, size(fens.xyz,1), 3)) # displacement field
+    u = NodalField(zeros(Complex{Float64}, size(fens.xyz,1), 3)) # displacement field
     nl = selectnode(fens, box=[0.0 0.0 -Inf Inf -Inf Inf], inflate=tolerance)
     setebc!(u, nl, true, 3)
     nl = selectnode(fens, box=[L L -Inf Inf -Inf Inf], inflate=tolerance)
@@ -176,7 +176,7 @@ function TEST13H_hva()
     F_f = vector_blocked(F, nfreedofs(u))[:f]
     U_d = gathersysvec(u, :d)
 
-    U1 = zeros(FCplxFlt, nfreedofs(u), length(frequencies))
+    U1 = zeros(Complex{Float64}, nfreedofs(u), length(frequencies))
     for k = 1:length(frequencies)
         frequency = frequencies[k];
         omega = 2*pi*frequency;
