@@ -43,7 +43,7 @@ function FV12_plate_esnice()
     d = d .- OmegaShift;
     fs = real(sqrt.(complex(d)))/(2*pi)
     println("Eigenvalues: $fs [Hz]")
-    println("f/f_analytical = $(fs[7:10]  ./ f_analytical[7:10] .* 100) %")
+    println("f/f_analytical % = $(fs[7:10]  ./ f_analytical[7:10] .* 100) %")
 
     vectors = []
     for i = 7:length(fs)
