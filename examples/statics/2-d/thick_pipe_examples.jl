@@ -1,6 +1,6 @@
 module thick_pipe_examples
 using FinEtools
-using FinEtools.AlgoBaseModule: solve!, matrix_blocked, vector_blocked
+using FinEtools.AlgoBaseModule: solve_blocked!, matrix_blocked, vector_blocked
 using FinEtoolsDeforLinear
 using PGFPlotsX
 using Statistics
@@ -139,7 +139,7 @@ function thick_pipe_axi()
 
     K = stiffness(femm, geom, u)
 
-    u = solve!(u, K, F2)
+    u = solve_blocked!(u, K, F2)
 
     # Transfer the solution of the displacement to the nodes on the
     # internal cylindrical surface and convert to
@@ -412,7 +412,7 @@ function thick_pipe_ps()
         copyto!(forceout, XYZ/norm(XYZ)*press)
         return forceout
     end
-    fi = ForceIntensity(FFlt, 2, pressureloading!); # pressure normal to the internal cylindrical surface
+    fi = ForceIntensity(Float64, 2, pressureloading!); # pressure normal to the internal cylindrical surface
     F2 = distribloads(el1femm, geom, u, fi, 2);
 
     # Property and material
@@ -422,7 +422,7 @@ function thick_pipe_ps()
 
     K =stiffness(femm, geom, u)
 
-    u = solve!(u, K, F2)
+    u = solve_blocked!(u, K, F2)
 
     # Transfer the solution of the displacement to the nodes on the
     # internal cylindrical surface and convert to
@@ -641,7 +641,7 @@ function thick_pipe_ps_T6()
         copyto!(forceout, XYZ/norm(XYZ)*press)
         return forceout
     end
-    fi = ForceIntensity(FFlt, 2, pressureloading!); # pressure normal to the internal cylindrical surface
+    fi = ForceIntensity(Float64, 2, pressureloading!); # pressure normal to the internal cylindrical surface
     F2 = distribloads(el1femm, geom, u, fi, 2);
 
     # Property and material
@@ -651,7 +651,7 @@ function thick_pipe_ps_T6()
 
     K =stiffness(femm, geom, u)
 
-    u = solve!(u, K, F2)
+    u = solve_blocked!(u, K, F2)
 
     # Transfer the solution of the displacement to the nodes on the
     # internal cylindrical surface and convert to

@@ -339,7 +339,7 @@ mmmCookmstressisommm.test()
 
 module mmLE10expimpmm
 using FinEtools
-using FinEtools.AlgoBaseModule: solve!
+using FinEtools.AlgoBaseModule: solve_blocked!
 using FinEtoolsDeforLinear
 using FinEtools.MeshExportModule
 using FinEtools.MeshImportModule
@@ -694,11 +694,11 @@ function test()
     numberdofs!(u)
 
     eL1femm =  FEMMBase(IntegDomain(subset(bdryfes,topbfl), TriRule(3)))
-    function pfun(forceout::FVec{T}, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) where {T}
+    function pfun(forceout::Vector{T}, XYZ, tangents, feid, qpid) where {T}
         forceout .=  [0.0, 0.0, -qmagn]
         return forceout
     end
-    fi = ForceIntensity(FFlt, 3, pfun);
+    fi = ForceIntensity(Float64, 3, pfun);
     F2 = distribloads(eL1femm, geom, u, fi, 2);
 
     # Note that the material object needs to be created with the proper
@@ -714,10 +714,10 @@ function test()
 
     K = stiffness(femm, geom, u)
 
-    u = solve!(u, K, F2)
+    u = solve_blocked!(u, K, F2)
 
     nl = selectnode(fens, box=[Ai,Ai,0,0,Thickness,Thickness],inflate=tolerance);
-    thecorneru = zeros(FFlt,1,3)
+    thecorneru = zeros(Float64,1,3)
     gathervalues_asmat!(u, thecorneru, nl);
     thecorneru = thecorneru/phun("mm")
     # println("displacement =$(thecorneru) [MM] as compared to reference [-0.030939, 0, -0.10488] [MM]")
@@ -803,11 +803,11 @@ try rm(AE.filename) catch end
     numberdofs!(u)
 
     eL1femm =  FEMMBase(IntegDomain(subset(bdryfes,topbfl), TriRule(3)))
-    # function pfun(forceout::FVec{T}, XYZ::FFltMat, tangents::FFltMat, feid::FInt) where {T}
+    # function pfun(forceout::FVec{T}, XYZ, tangents, feid) where {T}
     #     forceout .=  [0.0, 0.0, -qmagn]
     #     return forceout
     # end
-    fi = ForceIntensity(FFlt, 3, pfun);
+    fi = ForceIntensity(Float64, 3, pfun);
     F2 = distribloads(eL1femm, geom, u, fi, 2);
 
     # Note that the material object needs to be created with the proper
@@ -823,10 +823,10 @@ try rm(AE.filename) catch end
 
     K = stiffness(femm, geom, u)
 
-    u = solve!(u, K, F2)
+    u = solve_blocked!(u, K, F2)
 
     nl = selectnode(fens, box=[Ai,Ai,0,0,Thickness,Thickness],inflate=tolerance);
-    thecorneru = zeros(FFlt,1,3)
+    thecorneru = zeros(Float64,1,3)
     gathervalues_asmat!(u, thecorneru, nl);
     thecorneru = thecorneru/phun("mm")
     # println("displacement =$(thecorneru) [MM] as compared to reference [-0.030939, 0, -0.10488] [MM]")
@@ -931,7 +931,7 @@ mmLE10expimpmm.test()
 #     end
 
     
-#     v0 = [i==j ? one(FFlt) : zero(FFlt) for i=1:size(K,1), j=1:2*neigvs]
+#     v0 = [i==j ? one(Float64) : zero(Float64) for i=1:size(K,1), j=1:2*neigvs]
 #     tol = 1.0e-2
 #     maxiter = 20
 #     lamb, v, nconv, niter, lamberr =
@@ -1108,7 +1108,7 @@ mmFV32mm1.test()
 #         # @async run(`"paraview.exe" $File`)
 #     end
 
-#     v0 = [i==j ? one(FFlt) : zero(FFlt) for i=1:size(K,1), j=1:2*neigvs]
+#     v0 = [i==j ? one(Float64) : zero(Float64) for i=1:size(K,1), j=1:2*neigvs]
 #     tol = 1.0e-2
 #     maxiter = 20
 #     lamb, v, nconv, niter, lamberr =

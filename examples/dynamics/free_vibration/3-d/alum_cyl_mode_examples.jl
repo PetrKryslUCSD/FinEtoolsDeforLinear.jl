@@ -1,6 +1,6 @@
 module alum_cyl_mode_examples
 using FinEtools
-using FinEtools.AlgoBaseModule: solve!, matrix_blocked, vector_blocked
+using FinEtools.AlgoBaseModule: solve_blocked!, matrix_blocked, vector_blocked
 using FinEtools.MeshExportModule
 using FinEtoolsDeforLinear
 using FinEtoolsDeforLinear.FEMMDeforLinearESNICEModule

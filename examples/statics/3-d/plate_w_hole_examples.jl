@@ -89,7 +89,7 @@ function plate_w_hole_H20_stress()
             forceout[3] = 0.0
             return forceout
         end
-        fi = ForceIntensity(FFlt, 3, pfun);
+        fi = ForceIntensity(Float64, 3, pfun);
         F2 = distribloads(el1femm, geom, u, fi, 2);
 
         MR = DeforModelRed3D
@@ -229,7 +229,7 @@ function plate_w_hole_MSH8_convergence()
                 forceout[3] = 0.0
                 return forceout
             end
-            fi = ForceIntensity(FFlt, 3, pfun);
+            fi = ForceIntensity(Float64, 3, pfun);
             F2 = distribloads(el1femm, geom, u, fi, 2);
 
             MR = DeforModelRed3D
@@ -383,7 +383,7 @@ function plate_w_hole_MSH8_PE_convergence()
                 forceout[3] = 0.0
                 return forceout
             end
-            fi = ForceIntensity(FFlt, 3, pfun);
+            fi = ForceIntensity(Float64, 3, pfun);
             F2 = distribloads(el1femm, geom, u, fi, 2);
 
             MR = DeforModelRed3D
@@ -537,7 +537,7 @@ function plate_w_hole_MST10_convergence()
                 forceout[3] = 0.0
                 return forceout
             end
-            fi = ForceIntensity(FFlt, 3, pfun);
+            fi = ForceIntensity(Float64, 3, pfun);
             F2 = distribloads(el1femm, geom, u, fi, 2);
 
             MR = DeforModelRed3D
@@ -689,7 +689,7 @@ function plate_w_hole_MST10_PE_convergence()
                 forceout[3] = 0.0
                 return forceout
             end
-            fi = ForceIntensity(FFlt, 3, pfun);
+            fi = ForceIntensity(Float64, 3, pfun);
             F2 = distribloads(el1femm, geom, u, fi, 2);
 
             MR = DeforModelRed3D
@@ -824,7 +824,7 @@ function plate_w_hole_MST10_stress()
             forceout[3] = 0.0
             return forceout
         end
-        fi = ForceIntensity(FFlt, 3, pfun);
+        fi = ForceIntensity(Float64, 3, pfun);
         F2 = distribloads(el1femm, geom, u, fi, 2);
 
         MR = DeforModelRed3D
@@ -958,7 +958,7 @@ function plate_w_hole_RECT_H20_convergence()
                 forceout[3] = 0.0
                 return forceout
             end
-            fi = ForceIntensity(FFlt, 3, pfunx);
+            fi = ForceIntensity(Float64, 3, pfunx);
             Fx = distribloads(elxfemm, geom, u, fi, 2);
             # iyl = selectelem(fens, bdryfes, plane=[0.0, 1.0, 0.0, Re], thickness=tolerance);
             iyl = selectelem(fens, bdryfes, box=[-Inf, +Inf, Re, Re, -Inf, +Inf], inflate = tolerance);
@@ -969,7 +969,7 @@ function plate_w_hole_RECT_H20_convergence()
                 forceout[3] = 0.0
                 return forceout
             end
-            fi = ForceIntensity(FFlt, 3, pfuny);
+            fi = ForceIntensity(Float64, 3, pfuny);
             Fy = distribloads(elyfemm, geom, u, fi, 2);
 
             MR = DeforModelRed3D
@@ -1116,7 +1116,7 @@ function plate_w_hole_RECT_MSH8_convergence()
                 forceout[3] = 0.0
                 return forceout
             end
-            fi = ForceIntensity(FFlt, 3, pfunx);
+            fi = ForceIntensity(Float64, 3, pfunx);
             Fx = distribloads(elxfemm, geom, u, fi, 2);
             iyl = selectelem(fens, bdryfes, plane=[0.0, 1.0, 0.0, Re], thickness=tolerance);
             elyfemm =  FEMMBase(IntegDomain(subset(bdryfes,iyl), GaussRule(2, 2)))
@@ -1126,7 +1126,7 @@ function plate_w_hole_RECT_MSH8_convergence()
                 forceout[3] = 0.0
                 return forceout
             end
-            fi = ForceIntensity(FFlt, 3, pfuny);
+            fi = ForceIntensity(Float64, 3, pfuny);
             Fy = distribloads(elyfemm, geom, u, fi, 2);
 
             MR = DeforModelRed3D
@@ -1282,7 +1282,7 @@ function plate_w_hole_T10_PE_convergence()
                 forceout[3] = 0.0
                 return forceout
             end
-            fi = ForceIntensity(FFlt, 3, pfun);
+            fi = ForceIntensity(Float64, 3, pfun);
             F2 = distribloads(el1femm, geom, u, fi, 2);
 
             MR = DeforModelRed3D
@@ -1415,7 +1415,7 @@ function plate_w_hole_T10_stress()
             forceout[3] = 0.0
             return forceout
         end
-        fi = ForceIntensity(FFlt, 3, pfun);
+        fi = ForceIntensity(Float64, 3, pfun);
         F2 = distribloads(el1femm, geom, u, fi, 2);
 
         MR = DeforModelRed3D

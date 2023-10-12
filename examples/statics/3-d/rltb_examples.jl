@@ -1,6 +1,6 @@
 module rltb_examples
 using FinEtools
-using FinEtools.AlgoBaseModule: evalconvergencestudy, solve!
+using FinEtools.AlgoBaseModule: evalconvergencestudy, solve_blocked!
 using FinEtoolsDeforLinear
 using FinEtoolsDeforLinear.AlgoDeforLinearModule: linearstatics, exportstresselementwise, exportstress
 using Statistics: mean
@@ -65,13 +65,13 @@ function rltb_H8_by_hand()
     applyebc!(u)
     numberdofs!(u)
 
-    fi = ForceIntensity(FFlt, 3, getfrcL!);
+    fi = ForceIntensity(Float64, 3, getfrcL!);
     el2femm = FEMMBase(IntegDomain(subset(bfes, sectionL), GaussRule(2, 2)))
     F2 = distribloads(el2femm, geom, u, fi, 2);
     @show sum(F2)
     associategeometry!(femm, geom)
     K = stiffness(femm, geom, u)
-    u = solve!(u, K, F2)
+    u = solve_blocked!(u, K, F2)
 
     Tipl = selectnode(fens, box=[0 W L L 0 H], inflate=htol)
     utip = mean(u.values[Tipl, 3], dims=1)
@@ -133,13 +133,13 @@ function rltb_H20_by_hand()
     applyebc!(u)
     numberdofs!(u)
 
-    fi = ForceIntensity(FFlt, 3, getfrcL!);
+    fi = ForceIntensity(Float64, 3, getfrcL!);
     el2femm = FEMMBase(IntegDomain(subset(bfes, sectionL), GaussRule(2, 2)))
     F2 = distribloads(el2femm, geom, u, fi, 2);
     @show sum(F2)
     associategeometry!(femm, geom)
     K = stiffness(femm, geom, u)
-    u = solve!(u, K, F2)
+    u = solve_blocked!(u, K, F2)
 
     Tipl = selectnode(fens, box=[0 W L L 0 H], inflate=htol)
     utip = mean(u.values[Tipl, 3], dims=1)

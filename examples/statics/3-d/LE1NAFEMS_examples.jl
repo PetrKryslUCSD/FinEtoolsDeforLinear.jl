@@ -1,6 +1,6 @@
 module LE1NAFEMS_examples
 using FinEtools
-using FinEtools.AlgoBaseModule: solve!
+using FinEtools.AlgoBaseModule: solve_blocked!
 using FinEtoolsDeforLinear
 using FinEtoolsDeforLinear.AlgoDeforLinearModule
 using FinEtools.MeshExportModule
@@ -112,7 +112,7 @@ function LE1NAFEMS_MSH8()
         forceout .=    vec(p*pt/norm(pt));
         return forceout
     end
-    fi = ForceIntensity(FFlt, 3, pfun);
+    fi = ForceIntensity(Float64, 3, pfun);
     F2 = distribloads(el1femm, geom, u, fi, 2);
 
     # Note that the material object needs to be created with the proper
@@ -127,7 +127,7 @@ function LE1NAFEMS_MSH8()
     femm = associategeometry!(femm, geom)
 
     K = stiffness(femm, geom, u)
-    u = solve!(u, K, F2)
+    u = solve_blocked!(u, K, F2)
 
     nl = selectnode(fens, box=[2.0, 2.0, 0.0, 0.0, 0.0, 0.0],inflate=tolerance);
     thecorneru = zeros(FFlt,1,3)
@@ -216,7 +216,7 @@ function LE1NAFEMS_MSH8_convergence()
                 forceout .=    vec(p*pt/norm(pt));
                 return forceout
             end
-            fi = ForceIntensity(FFlt, 3, pfun);
+            fi = ForceIntensity(Float64, 3, pfun);
             F2 = distribloads(el1femm, geom, u, fi, 2);
 
             # Note that the material object needs to be created with the proper
@@ -231,7 +231,7 @@ function LE1NAFEMS_MSH8_convergence()
             femm = associategeometry!(femm, geom)
 
             K = stiffness(femm, geom, u)
-            u = solve!(u, K, F2)
+            u = solve_blocked!(u, K, F2)
 
             nl = selectnode(fens, box=[2.0, 2.0, 0.0, 0.0, 0.0, Thickness], inflate=tolerance);
             thecorneru = zeros(FFlt,length(nl),3)
@@ -305,7 +305,7 @@ function LE1NAFEMS_MSH8_export()
         forceout .=    vec(p*pt/norm(pt));
         return forceout
     end
-    fi = ForceIntensity(FFlt, 3, pfun);
+    fi = ForceIntensity(Float64, 3, pfun);
     F2 = distribloads(el1femm, geom, u, fi, 2);
 
     # Note that the material object needs to be created with the proper
@@ -320,7 +320,7 @@ function LE1NAFEMS_MSH8_export()
     femm = associategeometry!(femm, geom)
 
     K = stiffness(femm, geom, u)
-    u = solve!(u, K, F2)
+    u = solve_blocked!(u, K, F2)
 
     nl = selectnode(fens, box=[2.0, 2.0, 0.0, 0.0, 0.0, 0.0],inflate=tolerance);
     thecorneru = zeros(FFlt,1,3)
@@ -395,7 +395,7 @@ function LE1NAFEMS_MST10_convergence()
                 forceout .=    vec(p*pt/norm(pt));
                 return forceout
             end
-            fi = ForceIntensity(FFlt, 3, pfun);
+            fi = ForceIntensity(Float64, 3, pfun);
             F2 = distribloads(el1femm, geom, u, fi, 2);
 
             # Note that the material object needs to be created with the proper
@@ -410,7 +410,7 @@ function LE1NAFEMS_MST10_convergence()
             femm = associategeometry!(femm, geom)
 
             K = stiffness(femm, geom, u)
-            u = solve!(u, K, F2)
+            u = solve_blocked!(u, K, F2)
 
             nl = selectnode(fens, box=[2.0, 2.0, 0.0, 0.0, 0.0, Thickness], inflate=tolerance);
             thecorneru = zeros(FFlt,length(nl),3)
@@ -489,7 +489,7 @@ function LE1NAFEMS_MST10_one()
                 forceout .=    vec(p*pt/norm(pt));
                 return forceout
             end
-            fi = ForceIntensity(FFlt, 3, pfun);
+            fi = ForceIntensity(Float64, 3, pfun);
             F2 = distribloads(el1femm, geom, u, fi, 2);
 
             # Note that the material object needs to be created with the proper
@@ -504,7 +504,7 @@ function LE1NAFEMS_MST10_one()
             femm = associategeometry!(femm, geom)
 
             K = stiffness(femm, geom, u)
-            u = solve!(u, K, F2)
+            u = solve_blocked!(u, K, F2)
 
             nl = selectnode(fens, box=[2.0, 2.0, 0.0, 0.0, 0.0, Thickness], inflate=tolerance);
             thecorneru = zeros(FFlt,length(nl),3)
@@ -613,7 +613,7 @@ function LE1NAFEMS_MST10_stresses_nodal()
                 forceout .=    vec(p*pt/norm(pt));
                 return forceout
             end
-            fi = ForceIntensity(FFlt, 3, pfun);
+            fi = ForceIntensity(Float64, 3, pfun);
             F2 = distribloads(el1femm, geom, u, fi, 2);
 
             # Note that the material object needs to be created with the proper
@@ -628,7 +628,7 @@ function LE1NAFEMS_MST10_stresses_nodal()
             femm = associategeometry!(femm, geom)
 
             K = stiffness(femm, geom, u)
-            u = solve!(u, K, F2)
+            u = solve_blocked!(u, K, F2)
 
             nl = selectnode(fens, box=[2.0, 2.0, 0.0, 0.0, 0.0, Thickness], inflate=tolerance);
             thecorneru = zeros(FFlt,length(nl),3)
@@ -724,7 +724,7 @@ function LE1NAFEMS_MST10_S_convergence()
                 forceout .=    vec(p*pt/norm(pt));
                 return forceout
             end
-            fi = ForceIntensity(FFlt, 3, pfun);
+            fi = ForceIntensity(Float64, 3, pfun);
             F2 = distribloads(el1femm, geom, u, fi, 2);
 
             # Note that the material object needs to be created with the proper
@@ -739,7 +739,7 @@ function LE1NAFEMS_MST10_S_convergence()
             femm = associategeometry!(femm, geom)
 
             K = stiffness(femm, geom, u)
-            u = solve!(u, K, F2)
+            u = solve_blocked!(u, K, F2)
 
             nl = selectnode(fens, box=[2.0, 2.0, 0.0, 0.0, 0.0, Thickness], inflate=tolerance);
             thecorneru = zeros(FFlt,length(nl),3)
@@ -813,7 +813,7 @@ function LE1NAFEMS_T10_stresses_nodal()
             forceout .=    vec(p*pt/norm(pt));
             return forceout
         end
-        fi = ForceIntensity(FFlt, 3, pfun);
+        fi = ForceIntensity(Float64, 3, pfun);
         F2 = distribloads(el1femm, geom, u, fi, 2);
 
         # Note that the material object needs to be created with the proper
@@ -828,7 +828,7 @@ function LE1NAFEMS_T10_stresses_nodal()
         femm = associategeometry!(femm, geom)
 
         K = stiffness(femm, geom, u)
-        u = solve!(u, K, F2)
+        u = solve_blocked!(u, K, F2)
 
         nl = selectnode(fens, box=[2.0, 2.0, 0.0, 0.0, 0.0, Thickness], inflate=tolerance);
         thecorneru = zeros(FFlt,length(nl),3)

@@ -1,6 +1,6 @@
 module TEST13H_examples
 using FinEtools
-using FinEtools.AlgoBaseModule: solve!, matrix_blocked, vector_blocked
+using FinEtools.AlgoBaseModule: solve_blocked!, matrix_blocked, vector_blocked
 using FinEtoolsDeforLinear
 using LinearAlgebra
 using Arpack
@@ -103,7 +103,7 @@ function TEST13H_hva()
         forceout .=  [0.0, 0.0, -qmagn]
         return forceout
     end
-    fi = ForceIntensity(FFlt, 3, pfun);
+    fi = ForceIntensity(Float64, 3, pfun);
     F = distribloads(el1femm, geom, u, fi, 2);
 
     F_f = vector_blocked(F, nfreedofs(u))[:f]

@@ -1,14 +1,14 @@
 
 module scratch1_06092017_ortho
 using FinEtools
-using FinEtools.AlgoBaseModule: solve!
+using FinEtools.AlgoBaseModule: solve_blocked!
 using FinEtoolsDeforLinear
 using Test
 
 mutable struct MyIData
-  c::FInt
-  r::FFltVec
-  s::FFltVec
+  c::Int
+  r::Vector{Float64}
+  s::Vector{Float64}
 end
 
 function test()
@@ -139,7 +139,7 @@ function test()
 
   K = stiffness(femm, geom, u)
 
-  u = solve!(u, K, F2)
+  u = solve_blocked!(u, K, F2)
 
   # Transfer the solution of the displacement to the nodes on the
   # internal cylindrical surface and convert to
@@ -167,7 +167,7 @@ function test()
     return idat
   end
 
-  idat = MyIData(1, FInt[], FInt[])
+  idat = MyIData(1, Int[], Int[])
   idat = inspectintegpoints(femm, geom, u, collect(1:count(fes)),
   inspector, idat, :Cauchy)
 
@@ -198,7 +198,7 @@ scratch1_06092017_ortho.test()
 
 module mmLE11Q8mm
 using FinEtools
-using FinEtools.AlgoBaseModule: solve!
+using FinEtools.AlgoBaseModule: solve_blocked!
 using FinEtoolsDeforLinear
 using Test
 import LinearAlgebra: norm, cholesky, cross
@@ -281,9 +281,9 @@ function test()
   K  = stiffness(femm, geom, u)
   F  =  thermalstrainloads(femm, geom, u, dT)
 
-  u = solve!(u, K, F)
+  u = solve_blocked!(u, K, F)
 
-  nA  = selectnode(fens,box = FFlt[1.0  1.0 0.0 0.0], inflate = tolerance);
+  nA  = selectnode(fens,box = Float64[1.0  1.0 0.0 0.0], inflate = tolerance);
 
   fld =  fieldfromintegpoints(femm, geom, u, dT, :Cauchy, 2)
 
@@ -317,7 +317,7 @@ mmLE11Q8mm.test()
 
 module mmLE11Q8mmortho
 using FinEtools
-using FinEtools.AlgoBaseModule: solve!
+using FinEtools.AlgoBaseModule: solve_blocked!
 using FinEtoolsDeforLinear
 using Test
 import LinearAlgebra: norm, cholesky, cross
@@ -401,9 +401,9 @@ function test()
   K  = stiffness(femm, geom, u)
   F  =  thermalstrainloads(femm, geom, u, dT)
 
-  u = solve!(u, K, F)
+  u = solve_blocked!(u, K, F)
 
-  nA  = selectnode(fens,box = FFlt[1.0  1.0 0.0 0.0], inflate = tolerance);
+  nA  = selectnode(fens,box = Float64[1.0  1.0 0.0 0.0], inflate = tolerance);
 
   fld =  fieldfromintegpoints(femm, geom, u, dT, :Cauchy, 2)
 
@@ -437,7 +437,7 @@ mmLE11Q8mmortho.test()
 
 module mLE11Q8aximmm
 using FinEtools
-using FinEtools.AlgoBaseModule: solve!
+using FinEtools.AlgoBaseModule: solve_blocked!
 using FinEtoolsDeforLinear
 using Test
 import LinearAlgebra: norm, cholesky, cross
@@ -519,9 +519,9 @@ function test()
   K  = stiffness(femm, geom, u)
   F  =  thermalstrainloads(femm, geom, u, dT)
 
-  u = solve!(u, K, F)
+  u = solve_blocked!(u, K, F)
 
-  nA  = selectnode(fens,box = FFlt[1.0  1.0 0.0 0.0], inflate = tolerance);
+  nA  = selectnode(fens,box = Float64[1.0  1.0 0.0 0.0], inflate = tolerance);
 
   fld =  fieldfromintegpoints(femm, geom, u, dT, :Cauchy, 2)
 
@@ -607,7 +607,7 @@ mLE11Q8aximmm.test()
 
 module mLE11Q8aximorthom
 using FinEtools
-using FinEtools.AlgoBaseModule: solve!
+using FinEtools.AlgoBaseModule: solve_blocked!
 using FinEtoolsDeforLinear
 using Test
 import LinearAlgebra: norm, cholesky, cross
@@ -689,9 +689,9 @@ function test()
   K  = stiffness(femm, geom, u)
   F  =  thermalstrainloads(femm, geom, u, dT)
 
-  u = solve!(u, K, F)
+  u = solve_blocked!(u, K, F)
 
-  nA  = selectnode(fens,box = FFlt[1.0  1.0 0.0 0.0], inflate = tolerance);
+  nA  = selectnode(fens,box = Float64[1.0  1.0 0.0 0.0], inflate = tolerance);
 
   fld =  fieldfromintegpoints(femm, geom, u, dT, :Cauchy, 2)
 

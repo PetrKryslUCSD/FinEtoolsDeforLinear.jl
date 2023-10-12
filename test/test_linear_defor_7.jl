@@ -622,7 +622,7 @@ using FinEtoolsDeforLinear.FEMMDeforLinearBaseModule: infsup_sh
 using Test
 import LinearAlgebra: norm, cholesky
 function test()
-	Length::FFlt, Width::FFlt, Height::FFlt, nL::FInt, nW::FInt, nH::FInt, orientation::Symbol = ( 1.0, 1.0, 1.0, 1, 1, 1, :a)
+	Length, Width, Height, nL, nW, nH, orientation::Symbol = ( 1.0, 1.0, 1.0, 1, 1, 1, :a)
 	Ea, nua, alphaa = ( 1.0, 0.3, 0.0)
 	fens = FENodeSet(Float64[0     0     0
      0     3     3
@@ -669,7 +669,7 @@ using FinEtoolsDeforLinear.FEMMDeforLinearBaseModule: infsup_gh
 using Test
 import LinearAlgebra: norm, cholesky
 function test()
-	Length::FFlt, Width::FFlt, Height::FFlt, nL::FInt, nW::FInt, nH::FInt, orientation::Symbol = ( 1.0, 1.0, 1.0, 1, 1, 1, :a)
+	Length, Width, Height, nL, nW, nH, orientation::Symbol = ( 1.0, 1.0, 1.0, 1, 1, 1, :a)
 	Ea, nua, alphaa = ( 1.0, 0.3, 0.0)
 	fens = FENodeSet(Float64[           0            0            0
 							  -1.6200e-01   3.0000e+00   2.9791e+00
@@ -717,7 +717,7 @@ using FinEtoolsDeforLinear.FEMMDeforLinearBaseModule: infsup_sh
 using Test
 import LinearAlgebra: norm, cholesky
 function test()
-	Length::FFlt, Width::FFlt, Height::FFlt, nL::FInt, nW::FInt, nH::FInt, orientation::Symbol = ( 1.0, 1.0, 1.0, 1, 1, 1, :a)
+	Length, Width, Height, nL, nW, nH, orientation::Symbol = ( 1.0, 1.0, 1.0, 1, 1, 1, :a)
 	Ea, nua, alphaa = ( 1.0, 0.3, 0.0)
 	fens = FENodeSet(Float64[        0         0         0
 								   -0.1620    3.0000    2.9791
@@ -764,7 +764,7 @@ using FinEtoolsDeforLinear.FEMMDeforLinearBaseModule: infsup_gh
 using Test
 import LinearAlgebra: norm, cholesky
 function test()
-	Length::FFlt, Width::FFlt, Height::FFlt, nL::FInt, nW::FInt, nH::FInt, orientation::Symbol = ( 1.0, 1.0, 1.0, 1, 1, 1, :a)
+	Length, Width, Height, nL, nW, nH, orientation::Symbol = ( 1.0, 1.0, 1.0, 1, 1, 1, :a)
 	Ea, nua, alphaa = ( 1.0, 0.3, 0.0)
 	fens = FENodeSet(Float64[0     0     0
      0     3     3

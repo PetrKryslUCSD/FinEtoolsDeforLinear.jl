@@ -1,6 +1,6 @@
 module bushing_examples
 using FinEtools
-using FinEtools.AlgoBaseModule: solve!, matrix_blocked, vector_blocked
+using FinEtools.AlgoBaseModule: solve_blocked!, matrix_blocked, vector_blocked
 using FinEtoolsDeforLinear
 using FinEtoolsDeforLinear.AlgoDeforLinearModule
 using FinEtools.MeshExportModule
@@ -59,7 +59,7 @@ function bushing_h8_full()
 
 	K = stiffness(femm, geom, u)
 
-    u = solve!(u, K, fill(0.0, nalldofs(u)))
+    u = solve_blocked!(u, K, fill(0.0, nalldofs(u)))
 
 	File =  "bushing_h8_full_u.vtk"
 	vtkexportmesh(File, fens, fes; vectors = [("u", u.values)])

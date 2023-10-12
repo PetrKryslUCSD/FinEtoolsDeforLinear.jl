@@ -109,7 +109,7 @@ function stubby_corbel_H8_by_hand()
     numberdofs!(u)
     println("u.nfreedofs = $(u.nfreedofs)")
 
-    fi = ForceIntensity(FFlt, 3, getfrcL!);
+    fi = ForceIntensity(Float64, 3, getfrcL!);
     el2femm = FEMMBase(IntegDomain(subset(bfes, sectionL), GaussRule(2, 2)))
     F = distribloads(el2femm, geom, u, fi, 2);
     associategeometry!(femm, geom)
@@ -194,7 +194,7 @@ function stubby_corbel_H8_big_1(n = 10, solver = :suitesparse)
     # numberdofs!(u)
     println("u.nfreedofs = $(u.nfreedofs)")
 
-    fi = ForceIntensity(FFlt, 3, getfrcL!);
+    fi = ForceIntensity(Float64, 3, getfrcL!);
     el2femm = FEMMBase(IntegDomain(subset(bfes, sectionL), GaussRule(2, 2)))
     F = distribloads(el2femm, geom, u, fi, 2);
     associategeometry!(femm, geom)
@@ -396,7 +396,7 @@ function stubby_corbel_H8_big(n = 10, solver = :suitesparse)
     # numberdofs!(u)
     println("u.nfreedofs = $(u.nfreedofs)")
 
-    fi = ForceIntensity(FFlt, 3, getfrcL!);
+    fi = ForceIntensity(Float64, 3, getfrcL!);
     el2femm = FEMMBase(IntegDomain(subset(bfes, sectionL), GaussRule(2, 2)))
     F = distribloads(el2femm, geom, u, fi, 2);
     associategeometry!(femm, geom)

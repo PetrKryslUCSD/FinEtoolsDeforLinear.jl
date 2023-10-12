@@ -716,7 +716,7 @@ function fiber_reinf_cant_yn_strong_no_algo()
 
     println("K = stiffness(femm, geom, u)")
     @time K = stiffness(femm, geom, u)
-    fi = ForceIntensity(FFlt, 3, getshr!);
+    fi = ForceIntensity(Float64, 3, getshr!);
     println("F =  distribloads(Tracfemm, geom, u, fi, 2);")
     @time F =  distribloads(Tracfemm, geom, u, fi, 2);
 

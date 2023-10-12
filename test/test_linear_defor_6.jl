@@ -42,12 +42,12 @@ function test()
 
 
     el1femm =  FEMMBase(IntegDomain(subset(bdryfes,icl), GaussRule(2, 2)))
-    function pfun(forceout::FVec{T}, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) where {T}
+    function pfun(forceout::Vector{T}, XYZ, tangents, feid, qpid) where {T}
         pt= [2.75/3.25*XYZ[1], 3.25/2.75*XYZ[2], 0.0]
         forceout .=    vec(p*pt/norm(pt));
         return forceout
     end
-    fi = ForceIntensity(FFlt, 3, pfun);
+    fi = ForceIntensity(Float64, 3, pfun);
     F2 = distribloads(el1femm, geom, u, fi, 2);
 
     # Note that the material object needs to be created with the proper
@@ -73,7 +73,7 @@ function test()
     scattersysvec!(u, U_f)
 
     nl = selectnode(fens, box=[2.0, 2.0, 0.0, 0.0, 0.0, 0.0],inflate=tolerance);
-    thecorneru = zeros(FFlt,1,3)
+    thecorneru = zeros(Float64,1,3)
     gathervalues_asmat!(u, thecorneru, nl);
     thecorneru = thecorneru/phun("mm")
     # println("displacement =$(thecorneru) [MM] as compared to reference [-0.10215,0] [MM]")
@@ -277,7 +277,7 @@ function test()
     u = modeldata["u"]
     dT = modeldata["temp"]
 
-    nA  = selectnode(fens,box = FFlt[1.0  1.0 0.0 0.0], inflate = tolerance);
+    nA  = selectnode(fens,box = Float64[1.0  1.0 0.0 0.0], inflate = tolerance);
 
     fld =  fieldfromintegpoints(femm, geom, u, dT, :Cauchy, 2)
 
@@ -641,7 +641,7 @@ function test()
         CTE1, CTE2, CTE3)
 
         # The material coordinate system function is defined as:
-        function updatecs!(csmatout::FFltMat, feid::FInt, labels)
+        function updatecs!(csmatout, feid, labels)
             fe_label = labels[feid]
             rotmat3!(csmatout, angles[fe_label]/180.0*pi* [0.0; 0.0; 1.0]);
             csmatout
@@ -680,7 +680,7 @@ function test()
 
         # The traction boundary condition is applied at the top of the plate.
         bfes = meshboundary(fes)
-        function pfun(forceout::FVec{T}, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) where {T}
+        function pfun(forceout::Vector{T}, XYZ, tangents, feid, qpid) where {T}
             forceout[1] = 0.0
             forceout[2] = 0.0
             forceout[3] = -q0*sin(pi*XYZ[1]/L)
@@ -1161,12 +1161,12 @@ function test()
 
 
     el1femm =  FEMMBase(IntegDomain(subset(bdryfes,icl), GaussRule(2, 2)))
-    function pfun(forceout::FVec{T}, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) where {T}
+    function pfun(forceout::Vector{T}, XYZ, tangents, feid, qpid) where {T}
         pt= [2.75/3.25*XYZ[1], 3.25/2.75*XYZ[2], 0.0]
         forceout .=    vec(p*pt/norm(pt));
         return forceout
     end
-    fi = ForceIntensity(FFlt, 3, pfun);
+    fi = ForceIntensity(Float64, 3, pfun);
     F2 = distribloads(el1femm, geom, u, fi, 2);
 
     # Note that the material object needs to be created with the proper
@@ -1192,7 +1192,7 @@ function test()
     scattersysvec!(u, U_f)
 
     nl = selectnode(fens, box=[2.0, 2.0, 0.0, 0.0, 0.0, 0.0],inflate=tolerance);
-    thecorneru = zeros(FFlt,1,3)
+    thecorneru = zeros(Float64,1,3)
     gathervalues_asmat!(u, thecorneru, nl);
     thecorneru = thecorneru/phun("mm")
     # println("displacement =$(thecorneru) [MM] as compared to reference [-0.10215,0] [MM]")

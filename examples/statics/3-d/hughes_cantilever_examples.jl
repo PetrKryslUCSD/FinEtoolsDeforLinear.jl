@@ -132,10 +132,10 @@ function hughes_cantilever_stresses_H8_by_hand()
     applyebc!(u)
     numberdofs!(u)
 
-    fi = ForceIntensity(FFlt, 3, getfrc0!);
+    fi = ForceIntensity(Float64, 3, getfrc0!);
     el1femm = FEMMBase(IntegDomain(subset(bfes, sshear0), GaussRule(2, 2)))
     F1 = distribloads(el1femm, geom, u, fi, 2);
-    fi = ForceIntensity(FFlt, 3, getfrcL!);
+    fi = ForceIntensity(Float64, 3, getfrcL!);
     el2femm = FEMMBase(IntegDomain(subset(bfes, sshearL), GaussRule(2, 2)))
     F2 = distribloads(el2femm, geom, u, fi, 2);
 
@@ -222,10 +222,10 @@ function hughes_cantilever_stresses_H20_by_hand()
     numberdofs!(u)
     u
 
-    fi = ForceIntensity(FFlt, 3, getfrc0!);
+    fi = ForceIntensity(Float64, 3, getfrc0!);
     el1femm = FEMMBase(IntegDomain(subset(bfes, sshear0), GaussRule(2, 2)))
     F1 = distribloads(el1femm, geom, u, fi, 2);
-    fi = ForceIntensity(FFlt, 3, getfrcL!);
+    fi = ForceIntensity(Float64, 3, getfrcL!);
     el2femm = FEMMBase(IntegDomain(subset(bfes, sshearL), GaussRule(2, 2)))
     F2 = distribloads(el2femm, geom, u, fi, 2);
 
@@ -313,10 +313,10 @@ function hughes_cantilever_stresses_T10_by_hand()
     numberdofs!(u)
 
 
-    fi = ForceIntensity(FFlt, 3, getfrc0!);
+    fi = ForceIntensity(Float64, 3, getfrc0!);
     el1femm = FEMMBase(IntegDomain(subset(bfes, sshear0), SimplexRule(2, 3)))
     F1 = distribloads(el1femm, geom, u, fi, 2);
-    fi = ForceIntensity(FFlt, 3, getfrcL!);
+    fi = ForceIntensity(Float64, 3, getfrcL!);
     el2femm = FEMMBase(IntegDomain(subset(bfes, sshearL), SimplexRule(2, 3)))
     F2 = distribloads(el2femm, geom, u, fi, 2);
 
@@ -403,10 +403,10 @@ function hughes_cantilever_stresses_MST10_by_hand()
     numberdofs!(u)
 
 
-    fi = ForceIntensity(FFlt, 3, getfrc0!);
+    fi = ForceIntensity(Float64, 3, getfrc0!);
     el1femm = FEMMBase(IntegDomain(subset(bfes, sshear0), SimplexRule(2, 3)))
     F1 = distribloads(el1femm, geom, u, fi, 2);
-    fi = ForceIntensity(FFlt, 3, getfrcL!);
+    fi = ForceIntensity(Float64, 3, getfrcL!);
     el2femm = FEMMBase(IntegDomain(subset(bfes, sshearL), SimplexRule(2, 3)))
     F2 = distribloads(el2femm, geom, u, fi, 2);
 

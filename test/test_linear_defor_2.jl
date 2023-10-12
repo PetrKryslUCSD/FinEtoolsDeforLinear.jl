@@ -668,16 +668,16 @@ muunit_cube_modes_exportmmm.test()
 
 module mmpipemmPSmorthom
 using FinEtools
-using FinEtools.AlgoBaseModule: solve!
+using FinEtools.AlgoBaseModule: solve_blocked!
 using FinEtoolsDeforLinear
 using Test
 using LinearAlgebra: norm, cholesky, cross, dot
 using Statistics: mean
 
 mutable struct MyIData
-    c::FInt
-    r::FFltVec
-    s::FFltVec
+    c::Int
+    r::Vector{Float64}
+    s::Vector{Float64}
 end
 
 function test()
@@ -822,11 +822,11 @@ numberdofs!(u)
 # direction.
 
 el1femm =  FEMMBase(IntegDomain(subset(bdryfes,bcl), GaussRule(1, 3)))
-function pressureloading!(forceout::FFltVec, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt)
+function pressureloading!(forceout::Vector{Float64}, XYZ::Matrix{Float64}, tangents::Matrix{Float64}, feid::Int, qpid::Int)
   copyto!(forceout, XYZ/norm(XYZ)*press)
   return forceout
 end
-fi = ForceIntensity(FFlt, 2, pressureloading!); # pressure normal to the internal cylindrical surface
+fi = ForceIntensity(Float64, 2, pressureloading!); # pressure normal to the internal cylindrical surface
 F2 = distribloads(el1femm, geom, u, fi, 2);
 
 # Property and material
@@ -835,13 +835,13 @@ material = MatDeforElastOrtho(MR, E, nu)
 femm = FEMMDeforLinear(MR, IntegDomain(fes, GaussRule(2, 2)), material)
 
 K = stiffness(femm, geom, u)
-u = solve!(u, K, F2)
+u = solve_blocked!(u, K, F2)
 
 # Transfer the solution of the displacement to the nodes on the
 # internal cylindrical surface and convert to
 # cylindrical-coordinate displacements there.
 uv = u.values[internal_fenids,:];
-ur = zeros(FFlt,length(internal_fenids));
+ur = zeros(Float64,length(internal_fenids));
 
 for j = 1:length(internal_fenids)
     n = fens.xyz[internal_fenids[j],:];
@@ -880,17 +880,17 @@ function inspector(idat::MyIData, elnum, conn, xe,  out,  xq)
     return R
   end
   Rm=outputRm(xq)
-  tm=zeros(FFlt,3,3)
+  tm=zeros(Float64,3,3)
   stressvtot!(MR, tm, out);# stress in global XYZ
   tpm = Rm'*tm*Rm;#  stress matrix in cylindrical coordinates
-  sp=zeros(FFlt,6)
+  sp=zeros(Float64,6)
   stressttov!(MR, sp, tpm);# stress vector in cylindr. coord.
   push!(idat.r,norm(xq))
   push!(idat.s,sp[idat.c])
   return idat
 end
 
-idat = MyIData(1, FFltVec[], FFltVec[])
+idat = MyIData(1, Vector{Float64}[], Vector{Float64}[])
 idat = inspectintegpoints(femm, geom, u, collect(1:count(fes)),
  inspector, idat, :Cauchy)
 # show(idat)

@@ -1401,7 +1401,7 @@ function LE10NAFEMS_Abaqus_fine_MST10()
         forceout .=  [0.0, 0.0, -qmagn]
         return forceout
     end
-    fi = ForceIntensity(FFlt, 3, pfun);
+    fi = ForceIntensity(Float64, 3, pfun);
     F2 = distribloads(eL1femm, geom, u, fi, 2);
     
     # Note that the material object needs to be created with the proper
@@ -1504,7 +1504,7 @@ function LE10NAFEMS_Abaqus_fine_MST10()
     numberdofs!(u)
     
     eL1femm =  FEMMBase(IntegDomain(subset(bdryfes,topbfl), TriRule(3)))
-    fi = ForceIntensity(FFlt, 3, pfun);
+    fi = ForceIntensity(Float64, 3, pfun);
     F2 = distribloads(eL1femm, geom, u, fi, 2);
     
     # Note that the material object needs to be created with the proper
@@ -1897,7 +1897,7 @@ function LE10NAFEMS_Abaqus_MST10()
         forceout .=  [0.0, 0.0, -qmagn]
         return forceout
     end
-    fi = ForceIntensity(FFlt, 3, pfun);
+    fi = ForceIntensity(Float64, 3, pfun);
     F2 = distribloads(eL1femm, geom, u, fi, 2);
     
     # Note that the material object needs to be created with the proper
@@ -2000,7 +2000,7 @@ function LE10NAFEMS_Abaqus_MST10()
     numberdofs!(u)
     
     eL1femm =  FEMMBase(IntegDomain(subset(bdryfes,topbfl), TriRule(3)))
-    fi = ForceIntensity(FFlt, 3, pfun);
+    fi = ForceIntensity(Float64, 3, pfun);
     F2 = distribloads(eL1femm, geom, u, fi, 2);
     
     # Note that the material object needs to be created with the proper
@@ -2116,7 +2116,7 @@ function LE10NAFEMS_MSH8()
         forceout .=  [0.0, 0.0, -qmagn]
         return forceout
     end
-    fi = ForceIntensity(FFlt, 3, pfun);
+    fi = ForceIntensity(Float64, 3, pfun);
     F2 = distribloads(el1femm, geom, u, fi, 2);
     
     # Note that the material object needs to be created with the proper
@@ -2228,7 +2228,7 @@ function LE10NAFEMS_MSH8_alt_export()
         forceout .=  [0.0, 0.0, -qmagn]
         return forceout
     end
-    fi = ForceIntensity(FFlt, 3, pfun);
+    fi = ForceIntensity(Float64, 3, pfun);
     F2 = distribloads(el1femm, geom, u, fi, 2);
     
     # Note that the material object needs to be created with the proper
@@ -2369,7 +2369,7 @@ function LE10NAFEMS_MSH8_export()
         forceout .=  [0.0, 0.0, -qmagn]
         return forceout
     end
-    fi = ForceIntensity(FFlt, 3, pfun);
+    fi = ForceIntensity(Float64, 3, pfun);
     F2 = distribloads(el1femm, geom, u, fi, 2);
     
     # Note that the material object needs to be created with the proper
@@ -2510,7 +2510,7 @@ function LE10NAFEMS_MST10()
         forceout .=  [0.0, 0.0, -qmagn]
         return forceout
     end
-    fi = ForceIntensity(FFlt, 3, pfun);
+    fi = ForceIntensity(Float64, 3, pfun);
     F2 = distribloads(el1femm, geom, u, fi, 2);
     
     # Note that the material object needs to be created with the proper
@@ -2670,7 +2670,7 @@ function LE10NAFEMS_MST10_stresses_nodal()
             numberdofs!(u)
             
             el1femm =  FEMMBase(IntegDomain(subset(bdryfes,topbfl), TriRule(3)))
-            fi = ForceIntensity(FFlt, 3, pfun);
+            fi = ForceIntensity(Float64, 3, pfun);
             F2 = distribloads(el1femm, geom, u, fi, 2);
             
             # Note that the material object needs to be created with the proper
@@ -2781,7 +2781,7 @@ function LE10NAFEMS_MSH8_stresses_nodal()
             numberdofs!(u)
             
             el1femm =  FEMMBase(IntegDomain(subset(bdryfes,topbfl), GaussRule(2, 2)))
-            fi = ForceIntensity(FFlt, 3, pfun);
+            fi = ForceIntensity(Float64, 3, pfun);
             F2 = distribloads(el1femm, geom, u, fi, 2);
             
             # Note that the material object needs to be created with the proper

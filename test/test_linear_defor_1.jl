@@ -1,6 +1,6 @@
 module mmLE11NAFEMSQ8algo2
 using FinEtools
-using FinEtools.AlgoBaseModule: solve!, matrix_blocked, vector_blocked
+using FinEtools.AlgoBaseModule: solve_blocked!, matrix_blocked, vector_blocked
 using FinEtoolsDeforLinear
 using FinEtoolsDeforLinear.AlgoDeforLinearModule: linearstatics, exportdeformation,
 exportstress, exportstresselementwise
@@ -89,7 +89,7 @@ function test()
     # @async run(`"paraview.exe" $(modeldata["postprocessing"]["exported"][1]["file"])`)
     try rm(modeldata["postprocessing"]["exported"][1]["file"]) catch end
 
-    nA  = selectnode(fens,box = FFlt[1.0  1.0 0.0 0.0], inflate = tolerance);
+    nA  = selectnode(fens,box = Float64[1.0  1.0 0.0 0.0], inflate = tolerance);
 
     modeldata["postprocessing"] = FDataDict("boundary_only"=> true,
     "file"=>"LE11NAFEMS_Q8_sigmay.vtk", "quantity"=>:Cauchy,
@@ -132,7 +132,7 @@ mmLE11NAFEMSQ8algo2.test()
 
 module sscratch_06112017
 using FinEtools
-using FinEtools.AlgoBaseModule: solve!, matrix_blocked, vector_blocked
+using FinEtools.AlgoBaseModule: solve_blocked!, matrix_blocked, vector_blocked
 using FinEtoolsDeforLinear
 using Test
 import Statistics: mean
@@ -367,8 +367,8 @@ function test()
   # The  computed stress at the node that is located at the point A  is
   # going to be now extracted from the nodal field for the stress.
   # Nodes at level Z=0.0
-  l1 =selectnode(fens,box=FFlt[-Inf  Inf -Inf  Inf 0.0 0.0],inflate=tolerance);
-  l2 =selectnode(fens,distance=1.0+0.1/2^nref,from=FFlt[0.0 0.0 0.0],inflate=tolerance);
+  l1 =selectnode(fens,box=Float64[-Inf  Inf -Inf  Inf 0.0 0.0],inflate=tolerance);
+  l2 =selectnode(fens,distance=1.0+0.1/2^nref,from=Float64[0.0 0.0 0.0],inflate=tolerance);
   nA=intersect(l1,l2);
   sA = mean(fld.values[nA])/phun("MEGA*Pa")
   sAn = mean(fld.values[nA])/sigmaA
@@ -390,7 +390,7 @@ sscratch_06112017.test()
 module cookstress_1
 using Test
 using FinEtools
-using FinEtools.AlgoBaseModule: solve!, matrix_blocked, vector_blocked
+using FinEtools.AlgoBaseModule: solve_blocked!, matrix_blocked, vector_blocked
 using FinEtoolsDeforLinear
 using FinEtools.MeshExportModule
 import LinearAlgebra: norm, cholesky, cross
@@ -444,7 +444,7 @@ function test()
   scattersysvec!(u, U_f)
 
   nl = selectnode(fens,  box=[Mid_edge[1], Mid_edge[1], Mid_edge[2], Mid_edge[2]], inflate=tolerance);
-  theutip = zeros(FFlt, 1, 2)
+  theutip = zeros(Float64, 1, 2)
   gathervalues_asmat!(u, theutip, nl);
   # println("$(time()-t0) [s];  displacement =$(theutip[2]) as compared to converged $convutip")
 
@@ -462,14 +462,14 @@ cookstress_1.test()
 module scratch1_06092017
 
 using FinEtools
-using FinEtools.AlgoBaseModule: solve!, matrix_blocked, vector_blocked
+using FinEtools.AlgoBaseModule: solve_blocked!, matrix_blocked, vector_blocked
 using FinEtoolsDeforLinear
 using Test
 
 mutable struct MyIData
-  c::FInt
-  r::FFltVec
-  s::FFltVec
+  c::Int
+  r::Vector{Float64}
+  s::Vector{Float64}
 end
 
 function test()
@@ -629,7 +629,7 @@ function test()
     return idat
   end
 
-  idat = MyIData(1, FInt[], FInt[])
+  idat = MyIData(1, Int[], Int[])
   idat = inspectintegpoints(femm, geom, u, collect(1:count(fes)),
   inspector, idat, :Cauchy)
 
@@ -661,7 +661,7 @@ scratch1_06092017.test()
 module scratch2_06102017
 
 using FinEtools
-using FinEtools.AlgoBaseModule: solve!, matrix_blocked, vector_blocked
+using FinEtools.AlgoBaseModule: solve_blocked!, matrix_blocked, vector_blocked
 using FinEtoolsDeforLinear
 using Test
 import Arpack: eigs
@@ -719,7 +719,7 @@ scratch2_06102017.test()
 module mxxxx1_06102017
 
 using FinEtools
-using FinEtools.AlgoBaseModule: solve!, matrix_blocked, vector_blocked
+using FinEtools.AlgoBaseModule: solve_blocked!, matrix_blocked, vector_blocked
 using FinEtoolsDeforLinear
 using FinEtoolsDeforLinear.AlgoDeforLinearModule
 import Statistics: mean
@@ -852,7 +852,7 @@ mxxxx1_06102017.test()
 
 module mx_06112017
 using FinEtools
-using FinEtools.AlgoBaseModule: solve!, matrix_blocked, vector_blocked
+using FinEtools.AlgoBaseModule: solve_blocked!, matrix_blocked, vector_blocked
 using FinEtoolsDeforLinear
 using Test
 import Statistics: mean
@@ -1092,8 +1092,8 @@ function test()
   # The  computed stress at the node that is located at the point A  is
   # going to be now extracted from the nodal field for the stress.
   # Nodes at level Z=0.0
-  l1 =selectnode(fens,box=FFlt[-Inf  Inf -Inf  Inf 0.0 0.0],inflate=tolerance);
-  l2 =selectnode(fens,distance=1.0+0.1/2^nref,from=FFlt[0.0 0.0 0.0],inflate=tolerance);
+  l1 =selectnode(fens,box=Float64[-Inf  Inf -Inf  Inf 0.0 0.0],inflate=tolerance);
+  l2 =selectnode(fens,distance=1.0+0.1/2^nref,from=Float64[0.0 0.0 0.0],inflate=tolerance);
   nA=intersect(l1,l2);
   sA = mean(fld.values[nA])/phun("MEGA*Pa")
   sAn = mean(fld.values[nA])/sigmaA
@@ -1118,7 +1118,7 @@ mx_06112017.test()
 module my_06112017
 
 using FinEtools
-using FinEtools.AlgoBaseModule: solve!, matrix_blocked, vector_blocked
+using FinEtools.AlgoBaseModule: solve_blocked!, matrix_blocked, vector_blocked
 using FinEtoolsDeforLinear
 using Test
 function test()
@@ -1206,7 +1206,7 @@ function test()
   U_f =  (K_ff)\F_f
   scattersysvec!(u, U_f)
 
-  nA  = selectnode(fens,box = FFlt[1.0  1.0 0.0 0.0], inflate = tolerance);
+  nA  = selectnode(fens,box = Float64[1.0  1.0 0.0 0.0], inflate = tolerance);
 
   fld =  fieldfromintegpoints(femm, geom, u, dT, :Cauchy, 2)
 

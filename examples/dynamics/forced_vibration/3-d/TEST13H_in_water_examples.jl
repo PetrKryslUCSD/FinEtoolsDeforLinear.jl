@@ -105,7 +105,7 @@ function TEST13H_hva()
         forceout .=  [0.0, 0.0, -qmagn]
         return forceout
     end
-    fi = ForceIntensity(FFlt, 3, pfun);
+    fi = ForceIntensity(Float64, 3, pfun);
     F = distribloads(el1femm, geom, u, fi, 2);
     
     U1 = zeros(FCplxFlt, u.nfreedofs, length(frequencies))

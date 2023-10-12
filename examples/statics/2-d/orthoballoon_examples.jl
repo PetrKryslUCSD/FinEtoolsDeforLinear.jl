@@ -1,6 +1,6 @@
 module orthoballoon_examples
 using FinEtools
-using FinEtools.AlgoBaseModule: solve!, matrix_blocked, vector_blocked
+using FinEtools.AlgoBaseModule: solve_blocked!, matrix_blocked, vector_blocked
 using FinEtoolsDeforLinear
 using LinearAlgebra
 
@@ -68,7 +68,7 @@ function orthoballoon()
         copyto!(forceout, XYZ/norm(XYZ)*p)
         return forceout
     end
-    fi = ForceIntensity(FFlt, 2, pressureloading!); # pressure normal to the internal cylindrical surface
+    fi = ForceIntensity(Float64, 2, pressureloading!); # pressure normal to the internal cylindrical surface
     F2= distribloads(el1femm, geom, u, fi, 2);
 
     # Property and material
@@ -77,7 +77,7 @@ function orthoballoon()
     femm = FEMMDeforLinear(MR, IntegDomain(fes, GaussRule(2, 2), true), material)
 
     K =stiffness(femm, geom, u)
-    u = solve!(u, K, F2)
+    u = solve_blocked!(u, K, F2)
 
     # Produce a plot of the radial stress component in the cylindrical
     # coordinate system. Note that this is the usual representation of
@@ -146,7 +146,7 @@ function orthoballoon_penalty()
         copyto!(forceout, XYZ/norm(XYZ)*p)
         return forceout
     end
-    fi = ForceIntensity(FFlt, 2, pressureloading!); # pressure normal to the internal cylindrical surface
+    fi = ForceIntensity(Float64, 2, pressureloading!); # pressure normal to the internal cylindrical surface
     F2= distribloads(el1femm, geom, u, fi, 2);
 
     # Property and material
@@ -167,7 +167,7 @@ function orthoballoon_penalty()
     surfacenormalspringstiffness(ysfemm,  geom, u, springcoefficient, SurfaceNormal(3))
     K =stiffness(femm, geom, u)
 
-    u = solve!(u, K+H, F2)
+    u = solve_blocked!(u, K+H, F2)
 
     # Produce a plot of the radial stress component in the cylindrical
     # coordinate system. Note that this is the usual representation of

@@ -1,6 +1,6 @@
 module LE11NAFEMS_examples
 using FinEtools
-using FinEtools.AlgoBaseModule: solve!, matrix_blocked, vector_blocked
+using FinEtools.AlgoBaseModule: solve_blocked!, matrix_blocked, vector_blocked
 using FinEtoolsDeforLinear
 using FinEtoolsDeforLinear.AlgoDeforLinearModule
 using Statistics
@@ -208,7 +208,7 @@ function LE11NAFEMS_H20()
 
     ##
     # And  the solution for the free degrees of freedom is obtained.
-    u = solve!(u, K+H, F)
+    u = solve_blocked!(u, K+H, F)
 
     ##
     # The stress  is recovered from the stress calculated at the

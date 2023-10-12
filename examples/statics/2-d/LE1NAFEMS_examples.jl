@@ -44,7 +44,7 @@ function LE1NAFEMS()
         copyto!(forceout, vec(p*pt/norm(pt)))
         return forceout
     end
-    fi = ForceIntensity(FFlt, 2, pfun);
+    fi = ForceIntensity(Float64, 2, pfun);
     F2= distribloads(el1femm, geom, u, fi, 2);
 
     MR = DeforModelRed2DStress
@@ -124,7 +124,7 @@ function LE1NAFEMS_Q4_convergence()
                 forceout .=    vec(p*pt/norm(pt));
                 return forceout
             end
-            fi = ForceIntensity(FFlt, 2, pfun);
+            fi = ForceIntensity(Float64, 2, pfun);
             F2 = distribloads(el1femm, geom, u, fi, 2);
 
             # Note that the material object needs to be created for plane stress.
@@ -213,7 +213,7 @@ function LE1NAFEMS_Q8_stress()
         copyto!(forceout, vec(p*pt/norm(pt)))
         return forceout
     end
-    fi = ForceIntensity(FFlt, 2, pfun);
+    fi = ForceIntensity(Float64, 2, pfun);
     F2= distribloads(el1femm, geom, u, fi, 2);
 
     MR = DeforModelRed2DStress

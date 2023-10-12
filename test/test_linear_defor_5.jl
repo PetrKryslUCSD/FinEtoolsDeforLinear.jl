@@ -1,7 +1,7 @@
 
 module mfiber_reinf_cant_yn_strong_Abaqus
 using FinEtools
-using FinEtools.AlgoBaseModule: solve!, matrix_blocked, vector_blocked
+using FinEtools.AlgoBaseModule: solve_blocked!, matrix_blocked, vector_blocked
 using FinEtoolsDeforLinear
 using FinEtoolsDeforLinear.AlgoDeforLinearModule
 using Test
@@ -78,7 +78,7 @@ material = MatDeforElastOrtho(MR,
 csmat = zeros(3, 3)
 rotmat3!(csmat, -45.0/180.0*pi*[0,1,0])
 
-function updatecs!(csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt)
+function updatecs!(csmatout, XYZ, tangents, feid, qpid)
   copyto!(csmatout, csmat)
 end
 
@@ -98,7 +98,7 @@ applyebc!(u)
 # S = connectionmatrix(femm.femmbase, nnodes(geom))
 numberdofs!(u)
 
-function getshr!(forceout::FFltVec, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt)
+function getshr!(forceout::Vector{Float64}, XYZ, tangents, feid, qpid)
   copyto!(forceout, q0*[0.0; 0.0; 1.0])
   return forceout
 end
@@ -107,7 +107,7 @@ Tracfemm = FEMMBase(IntegDomain(subset(bfes, sshearl), GaussRule(2, 3)))
 
 # println("Stiffness")
 K = stiffness(femm, geom, u)
-fi = ForceIntensity(FFlt, 3, getshr!);
+fi = ForceIntensity(Float64, 3, getshr!);
 # println("Traction loads")
 F =  distribloads(Tracfemm, geom, u, fi, 2);
 
@@ -172,7 +172,7 @@ mfiber_reinf_cant_yn_strong_Abaqus.test()
 
 module mmorthoballoonpenaltymm
 using FinEtools
-using FinEtools.AlgoBaseModule: solve!, matrix_blocked, vector_blocked
+using FinEtools.AlgoBaseModule: solve_blocked!, matrix_blocked, vector_blocked
 using FinEtoolsDeforLinear
 using Test
 using LinearAlgebra: norm, cholesky, cross, Symmetric
@@ -224,11 +224,11 @@ function test()
     # direction.
 
     el1femm =  FEMMBase(IntegDomain(subset(bdryfes,icl), GaussRule(1, 3), true))
-    function pressureloading!(forceout::FFltVec, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt)
+    function pressureloading!(forceout::Vector{Float64}, XYZ, tangents, feid, qpid)
       copyto!(forceout, XYZ/norm(XYZ)*p)
       return forceout
     end
-    fi = ForceIntensity(FFlt, 2, pressureloading!); # pressure normal to the internal cylindrical surface
+    fi = ForceIntensity(Float64, 2, pressureloading!); # pressure normal to the internal cylindrical surface
     F2= distribloads(el1femm, geom, u, fi, 2);
 
     # Property and material
@@ -272,7 +272,7 @@ mmorthoballoonpenaltymm.test()
 
 module mbar1
 using FinEtools
-using FinEtools.AlgoBaseModule: solve!, matrix_blocked, vector_blocked
+using FinEtools.AlgoBaseModule: solve_blocked!, matrix_blocked, vector_blocked
 using FinEtoolsDeforLinear
 using FinEtools.FENodeSetModule
 using FinEtools.MeshExportModule
@@ -287,10 +287,6 @@ function test()
     30 25 -15]*phun("in") )
     fes = FESetL2(reshape([1,2],1,2))
 
-    # function otherdimensionfu(loc::FFltMat,
-    #   conn::CC, N::FFltMat)::FFlt where {CC<:AbstractArray{FInt}}
-    #   return otherdimension::FFlt
-    # end
     integdomain = IntegDomain(fes, GaussRule(1, 2), (loc, conn, N) -> Area, false)
     # display(IntegDomain)
 
@@ -345,7 +341,7 @@ mbar1.test()
 
 module mbar2
 using FinEtools
-using FinEtools.AlgoBaseModule: solve!, matrix_blocked, vector_blocked
+using FinEtools.AlgoBaseModule: solve_blocked!, matrix_blocked, vector_blocked
 using FinEtoolsDeforLinear
 using FinEtools.FENodeSetModule
 using FinEtools.MeshExportModule
@@ -433,7 +429,7 @@ mbar2.test()
 
 module mmmLE10expiAbaqus2mmmm
 using FinEtools
-using FinEtools.AlgoBaseModule: solve!, matrix_blocked, vector_blocked
+using FinEtools.AlgoBaseModule: solve_blocked!, matrix_blocked, vector_blocked
 using FinEtoolsDeforLinear
 using FinEtools.MeshExportModule
 using Test
@@ -507,11 +503,11 @@ function test()
     numberdofs!(u)
 
     el1femm =  FEMMBase(IntegDomain(subset(bdryfes,topbfl), GaussRule(2, 2)))
-    function pfun(forceout::FVec{T}, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) where {T}
+    function pfun(forceout::Vector{Float64}, XYZ, tangents, feid, qpid)
         forceout .=  [0.0, 0.0, -qmagn]
         return forceout
     end
-    fi = ForceIntensity(FFlt, 3, pfun);
+    fi = ForceIntensity(Float64, 3, pfun);
     F2 = distribloads(el1femm, geom, u, fi, 2);
 
     # Note that the material object needs to be created with the proper
@@ -537,7 +533,7 @@ function test()
     scattersysvec!(u, U_f)
 
     nl = selectnode(fens, box=[Ai,Ai,0,0,Thickness,Thickness],inflate=tolerance);
-    thecorneru = zeros(FFlt,1,3)
+    thecorneru = zeros(Float64,1,3)
     gathervalues_asmat!(u, thecorneru, nl);
     thecorneru = thecorneru/phun("mm")
     # println("displacement =$(thecorneru) [MM] as compared to reference [-0.030939, 0, -0.10488] [MM]")
@@ -596,7 +592,7 @@ mmmLE10expiAbaqus2mmmm.test()
 
 module mplate_w_hole_RECT_MSH8m
 using FinEtools
-using FinEtools.AlgoBaseModule: solve!, matrix_blocked, vector_blocked
+using FinEtools.AlgoBaseModule: solve_blocked!, matrix_blocked, vector_blocked
 using FinEtoolsDeforLinear
 using FinEtools.MeshExportModule
 # using DataFrames
@@ -644,11 +640,11 @@ function test()
         return -sigma0/2*(1+2*Ri^2/r^2-3*Ri^4/r^4)*sin(2*th)
     end
 
-    sigyderrs = Dict{Symbol, FFltVec}()
+    sigyderrs = Dict{Symbol, Vector{Float64}}()
 
     nelems = []
     for extrapolation in [:extrapmean]
-        sigyderrs[extrapolation] = FFltVec[]
+        sigyderrs[extrapolation] = Vector{Float64}[]
         nelems = []
         for ref in [1]
             # Thickness = H
@@ -682,23 +678,23 @@ function test()
             bdryfes = meshboundary(fes);
             ixl = selectelem(fens, bdryfes, plane=[1.0, 0.0, 0.0, Re], thickness=tolerance);
             elxfemm =  FEMMBase(IntegDomain(subset(bdryfes,ixl), GaussRule(2, 2)))
-            function pfunx(forceout::FVec{T}, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) where {T}
+            function pfunx(forceout::Vector{Float64}, XYZ, tangents, feid, qpid)
                 forceout[1] = sigmaxx(XYZ)
                 forceout[2] = sigmaxy(XYZ)
                 forceout[3] = 0.0
                 return forceout
             end
-            fi = ForceIntensity(FFlt, 3, pfunx);
+            fi = ForceIntensity(Float64, 3, pfunx);
             Fx = distribloads(elxfemm, geom, u, fi, 2);
             iyl = selectelem(fens, bdryfes, plane=[0.0, 1.0, 0.0, Re], thickness=tolerance);
             elyfemm =  FEMMBase(IntegDomain(subset(bdryfes,iyl), GaussRule(2, 2)))
-            function pfuny(forceout::FVec{T}, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) where {T}
+            function pfuny(forceout::Vector{Float64}, XYZ, tangents, feid, qpid)
                 forceout[1] = -sigmaxy(XYZ)
                 forceout[2] = sigmayy(XYZ)
                 forceout[3] = 0.0
                 return forceout
             end
-            fi = ForceIntensity(FFlt, 3, pfuny);
+            fi = ForceIntensity(Float64, 3, pfuny);
             Fy = distribloads(elyfemm, geom, u, fi, 2);
 
             MR = DeforModelRed3D
@@ -723,7 +719,7 @@ function test()
 
             nlA = selectnode(fens, box=[Ri, Ri, 0.0, 0.0, 0.0, Thickness], inflate=tolerance);
             nlB = selectnode(fens, box=[0.0, 0.0, Ri, Ri, 0.0, Thickness], inflate=tolerance);
-            # thecorneru = zeros(FFlt,length(nlA),3)
+            # thecorneru = zeros(Float64,length(nlA),3)
             # gathervalues_asmat!(u, thecorneru, nl);
             # thecorneru = mean(thecorneru, 1)[1]/phun("mm")
             # println("displacement = $(thecorneru) vs -0.10215 [MM]")
@@ -767,7 +763,7 @@ mplate_w_hole_RECT_MSH8m.test()
 
 module mplate_w_hole_RECT_H20m
 using FinEtools
-using FinEtools.AlgoBaseModule: solve!, matrix_blocked, vector_blocked
+using FinEtools.AlgoBaseModule: solve_blocked!, matrix_blocked, vector_blocked
 using FinEtoolsDeforLinear
 using FinEtools.MeshExportModule
 using FinEtools.MeshImportModule: import_ABAQUS
@@ -816,11 +812,11 @@ function test()
         return -sigma0/2*(1+2*Ri^2/r^2-3*Ri^4/r^4)*sin(2*th)
     end
 
-    sigyderrs = Dict{Symbol, FFltVec}()
+    sigyderrs = Dict{Symbol, Vector{Float64}}()
 
     nelems = []
     for extrapolation in [:extrapmean]
-        sigyderrs[extrapolation] = FFltVec[]
+        sigyderrs[extrapolation] = Vector{Float64}[]
         nelems = []
         for ref in [1]
             Thickness = H
@@ -867,24 +863,24 @@ function test()
             # ixl = selectelem(fens, bdryfes, plane=[1.0, 0.0, 0.0, Re], thickness=tolerance);
             ixl = selectelem(fens, bdryfes, box=[Re, Re, -Inf, +Inf, -Inf, +Inf], inflate = tolerance);
             elxfemm =  FEMMBase(IntegDomain(subset(bdryfes,ixl), GaussRule(2, 2)))
-            function pfunx(forceout::FVec{T}, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) where {T}
+            function pfunx(forceout::Vector{Float64}, XYZ, tangents, feid, qpid)
                 forceout[1] = sigmaxx(XYZ)
                 forceout[2] = sigmaxy(XYZ)
                 forceout[3] = 0.0
                 return forceout
             end
-            fi = ForceIntensity(FFlt, 3, pfunx);
+            fi = ForceIntensity(Float64, 3, pfunx);
             Fx = distribloads(elxfemm, geom, u, fi, 2);
             # iyl = selectelem(fens, bdryfes, plane=[0.0, 1.0, 0.0, Re], thickness=tolerance);
             iyl = selectelem(fens, bdryfes, box=[-Inf, +Inf, Re, Re, -Inf, +Inf], inflate = tolerance);
             elyfemm =  FEMMBase(IntegDomain(subset(bdryfes,iyl), GaussRule(2, 2)))
-            function pfuny(forceout::FVec{T}, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) where {T}
+            function pfuny(forceout::Vector{Float64}, XYZ, tangents, feid, qpid)
                 forceout[1] = sigmaxy(XYZ)
                 forceout[2] = sigmayy(XYZ)
                 forceout[3] = 0.0
                 return forceout
             end
-            fi = ForceIntensity(FFlt, 3, pfuny);
+            fi = ForceIntensity(Float64, 3, pfuny);
             Fy = distribloads(elyfemm, geom, u, fi, 2);
 
             MR = DeforModelRed3D
@@ -911,17 +907,17 @@ function test()
             @test abs(norm(F_f, 2) - 883.437848042617) < 1.0e-2
 
             nlA = selectnode(fens, box=[Ri, Ri, 0.0, 0.0, 0.0, 00.0], inflate=tolerance);
-            pointu = zeros(FFlt,length(nlA),3)
+            pointu = zeros(Float64,length(nlA),3)
             gathervalues_asmat!(u, pointu, nlA);
             # println("disp@A = $(pointu/phun("mm")) [MM]")
             @test norm(pointu/phun("mm") - [0.00213238 0.0 0.0]) < 1.0e-4
             nlB = selectnode(fens, box=[0.0, 0.0, Ri, Ri, 0.0, 0.0], inflate=tolerance);
-            pointu = zeros(FFlt,length(nlB),3)
+            pointu = zeros(Float64,length(nlB),3)
             gathervalues_asmat!(u, pointu, nlB);
             # println("disp@B = $(pointu/phun("mm")) [MM]")
             @test norm(pointu/phun("mm") - [0.0 -0.000708141 0.0]) < 1.0e-4
             nlC = selectnode(fens, box=[Re, Re, Re, Re, Thickness, Thickness], inflate=tolerance);
-            pointu = zeros(FFlt,length(nlC),3)
+            pointu = zeros(Float64,length(nlC),3)
             gathervalues_asmat!(u, pointu, nlC);
             # println("disp@C = $(pointu/phun("mm")) [MM]")
             @test norm(pointu/phun("mm") - [0.00168556 -0.000455007 -1.4286e-5]) < 1.0e-4
@@ -968,7 +964,7 @@ mplate_w_hole_RECT_H20m.test()
 
 module mplate_w_hole_MST10m
 using FinEtools
-using FinEtools.AlgoBaseModule: solve!, matrix_blocked, vector_blocked
+using FinEtools.AlgoBaseModule: solve_blocked!, matrix_blocked, vector_blocked
 using FinEtoolsDeforLinear
 using FinEtools.MeshExportModule
 using Test
@@ -1014,13 +1010,13 @@ function test()
         return -sigma0/2*(1+2*Ri^2/r^2-3*Ri^4/r^4)*sin(2*th)
     end
 
-    sigxderrs = Dict{Symbol, FFltVec}()
-    sigyderrs = Dict{Symbol, FFltVec}()
+    sigxderrs = Dict{Symbol, Vector{Float64}}()
+    sigyderrs = Dict{Symbol, Vector{Float64}}()
     numelements = []
     numnodes = []
     for extrapolation in [:extrapmean] # :extraptrend
-        sigxderrs[extrapolation] = FFltVec[]
-        sigyderrs[extrapolation] = FFltVec[]
+        sigxderrs[extrapolation] = Vector{Float64}[]
+        sigyderrs[extrapolation] = Vector{Float64}[]
         numelements = []
         numnodes = []
         for ref in 1:1
@@ -1060,7 +1056,7 @@ function test()
             applyebc!(u)
             numberdofs!(u)
             el1femm =  FEMMBase(IntegDomain(subset(bdryfes,icl), SimplexRule(2, 3)))
-            function pfun(forceout::FVec{T}, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) where {T}
+            function pfun(forceout::Vector{Float64}, XYZ, tangents, feid, qpid)
                 local r = sqrt(XYZ[1]^2 + XYZ[2]^2)
                 nx = XYZ[1]/r; ny = XYZ[2]/r
                 # local sx, sy, txy
@@ -1075,7 +1071,7 @@ function test()
                 forceout[3] = 0.0
                 return forceout
             end
-            fi = ForceIntensity(FFlt, 3, pfun);
+            fi = ForceIntensity(Float64, 3, pfun);
             F2 = distribloads(el1femm, geom, u, fi, 2);
 
             MR = DeforModelRed3D
@@ -1103,7 +1099,7 @@ function test()
 
             nlA = selectnode(fens, box=[Ri, Ri, 0.0, 0.0, 0.0, Thickness], inflate=tolerance);
             nlB = selectnode(fens, box=[0.0, 0.0, Ri, Ri, 0.0, Thickness], inflate=tolerance);
-            # thecorneru = zeros(FFlt,length(nlA),3)
+            # thecorneru = zeros(Float64,length(nlA),3)
             # gathervalues_asmat!(u, thecorneru, nl);
             # thecorneru = mean(thecorneru, 1)[1]/phun("mm")
             # println("displacement = $(thecorneru) vs -0.10215 [MM]")

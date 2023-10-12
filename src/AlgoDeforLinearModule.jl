@@ -161,7 +161,7 @@ function linearstatics(modeldata::FDataDict)
             dcheck!(tractionbc, traction_bcs_recognized_keys)
             traction_vector = tractionbc["traction_vector"];
             if (typeof(traction_vector) <: Function)
-                fi = ForceIntensity(FFlt, ndofs(geom), traction_vector);
+                fi = ForceIntensity(Float64, ndofs(geom), traction_vector);
             elseif (typeof(traction_vector) <: ForceIntensity)
                 fi = traction_vector
             else

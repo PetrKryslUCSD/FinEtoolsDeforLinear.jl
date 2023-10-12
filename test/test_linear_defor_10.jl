@@ -14,7 +14,7 @@ function test()
         MR = DeforModelRed1DStress
         material = MatDeforElastIso(MR,  0.0, E, nu, alpha)
         D = fill(0.0, 1, 1)
-        t::FFlt, dt::FFlt, loc::FFltMat, label::FInt = 0.0, 0.0, [0.0 0.0 0.0], 0
+        t, dt, loc, label = 0.0, 0.0, [0.0 0.0 0.0], 0
         tangentmoduli!(material,  D,  t, dt, loc, label)
         @test D[1, 1] ≈ E
     end
@@ -41,7 +41,7 @@ function test()
         MR = DeforModelRed1DStrain
         material = MatDeforElastIso(MR,  0.0, E, nu, alpha)
         D = fill(0.0, 1, 1)
-        t::FFlt, dt::FFlt, loc::FFltMat, label::FInt = 0.0, 0.0, [0.0 0.0 0.0], 0
+        t, dt, loc, label = 0.0, 0.0, [0.0 0.0 0.0], 0
         tangentmoduli!(material,  D,  t, dt, loc, label)
         lambda = E * nu / (1 + nu) / (1 - 2*(nu));
         mu = E / 2. / (1+nu);
@@ -160,11 +160,11 @@ function TEST13H_hva()
     bdryfes = meshboundary(fes)
     topbfl = selectelem(fens, bdryfes, facing=true, direction=[0.0 0.0 1.0])
     el1femm =  FEMMBase(IntegDomain(subset(bdryfes,topbfl), GaussRule(2,2)))
-    function pfun(forceout::FVec{T}, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) where {T}
+    function pfun(forceout::Vector{T}, XYZ, tangents, feid, qpid) where {T}
         forceout .=  [0.0, 0.0, -qmagn]
         return forceout
     end
-    fi = ForceIntensity(FFlt, 3, pfun);
+    fi = ForceIntensity(Float64, 3, pfun);
     F = distribloads(el1femm, geom, u, fi, 2);
     
 
@@ -226,9 +226,9 @@ function distorted_block_infsup_T4()
     lambdamin = Float64[]
     h = Float64[]
     for ne = [2, 3, 4]
-        Length::FFlt, Width::FFlt, Height::FFlt, nL::FInt, nW::FInt, nH::FInt, orientation::Symbol = (6.0, 6.0, 6.0, ne, ne, ne, :a)
+        Length, Width, Height, nL, nW, nH, orientation::Symbol = (6.0, 6.0, 6.0, ne, ne, ne, :a)
 
-        fens, fes = T4block(Length::FFlt, Width::FFlt, Height::FFlt, nL::FInt, nW::FInt, nH::FInt, orientation::Symbol)
+        fens, fes = T4block(Length, Width, Height, nL, nW, nH, orientation::Symbol)
         # fens, fes = T4toT10(fens, fes)
         # @show connasarray(fes)
 
