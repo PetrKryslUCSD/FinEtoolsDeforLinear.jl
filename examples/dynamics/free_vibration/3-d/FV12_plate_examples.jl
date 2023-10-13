@@ -16,7 +16,7 @@ E = 200e3*phun("MPa");
 nu = 0.3;
 rho = 8000*phun("KG/M^3");
 L = 10.00*phun("M"); t = 0.05*phun("M");
-nL = 8; nt =2;
+nL = 8; nt = 4;
 neigvs = 14                   # how many eigenvalues
 OmegaShift = (1.0*2*pi)^2;
 # Fundamental frequency

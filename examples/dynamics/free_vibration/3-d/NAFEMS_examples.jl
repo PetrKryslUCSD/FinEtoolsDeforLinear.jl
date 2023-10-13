@@ -22,7 +22,7 @@ function NAFEMS_FV32_algo()
     
     E = 200*phun("GPA");
     nu = 0.3;
-    rho= 8000*phun("KG/M^3");
+    rho = 8000*phun("KG/M^3");
     L = 10*phun("M");
     W0 = 5*phun("M");
     WL = 1*phun("M");
@@ -65,7 +65,7 @@ function NAFEMS_FV32_algo()
     modeldata = AlgoDeforLinearModule.modal(modeldata)
     
     fs = modeldata["omega"]/(2*pi)
-    println("Eigenvalues: $fs [Hz]")
+    println("Frequencies: $(fs[1:6]) [Hz]")
     println("Percentage frequency errors: $((vec(fs[1:6]) - vec(Reffs))./vec(Reffs)*100)")
     
     modeldata["postprocessing"] = FDataDict("file"=>"FV32-modes", "mode"=>1:10)
@@ -137,13 +137,16 @@ function NAFEMS_TEST13H_vib()
     K = stiffness(femm, geom, u)
     femm = FEMMDeforLinear(MR, IntegDomain(fes, GaussRule(3,3)), material)
     M = mass(femm, geom, u)
+
+    K_ff = matrix_blocked(K, nfreedofs(u))[:ff]
+    M_ff = matrix_blocked(M, nfreedofs(u))[:ff]
     
     if true
         t0 = time()
-        d,v,nev,nconv = eigs(K+OmegaShift*M, M; nev=neigvs, which=:SM, explicittransform=:none)
+        d,v,nev,nconv = eigs(K_ff+OmegaShift*M_ff, M_ff; nev=neigvs, which=:SM, explicittransform=:none)
         d = d .- OmegaShift;
         fs = real(sqrt.(complex(d)))/(2*pi)
-        println("Reference Eigenvalues: $fs [Hz]")
+        println("Reference frequencies: $fs [Hz]")
         println("eigs solution ($(time() - t0) sec)")
     end
     true
