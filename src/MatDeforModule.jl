@@ -7,9 +7,6 @@ module MatDeforModule
 
 __precompile__(true)
 
-using FinEtools.FTypesModule:
-    FInt,
-    FFlt, FCplxFlt, FFltVec, FIntVec, FFltMat, FIntMat, FMat, FVec, FDataDict
 using FinEtools.DeforModelRedModule:
     DeforModelRed3D,
     DeforModelRed2DStrain,

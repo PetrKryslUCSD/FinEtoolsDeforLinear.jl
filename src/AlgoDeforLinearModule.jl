@@ -131,6 +131,8 @@ function linearstatics(modeldata::FDataDict)
     # Construct the displacement field
     u = NodalField(zeros(nnodes(geom), ndofs(geom)))
 
+    UFT = eltype(u.values)
+
     # Construct the temperature field
     temp = NodalField(zeros(nnodes(geom), 1))
 
@@ -145,7 +147,7 @@ function linearstatics(modeldata::FDataDict)
             dcheck!(ebc, essential_bcs_recognized_keys)
             fenids = get(() -> error("Must get node list!"), ebc, "node_list")
             displacement = get(ebc, "displacement", nothing)
-            u_fixed = zeros(FFlt, length(fenids)) # default is  zero displacement
+            u_fixed = zeros(UFT, length(fenids)) # default is  zero displacement
             if (displacement != nothing) # if it is nonzero,
                 if (typeof(displacement) <: Function) # it could be a function
                     for k in 1:length(fenids)
@@ -191,7 +193,7 @@ function linearstatics(modeldata::FDataDict)
             dcheck!(tractionbc, traction_bcs_recognized_keys)
             traction_vector = tractionbc["traction_vector"]
             if (typeof(traction_vector) <: Function)
-                fi = ForceIntensity(Float64, ndofs(geom), traction_vector)
+                fi = ForceIntensity(UFT, ndofs(geom), traction_vector)
             elseif (typeof(traction_vector) <: ForceIntensity)
                 fi = traction_vector
             else
