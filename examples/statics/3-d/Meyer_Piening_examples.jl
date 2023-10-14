@@ -38,93 +38,107 @@ function Meyer_Piening_sandwich()
     # Proceedings of the Fifth International Conference On Sandwich Constructions,
     # September 5–7, vol. I, Zurich, Switzerland, 2000, pp. 37–48.
 
-
-
     t0 = time()
     # Orthotropic material for the SKIN
-    E1s = 70000.0*phun("MPa")
-    E2s = 71000.0*phun("MPa")
-    E3s = 69000.0*phun("MPa")
+    E1s = 70000.0 * phun("MPa")
+    E2s = 71000.0 * phun("MPa")
+    E3s = 69000.0 * phun("MPa")
     nu12s = nu13s = nu23s = 0.3
-    G12s = G13s = G23s = 26000.0*phun("MPa")
-    CTE1 =  CTE2 =  CTE3 = 0.0
+    G12s = G13s = G23s = 26000.0 * phun("MPa")
+    CTE1 = CTE2 = CTE3 = 0.0
     # Orthotropic material for the CORE
-    E1c = 3.0*phun("MPa")
-    E2c = 3.0*phun("MPa")
-    E3c = 2.8*phun("MPa")
+    E1c = 3.0 * phun("MPa")
+    E2c = 3.0 * phun("MPa")
+    E3c = 2.8 * phun("MPa")
     nu12c = nu13c = nu23c = 0.25
-    G12c = G13c = G23c = 1.0*phun("MPa")
-    CTE1 =  CTE2 =  CTE3 = 0.0
+    G12c = G13c = G23c = 1.0 * phun("MPa")
+    CTE1 = CTE2 = CTE3 = 0.0
 
-    Lx = 5.0*phun("mm") # length  of loaded rectangle
-    Ly = 20.0*phun("mm") # length  of loaded rectangle
-    Sx = 100.0*phun("mm") # span of the plate
-    Sy = 200.0*phun("mm") # span of the plate
+    Lx = 5.0 * phun("mm") # length  of loaded rectangle
+    Ly = 20.0 * phun("mm") # length  of loaded rectangle
+    Sx = 100.0 * phun("mm") # span of the plate
+    Sy = 200.0 * phun("mm") # span of the plate
 
     # Here we define the layout and the thicknesses of the layers.
-    angles = vec([0.0 0.0 0.0]);
-    ts = vec([0.5  11.4  0.1])*phun("mm"); # layer thicknesses
-    TH = sum(ts); # total thickness of the plate
+    angles = vec([0.0 0.0 0.0])
+    ts = vec([0.5 11.4 0.1]) * phun("mm") # layer thicknesses
+    TH = sum(ts) # total thickness of the plate
 
-    tolerance = 0.0001*TH
+    tolerance = 0.0001 * TH
 
     # The line load is in the negative Z direction.
-    q0 = 1*phun("MPa"); #    line load
+    q0 = 1 * phun("MPa") #    line load
 
     # Reference deflection under the load is
-    wtopref = -3.789*phun("mm"); # From [1]
-    wbottomref = -2.16*phun("mm"); # Not given in [1]; guessed from the figure
+    wtopref = -3.789 * phun("mm") # From [1]
+    wbottomref = -2.16 * phun("mm") # Not given in [1]; guessed from the figure
 
     # Select how find the mesh should be
     Refinement = 5
-    nL = Refinement * 1;
-    nSx = nL + Refinement * 4;
-    nSy = 2 * nSx;
+    nL = Refinement * 1
+    nSx = nL + Refinement * 4
+    nSy = 2 * nSx
 
     # Each layer is modeled with a single element.
-    nts= Refinement * [1, 2, 1];# number of elements per layer
+    nts = Refinement * [1, 2, 1]# number of elements per layer
     strength = 1.5
-    xs = unique(vcat(reverse(collect(MeshUtilModule.gradedspace(Lx/2, 0.0, nL+1, strength))),
-    collect(MeshUtilModule.gradedspace(Lx/2, Sx/2, nSx-nL+1, strength))))
-    ys = unique(vcat(reverse(collect(MeshUtilModule.gradedspace(Ly/2, 0.0, nL+1, strength))),
-    collect(MeshUtilModule.gradedspace(Ly/2, Sy/2, nSy-nL+1, strength))))
+    xs = unique(vcat(reverse(collect(MeshUtilModule.gradedspace(Lx / 2,
+            0.0,
+            nL + 1,
+            strength))),
+        collect(MeshUtilModule.gradedspace(Lx / 2, Sx / 2, nSx - nL + 1, strength))))
+    ys = unique(vcat(reverse(collect(MeshUtilModule.gradedspace(Ly / 2,
+            0.0,
+            nL + 1,
+            strength))),
+        collect(MeshUtilModule.gradedspace(Ly / 2, Sy / 2, nSy - nL + 1, strength))))
 
-    fens,fes = H8layeredplatex(xs, ys, ts, nts)
-
+    fens, fes = H8layeredplatex(xs, ys, ts, nts)
 
     # This is the material  model
     MR = DeforModelRed3D
     skinmaterial = MatDeforElastOrtho(MR,
-    0.0, E1s, E2s, E3s,
-    nu12s, nu13s, nu23s,
-    G12s, G13s, G23s,
-    CTE1, CTE2, CTE3)
+        0.0, E1s, E2s, E3s,
+        nu12s, nu13s, nu23s,
+        G12s, G13s, G23s,
+        CTE1, CTE2, CTE3)
     corematerial = MatDeforElastOrtho(MR,
-    0.0, E1c, E2c, E3c,
-    nu12c, nu13c, nu23c,
-    G12c, G13c, G23c,
-    CTE1, CTE2, CTE3)
+        0.0, E1c, E2c, E3c,
+        nu12c, nu13c, nu23c,
+        G12c, G13c, G23c,
+        CTE1, CTE2, CTE3)
 
     # The material coordinate system function is defined as:
     function _updatecs!(csmatout::FFltMat, feid::FInt, label)
-        rotmat3!(csmatout, angles[label]/180.0*pi* [0.0; 0.0; 1.0]);
+        rotmat3!(csmatout, angles[label] / 180.0 * pi * [0.0; 0.0; 1.0])
         csmatout
     end
-
 
     # The vvolume integrals are evaluated using this rule
     gr = GaussRule(3, 2)
 
     # We will create three regions, two for the skin, and one for the core.
     rfes = subset(fes, selectelem(fens, fes, label = 1))
-    botskinregion = FDataDict("femm"=>FEMMDeforLinearMSH8(MR, IntegDomain(rfes, gr), CSys(3, 3, (csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) ->
-        _updatecs!(csmatout, feid, 1)), skinmaterial))
+    botskinregion = FDataDict("femm" => FEMMDeforLinearMSH8(MR, IntegDomain(rfes, gr),
+        CSys(3,
+            3,
+            (csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) -> _updatecs!(csmatout,
+                feid,
+                1)), skinmaterial))
     rfes = subset(fes, selectelem(fens, fes, label = 3))
-    topskinregion = FDataDict("femm"=>FEMMDeforLinearMSH8(MR, IntegDomain(rfes, gr), CSys(3, 3, (csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) ->
-        _updatecs!(csmatout, feid, 3)), skinmaterial))
+    topskinregion = FDataDict("femm" => FEMMDeforLinearMSH8(MR, IntegDomain(rfes, gr),
+        CSys(3,
+            3,
+            (csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) -> _updatecs!(csmatout,
+                feid,
+                3)), skinmaterial))
     rfes = subset(fes, selectelem(fens, fes, label = 2))
-    coreregion = FDataDict("femm"=>FEMMDeforLinearMSH8(MR, IntegDomain(rfes, gr), CSys(3, 3, (csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) ->
-        _updatecs!(csmatout, feid, 2)), corematerial))
+    coreregion = FDataDict("femm" => FEMMDeforLinearMSH8(MR, IntegDomain(rfes, gr),
+        CSys(3,
+            3,
+            (csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) -> _updatecs!(csmatout,
+                feid,
+                2)), corematerial))
 
     # File =  "Meyer_Piening_sandwich-r1.vtk"
     # vtkexportmesh(File, skinregion["femm"].integdomain.fes.conn, fens.xyz, FinEtools.MeshExportModule.H8)
@@ -135,32 +149,33 @@ function Meyer_Piening_sandwich()
 
     # The essential boundary conditions are applied on the symmetry planes.
     # First the plane X=0;...
-    lx0 = selectnode(fens, box=[0.0 0.0 -Inf Inf -Inf Inf], inflate=tolerance)
-    ex0 = FDataDict( "displacement"=>  0.0, "component"=> 1, "node_list"=>lx0 )
+    lx0 = selectnode(fens, box = [0.0 0.0 -Inf Inf -Inf Inf], inflate = tolerance)
+    ex0 = FDataDict("displacement" => 0.0, "component" => 1, "node_list" => lx0)
     # ... and then the plane Y=0.
-    ly0 = selectnode(fens, box=[-Inf Inf 0.0 0.0 -Inf Inf], inflate=tolerance)
-    ey0 = FDataDict( "displacement"=>  0.0, "component"=> 2, "node_list"=>ly0 )
+    ly0 = selectnode(fens, box = [-Inf Inf 0.0 0.0 -Inf Inf], inflate = tolerance)
+    ey0 = FDataDict("displacement" => 0.0, "component" => 2, "node_list" => ly0)
     # The transverse displacement is fixed around the circumference.
-    lz0 = vcat(selectnode(fens, box=[Sx/2 Sx/2 -Inf Inf -Inf Inf], inflate=tolerance),
-    selectnode(fens, box=[-Inf Inf Sy/2 Sy/2 -Inf Inf], inflate=tolerance))
-    ez0 = FDataDict( "displacement"=>  0.0, "component"=> 3, "node_list"=>lz0 )
+    lz0 = vcat(selectnode(fens,
+            box = [Sx / 2 Sx / 2 -Inf Inf -Inf Inf],
+            inflate = tolerance),
+        selectnode(fens, box = [-Inf Inf Sy / 2 Sy / 2 -Inf Inf], inflate = tolerance))
+    ez0 = FDataDict("displacement" => 0.0, "component" => 3, "node_list" => lz0)
 
     # The traction boundary condition is applied  along rectangle in the middle of the plate.
     bfes = meshboundary(fes)
     # From  the entire boundary we select those quadrilaterals that lie on the plane
     # Z = thickness
-    tl = selectelem(fens, bfes, box = [0.0 Lx/2 0 Ly/2 TH TH], inflate=tolerance)
-    Trac = FDataDict("traction_vector"=>vec([0.0; 0.0; -q0]),
-    "femm"=>FEMMBase(IntegDomain(subset(bfes, tl), GaussRule(2, 2))))
+    tl = selectelem(fens, bfes, box = [0.0 Lx / 2 0 Ly / 2 TH TH], inflate = tolerance)
+    Trac = FDataDict("traction_vector" => vec([0.0; 0.0; -q0]),
+        "femm" => FEMMBase(IntegDomain(subset(bfes, tl), GaussRule(2, 2))))
 
-    modeldata = FDataDict("fens"=>fens,
-    "regions"=>[botskinregion, coreregion, topskinregion],
-    "essential_bcs"=>[ex0, ey0, ez0],
-    "traction_bcs"=> [Trac]
-    )
+    modeldata = FDataDict("fens" => fens,
+        "regions" => [botskinregion, coreregion, topskinregion],
+        "essential_bcs" => [ex0, ey0, ez0],
+        "traction_bcs" => [Trac])
     modeldata = AlgoDeforLinearModule.linearstatics(modeldata)
 
-    modeldata["postprocessing"] = FDataDict("file"=>"Meyer_Piening_sandwich")
+    modeldata["postprocessing"] = FDataDict("file" => "Meyer_Piening_sandwich")
     modeldata = AlgoDeforLinearModule.exportdeformation(modeldata)
 
     u = modeldata["u"]
@@ -168,11 +183,15 @@ function Meyer_Piening_sandwich()
 
     # The results of the displacement and stresses will be reported at
     # nodes located at the appropriate points.
-    nbottomcenter = selectnode(fens, box=[0.0 0.0 0.0 0.0 0.0 0.0], inflate=tolerance)
-    ntopcenter = selectnode(fens, box=[0.0 0.0 0.0 0.0 TH TH], inflate=tolerance)
-    ncenterline = selectnode(fens, box=[0.0 0.0 0.0 0.0 0.0 TH], inflate=tolerance)
-    nintertop = selectnode(fens, box=[-Inf Inf 0.0 0.0 sum(ts[1:2]) sum(ts[1:2])], inflate=tolerance)
-    ninterbot = selectnode(fens, box=[-Inf Inf 0.0 0.0 sum(ts[1:1]) sum(ts[1:1])], inflate=tolerance)
+    nbottomcenter = selectnode(fens, box = [0.0 0.0 0.0 0.0 0.0 0.0], inflate = tolerance)
+    ntopcenter = selectnode(fens, box = [0.0 0.0 0.0 0.0 TH TH], inflate = tolerance)
+    ncenterline = selectnode(fens, box = [0.0 0.0 0.0 0.0 0.0 TH], inflate = tolerance)
+    nintertop = selectnode(fens,
+        box = [-Inf Inf 0.0 0.0 sum(ts[1:2]) sum(ts[1:2])],
+        inflate = tolerance)
+    ninterbot = selectnode(fens,
+        box = [-Inf Inf 0.0 0.0 sum(ts[1:1]) sum(ts[1:1])],
+        inflate = tolerance)
 
     zclo = sortperm(vec(geom.values[ncenterline, 3]))
     centerz = geom.values[ncenterline[zclo], 3]
@@ -181,9 +200,11 @@ function Meyer_Piening_sandwich()
     xclobot = sortperm(vec(geom.values[ninterbot, 1]))
     botx = geom.values[ninterbot[xclobot], 1]
 
-    conninbotskin = intersect(connectednodes(botskinregion["femm"].integdomain.fes), ncenterline)
+    conninbotskin = intersect(connectednodes(botskinregion["femm"].integdomain.fes),
+        ncenterline)
     connincore = intersect(connectednodes(coreregion["femm"].integdomain.fes), ncenterline)
-    connintopskin = intersect(connectednodes(topskinregion["femm"].integdomain.fes), ncenterline)
+    connintopskin = intersect(connectednodes(topskinregion["femm"].integdomain.fes),
+        ncenterline)
     inbotskin = [n in conninbotskin for n in ncenterline]
     incore = [n in connincore for n in ncenterline]
     intopskin = [n in connintopskin for n in ncenterline]
@@ -199,9 +220,9 @@ function Meyer_Piening_sandwich()
     nodevalmeth = :invdistance
 
     # Normal stress in the X direction
-    modeldata["postprocessing"] = FDataDict("file"=>"Meyer_Piening_sandwich-sx",
-    "quantity"=>:Cauchy, "component"=>1, "outputcsys"=>CSys(3),
-    "nodevalmethod"=>nodevalmeth, "reportat"=>extrap)
+    modeldata["postprocessing"] = FDataDict("file" => "Meyer_Piening_sandwich-sx",
+        "quantity" => :Cauchy, "component" => 1, "outputcsys" => CSys(3),
+        "nodevalmethod" => nodevalmeth, "reportat" => extrap)
     modeldata = AlgoDeforLinearModule.exportstress(modeldata)
     s = modeldata["postprocessing"]["exported"][1]["field"]
     sxbot = s.values[ncenterline[zclo], 1]
@@ -212,24 +233,22 @@ function Meyer_Piening_sandwich()
 
     # The graph data needs to be collected by going through each layer separately.
     # Some quantities may be discontinuous between layers.
-    zs = vcat(  [z for (j,z) in enumerate(centerz) if inbotskin[j]],
-    [z for (j,z) in enumerate(centerz) if incore[j]],
-    [z for (j,z) in enumerate(centerz) if intopskin[j]]
-    )
-    sxs = vcat( [sxbot[j] for (j,z) in enumerate(centerz) if inbotskin[j]],
-    [sxcore[j] for (j,z) in enumerate(centerz) if incore[j]],
-    [sxtop[j] for (j,z) in enumerate(centerz) if intopskin[j]]
-    )
+    zs = vcat([z for (j, z) in enumerate(centerz) if inbotskin[j]],
+        [z for (j, z) in enumerate(centerz) if incore[j]],
+        [z for (j, z) in enumerate(centerz) if intopskin[j]])
+    sxs = vcat([sxbot[j] for (j, z) in enumerate(centerz) if inbotskin[j]],
+        [sxcore[j] for (j, z) in enumerate(centerz) if incore[j]],
+        [sxtop[j] for (j, z) in enumerate(centerz) if intopskin[j]])
 
     File = "Meyer_Piening_sandwich-sx-$(extrap).CSV"
-    savecsv(File, zs=vec(zs)/phun("mm"), sx=vec(sxs)/phun("MPa"))
+    savecsv(File, zs = vec(zs) / phun("mm"), sx = vec(sxs) / phun("MPa"))
 
     # @async run(`"paraview.exe" $File`)
 
     # Inter laminar stress between the skin and the core
-    modeldata["postprocessing"] = FDataDict("file"=>"Meyer_Piening_sandwich-sxz",
-    "quantity"=>:Cauchy, "component"=>5, "outputcsys"=>CSys(3),
-    "nodevalmethod"=>nodevalmeth, "reportat"=>extrap)
+    modeldata["postprocessing"] = FDataDict("file" => "Meyer_Piening_sandwich-sxz",
+        "quantity" => :Cauchy, "component" => 5, "outputcsys" => CSys(3),
+        "nodevalmethod" => nodevalmeth, "reportat" => extrap)
     modeldata = AlgoDeforLinearModule.exportstress(modeldata)
     s = modeldata["postprocessing"]["exported"][1]["field"]
     sxzskinbot = s.values[ninterbot[xclobot], 1]
@@ -240,13 +259,17 @@ function Meyer_Piening_sandwich()
     sxzskintop = s.values[nintertop[xclotop], 1]
 
     File = "Meyer_Piening_sandwich-sxz-$(extrap).CSV"
-    savecsv(File, xstop=vec(topx[xclotop])/phun("mm"), sxzskintop=vec(sxzskintop[xclotop])/phun("MPa"), sxzcoretop=vec(sxzcoretop[xclotop])/phun("MPa"),thexsbot=vec(botx[xclobot])/phun("mm"), sxzskinbot=vec(sxzskinbot[xclobot])/phun("MPa"), sxzcorebot=vec(sxzcorebot[xclobot])/phun("MPa"))
+    savecsv(File,
+        xstop = vec(topx[xclotop]) / phun("mm"),
+        sxzskintop = vec(sxzskintop[xclotop]) / phun("MPa"),
+        sxzcoretop = vec(sxzcoretop[xclotop]) / phun("MPa"),
+        thexsbot = vec(botx[xclobot]) / phun("mm"),
+        sxzskinbot = vec(sxzskinbot[xclobot]) / phun("MPa"),
+        sxzcorebot = vec(sxzcorebot[xclobot]) / phun("MPa"))
 
     println("Done")
     true
-
 end # Meyer_Piening_sandwich
-
 
 function Meyer_Piening_sandwich_H20()
     println("""
@@ -286,90 +309,102 @@ function Meyer_Piening_sandwich_H20()
 
     t0 = time()
     # Orthotropic material for the SKIN
-    E1s = 70000.0*phun("MPa")
-    E2s = 71000.0*phun("MPa")
-    E3s = 69000.0*phun("MPa")
+    E1s = 70000.0 * phun("MPa")
+    E2s = 71000.0 * phun("MPa")
+    E3s = 69000.0 * phun("MPa")
     nu12s = nu13s = nu23s = 0.3
-    G12s = G13s = G23s = 26000.0*phun("MPa")
-    CTE1 =  CTE2 =  CTE3 = 0.0
+    G12s = G13s = G23s = 26000.0 * phun("MPa")
+    CTE1 = CTE2 = CTE3 = 0.0
     # Orthotropic material for the CORE
-    E1c = 3.0*phun("MPa")
-    E2c = 3.0*phun("MPa")
-    E3c = 2.8*phun("MPa")
+    E1c = 3.0 * phun("MPa")
+    E2c = 3.0 * phun("MPa")
+    E3c = 2.8 * phun("MPa")
     nu12c = nu13c = nu23c = 0.25
-    G12c = G13c = G23c = 1.0*phun("MPa")
-    CTE1 =  CTE2 =  CTE3 = 0.0
+    G12c = G13c = G23c = 1.0 * phun("MPa")
+    CTE1 = CTE2 = CTE3 = 0.0
 
-    Lx = 5.0*phun("mm") # length  of loaded rectangle
-    Ly = 20.0*phun("mm") # length  of loaded rectangle
-    Sx = 100.0*phun("mm") # span of the plate
-    Sy = 200.0*phun("mm") # span of the plate
+    Lx = 5.0 * phun("mm") # length  of loaded rectangle
+    Ly = 20.0 * phun("mm") # length  of loaded rectangle
+    Sx = 100.0 * phun("mm") # span of the plate
+    Sy = 200.0 * phun("mm") # span of the plate
 
     # Here we define the layout and the thicknesses of the layers.
-    angles = vec([0.0 0.0 0.0]);
-    ts = vec([0.5  11.4  0.1])*phun("mm"); # layer thicknesses
-    TH = sum(ts); # total thickness of the plate
+    angles = vec([0.0 0.0 0.0])
+    ts = vec([0.5 11.4 0.1]) * phun("mm") # layer thicknesses
+    TH = sum(ts) # total thickness of the plate
 
-    tolerance = 0.0001*TH
+    tolerance = 0.0001 * TH
 
     # The line load is in the negative Z direction.
-    q0 = 1*phun("MPa"); #    line load
+    q0 = 1 * phun("MPa") #    line load
 
     # Reference deflection under the load is
-    wtopref = -3.789*phun("mm"); # From [1]
-    wbottomref = -2.16*phun("mm"); # Not given in [1]; guessed from the figure
+    wtopref = -3.789 * phun("mm") # From [1]
+    wbottomref = -2.16 * phun("mm") # Not given in [1]; guessed from the figure
 
     # Select how find the mesh should be
     Refinement = 3
-    nL = Refinement * 1;
-    nSx = nL + Refinement * 4;
-    nSy = 2 * nSx;
+    nL = Refinement * 1
+    nSx = nL + Refinement * 4
+    nSy = 2 * nSx
 
     # Each layer is modeled with a single element.
-    nts= Refinement * [1, 2, 1];# number of elements per layer
+    nts = Refinement * [1, 2, 1]# number of elements per layer
     strength = 1.5
     sp = (a, b, n) -> MeshUtilModule.gradedspace(a, b, n, strength)
     sp = (a, b, n) -> linearspace(a, b, n)
-    xs = unique(vcat(reverse(collect(sp(Lx/2, 0.0, nL+1))),
-    collect(sp(Lx/2, Sx/2, nSx-nL+1))))
-    ys = unique(vcat(reverse(collect(MeshUtilModule.gradedspace(Ly/2, 0.0, nL+1))),
-    collect(sp(Ly/2, Sy/2, nSy-nL+1))))
+    xs = unique(vcat(reverse(collect(sp(Lx / 2, 0.0, nL + 1))),
+        collect(sp(Lx / 2, Sx / 2, nSx - nL + 1))))
+    ys = unique(vcat(reverse(collect(MeshUtilModule.gradedspace(Ly / 2, 0.0, nL + 1))),
+        collect(sp(Ly / 2, Sy / 2, nSy - nL + 1))))
 
-    fens,fes = H8layeredplatex(xs, ys, ts, nts)
-    fens,fes = H8toH20(fens,fes)
+    fens, fes = H8layeredplatex(xs, ys, ts, nts)
+    fens, fes = H8toH20(fens, fes)
 
     # This is the material  model
     MR = DeforModelRed3D
     skinmaterial = MatDeforElastOrtho(MR,
-    0.0, E1s, E2s, E3s,
-    nu12s, nu13s, nu23s,
-    G12s, G13s, G23s,
-    CTE1, CTE2, CTE3)
+        0.0, E1s, E2s, E3s,
+        nu12s, nu13s, nu23s,
+        G12s, G13s, G23s,
+        CTE1, CTE2, CTE3)
     corematerial = MatDeforElastOrtho(MR,
-    0.0, E1c, E2c, E3c,
-    nu12c, nu13c, nu23c,
-    G12c, G13c, G23c,
-    CTE1, CTE2, CTE3)
+        0.0, E1c, E2c, E3c,
+        nu12c, nu13c, nu23c,
+        G12c, G13c, G23c,
+        CTE1, CTE2, CTE3)
 
     # The material coordinate system function is defined as:
-        function _updatecs!(csmatout::FFltMat, feid::FInt, label)
-            rotmat3!(csmatout, angles[label]/180.0*pi* [0.0; 0.0; 1.0]);
-            csmatout
-        end
+    function _updatecs!(csmatout::FFltMat, feid::FInt, label)
+        rotmat3!(csmatout, angles[label] / 180.0 * pi * [0.0; 0.0; 1.0])
+        csmatout
+    end
 
     # The volume integrals are evaluated using this rule
     gr = GaussRule(3, 3)
 
     # We will create three regions, two for the skin, and one for the core.
     rfes = subset(fes, selectelem(fens, fes, label = 1))
-    botskinregion = FDataDict("femm"=>FEMMDeforLinear(MR, IntegDomain(rfes, gr), CSys(3, 3, (csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) ->
-        _updatecs!(csmatout, feid, 1)), skinmaterial))
+    botskinregion = FDataDict("femm" => FEMMDeforLinear(MR, IntegDomain(rfes, gr),
+        CSys(3,
+            3,
+            (csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) -> _updatecs!(csmatout,
+                feid,
+                1)), skinmaterial))
     rfes = subset(fes, selectelem(fens, fes, label = 3))
-    topskinregion = FDataDict("femm"=>FEMMDeforLinear(MR, IntegDomain(rfes, gr), CSys(3, 3, (csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) ->
-        _updatecs!(csmatout, feid, 3)), skinmaterial))
+    topskinregion = FDataDict("femm" => FEMMDeforLinear(MR, IntegDomain(rfes, gr),
+        CSys(3,
+            3,
+            (csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) -> _updatecs!(csmatout,
+                feid,
+                3)), skinmaterial))
     rfes = subset(fes, selectelem(fens, fes, label = 2))
-    coreregion = FDataDict("femm"=>FEMMDeforLinear(MR, IntegDomain(rfes, gr), CSys(3, 3, (csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) ->
-        _updatecs!(csmatout, feid, 2)), corematerial))
+    coreregion = FDataDict("femm" => FEMMDeforLinear(MR, IntegDomain(rfes, gr),
+        CSys(3,
+            3,
+            (csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) -> _updatecs!(csmatout,
+                feid,
+                2)), corematerial))
 
     # File =  "Meyer_Piening_sandwich-r1.vtk"
     # vtkexportmesh(File, skinregion["femm"].integdomain.fes.conn, fens.xyz, FinEtools.MeshExportModule.H8)
@@ -380,31 +415,33 @@ function Meyer_Piening_sandwich_H20()
 
     # The essential boundary conditions are applied on the symmetry planes.
     # First the plane X=0;...
-    lx0 = selectnode(fens, box=[0.0 0.0 -Inf Inf -Inf Inf], inflate=tolerance)
-    ex0 = FDataDict( "displacement"=>  0.0, "component"=> 1, "node_list"=>lx0 )
+    lx0 = selectnode(fens, box = [0.0 0.0 -Inf Inf -Inf Inf], inflate = tolerance)
+    ex0 = FDataDict("displacement" => 0.0, "component" => 1, "node_list" => lx0)
     # ... and then the plane Y=0.
-    ly0 = selectnode(fens, box=[-Inf Inf 0.0 0.0 -Inf Inf], inflate=tolerance)
-    ey0 = FDataDict( "displacement"=>  0.0, "component"=> 2, "node_list"=>ly0 )
+    ly0 = selectnode(fens, box = [-Inf Inf 0.0 0.0 -Inf Inf], inflate = tolerance)
+    ey0 = FDataDict("displacement" => 0.0, "component" => 2, "node_list" => ly0)
     # The transverse displacement is fixed around the circumference.
-    lz0 = vcat(selectnode(fens, box=[Sx/2 Sx/2 -Inf Inf -Inf Inf], inflate=tolerance),
-    selectnode(fens, box=[-Inf Inf Sy/2 Sy/2 -Inf Inf], inflate=tolerance))
-    ez0 = FDataDict( "displacement"=>  0.0, "component"=> 3, "node_list"=>lz0 )
+    lz0 = vcat(selectnode(fens,
+            box = [Sx / 2 Sx / 2 -Inf Inf -Inf Inf],
+            inflate = tolerance),
+        selectnode(fens, box = [-Inf Inf Sy / 2 Sy / 2 -Inf Inf], inflate = tolerance))
+    ez0 = FDataDict("displacement" => 0.0, "component" => 3, "node_list" => lz0)
 
     # The traction boundary condition is applied  along rectangle in the middle of the plate.
     bfes = meshboundary(fes)
     # From  the entire boundary we select those quadrilaterals that lie on the plane
     # Z = thickness
-    tl = selectelem(fens, bfes, box = [0.0 Lx/2 0 Ly/2 TH TH], inflate=tolerance)
-    Trac = FDataDict("traction_vector"=>vec([0.0; 0.0; -q0]), "femm"=>FEMMBase(IntegDomain(subset(bfes, tl), GaussRule(2, 3))))
+    tl = selectelem(fens, bfes, box = [0.0 Lx / 2 0 Ly / 2 TH TH], inflate = tolerance)
+    Trac = FDataDict("traction_vector" => vec([0.0; 0.0; -q0]),
+        "femm" => FEMMBase(IntegDomain(subset(bfes, tl), GaussRule(2, 3))))
 
-    modeldata = FDataDict("fens"=>fens,
-    "regions"=>[botskinregion, coreregion, topskinregion],
-    "essential_bcs"=>[ex0, ey0, ez0],
-    "traction_bcs"=> [Trac]
-    )
+    modeldata = FDataDict("fens" => fens,
+        "regions" => [botskinregion, coreregion, topskinregion],
+        "essential_bcs" => [ex0, ey0, ez0],
+        "traction_bcs" => [Trac])
     modeldata = AlgoDeforLinearModule.linearstatics(modeldata)
 
-    modeldata["postprocessing"] = FDataDict("file"=>filebase * "-u")
+    modeldata["postprocessing"] = FDataDict("file" => filebase * "-u")
     modeldata = AlgoDeforLinearModule.exportdeformation(modeldata)
 
     u = modeldata["u"]
@@ -412,11 +449,15 @@ function Meyer_Piening_sandwich_H20()
 
     # The results of the displacement and stresses will be reported at
     # nodes located at the appropriate points.
-    nbottomcenter = selectnode(fens, box=[0.0 0.0 0.0 0.0 0.0 0.0], inflate=tolerance)
-    ntopcenter = selectnode(fens, box=[0.0 0.0 0.0 0.0 TH TH], inflate=tolerance)
-    ncenterline = selectnode(fens, box=[0.0 0.0 0.0 0.0 0.0 TH], inflate=tolerance)
-    nintertop = selectnode(fens, box=[-Inf Inf 0.0 0.0 sum(ts[1:2]) sum(ts[1:2])], inflate=tolerance)
-    ninterbot = selectnode(fens, box=[-Inf Inf 0.0 0.0 sum(ts[1:1]) sum(ts[1:1])], inflate=tolerance)
+    nbottomcenter = selectnode(fens, box = [0.0 0.0 0.0 0.0 0.0 0.0], inflate = tolerance)
+    ntopcenter = selectnode(fens, box = [0.0 0.0 0.0 0.0 TH TH], inflate = tolerance)
+    ncenterline = selectnode(fens, box = [0.0 0.0 0.0 0.0 0.0 TH], inflate = tolerance)
+    nintertop = selectnode(fens,
+        box = [-Inf Inf 0.0 0.0 sum(ts[1:2]) sum(ts[1:2])],
+        inflate = tolerance)
+    ninterbot = selectnode(fens,
+        box = [-Inf Inf 0.0 0.0 sum(ts[1:1]) sum(ts[1:1])],
+        inflate = tolerance)
 
     zclo = sortperm(vec(geom.values[ncenterline, 3]))
     ncenterline = ncenterline[zclo]
@@ -431,9 +472,11 @@ function Meyer_Piening_sandwich_H20()
     botx = geom.values[ninterbot, 1]
     xclotop = xclobot = nothing
 
-    conninbotskin = intersect(connectednodes(botskinregion["femm"].integdomain.fes), ncenterline)
+    conninbotskin = intersect(connectednodes(botskinregion["femm"].integdomain.fes),
+        ncenterline)
     connincore = intersect(connectednodes(coreregion["femm"].integdomain.fes), ncenterline)
-    connintopskin = intersect(connectednodes(topskinregion["femm"].integdomain.fes), ncenterline)
+    connintopskin = intersect(connectednodes(topskinregion["femm"].integdomain.fes),
+        ncenterline)
     inbotskin = [n in conninbotskin for n in ncenterline]
     incore = [n in connincore for n in ncenterline]
     intopskin = [n in connintopskin for n in ncenterline]
@@ -449,9 +492,9 @@ function Meyer_Piening_sandwich_H20()
     nodevalmeth = :invdistance
 
     # Normal stress in the X direction
-    modeldata["postprocessing"] = FDataDict("file"=>filebase * "-sx",
-    "quantity"=>:Cauchy, "component"=>1, "outputcsys"=>CSys(3),
-    "nodevalmethod"=>nodevalmeth, "reportat"=>extrap)
+    modeldata["postprocessing"] = FDataDict("file" => filebase * "-sx",
+        "quantity" => :Cauchy, "component" => 1, "outputcsys" => CSys(3),
+        "nodevalmethod" => nodevalmeth, "reportat" => extrap)
     modeldata = AlgoDeforLinearModule.exportstress(modeldata)
     s = modeldata["postprocessing"]["exported"][1]["field"]
     sxbot = s.values[ncenterline, 1]
@@ -462,24 +505,22 @@ function Meyer_Piening_sandwich_H20()
 
     # The graph data needs to be collected by going through each layer separately.
     # Some quantities may be discontinuous between layers.
-    zs = vcat(  [z for (j,z) in enumerate(centerz) if inbotskin[j]],
-    [z for (j,z) in enumerate(centerz) if incore[j]],
-    [z for (j,z) in enumerate(centerz) if intopskin[j]]
-    )
-    sxs = vcat( [sxbot[j] for (j,z) in enumerate(centerz) if inbotskin[j]],
-    [sxcore[j] for (j,z) in enumerate(centerz) if incore[j]],
-    [sxtop[j] for (j,z) in enumerate(centerz) if intopskin[j]]
-    )
+    zs = vcat([z for (j, z) in enumerate(centerz) if inbotskin[j]],
+        [z for (j, z) in enumerate(centerz) if incore[j]],
+        [z for (j, z) in enumerate(centerz) if intopskin[j]])
+    sxs = vcat([sxbot[j] for (j, z) in enumerate(centerz) if inbotskin[j]],
+        [sxcore[j] for (j, z) in enumerate(centerz) if incore[j]],
+        [sxtop[j] for (j, z) in enumerate(centerz) if intopskin[j]])
 
     File = filebase * "-sx-$(extrap).CSV"
-    savecsv(File, zs=vec(zs)/phun("mm"), sx=vec(sxs)/phun("MPa"))
+    savecsv(File, zs = vec(zs) / phun("mm"), sx = vec(sxs) / phun("MPa"))
 
     # @async run(`"paraview.exe" $File`)
 
     # Inter laminar stress between the skin and the core
-    modeldata["postprocessing"] = FDataDict("file"=>filebase * "-sxz",
-    "quantity"=>:Cauchy, "component"=>5, "outputcsys"=>CSys(3),
-    "nodevalmethod"=>nodevalmeth, "reportat"=>extrap)
+    modeldata["postprocessing"] = FDataDict("file" => filebase * "-sxz",
+        "quantity" => :Cauchy, "component" => 5, "outputcsys" => CSys(3),
+        "nodevalmethod" => nodevalmeth, "reportat" => extrap)
     modeldata = AlgoDeforLinearModule.exportstress(modeldata)
     s = modeldata["postprocessing"]["exported"][1]["field"]
     sxzskinbot = s.values[ninterbot, 1]
@@ -490,15 +531,19 @@ function Meyer_Piening_sandwich_H20()
     sxzskintop = s.values[nintertop, 1]
 
     File = filebase * "-sxz-$(extrap).CSV"
-    savecsv(File, xstop=vec(topx)/phun("mm"), sxzskintop=vec(sxzskintop)/phun("MPa"), sxzcoretop=vec(sxzcoretop)/phun("MPa"), xsbot=vec(botx)/phun("mm"), sxzskinbot=vec(sxzskinbot)/phun("MPa"), sxzcorebot=vec(sxzcorebot)/phun("MPa"))
+    savecsv(File,
+        xstop = vec(topx) / phun("mm"),
+        sxzskintop = vec(sxzskintop) / phun("MPa"),
+        sxzcoretop = vec(sxzcoretop) / phun("MPa"),
+        xsbot = vec(botx) / phun("mm"),
+        sxzskinbot = vec(sxzskinbot) / phun("MPa"),
+        sxzcorebot = vec(sxzcorebot) / phun("MPa"))
 
     @async run(`"paraview.exe" $File`)
 
     println("Done")
     true
-
 end # Meyer_Piening_sandwich_H20
-
 
 function Meyer_Piening_sandwich_H8()
     println("""
@@ -534,93 +579,107 @@ function Meyer_Piening_sandwich_H8()
     # Proceedings of the Fifth International Conference On Sandwich Constructions,
     # September 5–7, vol. I, Zurich, Switzerland, 2000, pp. 37–48.
 
-
-
     t0 = time()
     # Orthotropic material for the SKIN
-    E1s = 70000.0*phun("MPa")
-    E2s = 71000.0*phun("MPa")
-    E3s = 69000.0*phun("MPa")
+    E1s = 70000.0 * phun("MPa")
+    E2s = 71000.0 * phun("MPa")
+    E3s = 69000.0 * phun("MPa")
     nu12s = nu13s = nu23s = 0.3
-    G12s = G13s = G23s = 26000.0*phun("MPa")
-    CTE1 =  CTE2 =  CTE3 = 0.0
+    G12s = G13s = G23s = 26000.0 * phun("MPa")
+    CTE1 = CTE2 = CTE3 = 0.0
     # Orthotropic material for the CORE
-    E1c = 3.0*phun("MPa")
-    E2c = 3.0*phun("MPa")
-    E3c = 2.8*phun("MPa")
+    E1c = 3.0 * phun("MPa")
+    E2c = 3.0 * phun("MPa")
+    E3c = 2.8 * phun("MPa")
     nu12c = nu13c = nu23c = 0.25
-    G12c = G13c = G23c = 1.0*phun("MPa")
-    CTE1 =  CTE2 =  CTE3 = 0.0
+    G12c = G13c = G23c = 1.0 * phun("MPa")
+    CTE1 = CTE2 = CTE3 = 0.0
 
-    Lx = 5.0*phun("mm") # length  of loaded rectangle
-    Ly = 20.0*phun("mm") # length  of loaded rectangle
-    Sx = 100.0*phun("mm") # span of the plate
-    Sy = 200.0*phun("mm") # span of the plate
+    Lx = 5.0 * phun("mm") # length  of loaded rectangle
+    Ly = 20.0 * phun("mm") # length  of loaded rectangle
+    Sx = 100.0 * phun("mm") # span of the plate
+    Sy = 200.0 * phun("mm") # span of the plate
 
     # Here we define the layout and the thicknesses of the layers.
-    angles = vec([0.0 0.0 0.0]);
-    ts = vec([0.5  11.4  0.1])*phun("mm"); # layer thicknesses
-    TH = sum(ts); # total thickness of the plate
+    angles = vec([0.0 0.0 0.0])
+    ts = vec([0.5 11.4 0.1]) * phun("mm") # layer thicknesses
+    TH = sum(ts) # total thickness of the plate
 
-    tolerance = 0.0001*TH
+    tolerance = 0.0001 * TH
 
     # The line load is in the negative Z direction.
-    q0 = 1*phun("MPa"); #    line load
+    q0 = 1 * phun("MPa") #    line load
 
     # Reference deflection under the load is
-    wtopref = -3.789*phun("mm"); # From [1]
-    wbottomref = -2.16*phun("mm"); # Not given in [1]; guessed from the figure
+    wtopref = -3.789 * phun("mm") # From [1]
+    wbottomref = -2.16 * phun("mm") # Not given in [1]; guessed from the figure
 
     # Select how find the mesh should be
     Refinement = 5
-    nL = Refinement * 1;
-    nSx = nL + Refinement * 4;
-    nSy = 2 * nSx;
+    nL = Refinement * 1
+    nSx = nL + Refinement * 4
+    nSy = 2 * nSx
 
     # Each layer is modeled with a single element.
-    nts= Refinement * [1, 2, 1];# number of elements per layer
+    nts = Refinement * [1, 2, 1]# number of elements per layer
     strength = 1.5
-    xs = unique(vcat(reverse(collect(MeshUtilModule.gradedspace(Lx/2, 0.0, nL+1, strength))),
-    collect(MeshUtilModule.gradedspace(Lx/2, Sx/2, nSx-nL+1, strength))))
-    ys = unique(vcat(reverse(collect(MeshUtilModule.gradedspace(Ly/2, 0.0, nL+1, strength))),
-    collect(MeshUtilModule.gradedspace(Ly/2, Sy/2, nSy-nL+1, strength))))
+    xs = unique(vcat(reverse(collect(MeshUtilModule.gradedspace(Lx / 2,
+            0.0,
+            nL + 1,
+            strength))),
+        collect(MeshUtilModule.gradedspace(Lx / 2, Sx / 2, nSx - nL + 1, strength))))
+    ys = unique(vcat(reverse(collect(MeshUtilModule.gradedspace(Ly / 2,
+            0.0,
+            nL + 1,
+            strength))),
+        collect(MeshUtilModule.gradedspace(Ly / 2, Sy / 2, nSy - nL + 1, strength))))
 
-    fens,fes = H8layeredplatex(xs, ys, ts, nts)
-
+    fens, fes = H8layeredplatex(xs, ys, ts, nts)
 
     # This is the material  model
     MR = DeforModelRed3D
     skinmaterial = MatDeforElastOrtho(MR,
-    0.0, E1s, E2s, E3s,
-    nu12s, nu13s, nu23s,
-    G12s, G13s, G23s,
-    CTE1, CTE2, CTE3)
+        0.0, E1s, E2s, E3s,
+        nu12s, nu13s, nu23s,
+        G12s, G13s, G23s,
+        CTE1, CTE2, CTE3)
     corematerial = MatDeforElastOrtho(MR,
-    0.0, E1c, E2c, E3c,
-    nu12c, nu13c, nu23c,
-    G12c, G13c, G23c,
-    CTE1, CTE2, CTE3)
+        0.0, E1c, E2c, E3c,
+        nu12c, nu13c, nu23c,
+        G12c, G13c, G23c,
+        CTE1, CTE2, CTE3)
 
     # The material coordinate system function is defined as:
-        function _updatecs!(csmatout::FFltMat, feid::FInt, label)
-            rotmat3!(csmatout, angles[label]/180.0*pi* [0.0; 0.0; 1.0]);
-            csmatout
-        end
+    function _updatecs!(csmatout::FFltMat, feid::FInt, label)
+        rotmat3!(csmatout, angles[label] / 180.0 * pi * [0.0; 0.0; 1.0])
+        csmatout
+    end
 
     # The vvolume integrals are evaluated using this rule
     gr = GaussRule(3, 2)
 
     # We will create three regions, two for the skin, and one for the core.
     rfes = subset(fes, selectelem(fens, fes, label = 1))
-    botskinregion = FDataDict("femm"=>FEMMDeforLinear(MR, IntegDomain(rfes, gr), CSys(3, 3, (csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) ->
-        _updatecs!(csmatout, feid, 1)), skinmaterial))
+    botskinregion = FDataDict("femm" => FEMMDeforLinear(MR, IntegDomain(rfes, gr),
+        CSys(3,
+            3,
+            (csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) -> _updatecs!(csmatout,
+                feid,
+                1)), skinmaterial))
     rfes = subset(fes, selectelem(fens, fes, label = 3))
-    topskinregion = FDataDict("femm"=>FEMMDeforLinear(MR, IntegDomain(rfes, gr), CSys(3, 3, (csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) ->
-        _updatecs!(csmatout, feid, 3)), skinmaterial))
+    topskinregion = FDataDict("femm" => FEMMDeforLinear(MR, IntegDomain(rfes, gr),
+        CSys(3,
+            3,
+            (csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) -> _updatecs!(csmatout,
+                feid,
+                3)), skinmaterial))
     rfes = subset(fes, selectelem(fens, fes, label = 2))
-    coreregion = FDataDict("femm"=>FEMMDeforLinear(MR, IntegDomain(rfes, gr), CSys(3, 3, (csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) ->
-        _updatecs!(csmatout, feid, 2)), corematerial))
-
+    coreregion = FDataDict("femm" => FEMMDeforLinear(MR, IntegDomain(rfes, gr),
+        CSys(3,
+            3,
+            (csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) -> _updatecs!(csmatout,
+                feid,
+                2)), corematerial))
 
     # File =  "Meyer_Piening_sandwich-r1.vtk"
     # vtkexportmesh(File, skinregion["femm"].integdomain.fes.conn, fens.xyz, FinEtools.MeshExportModule.H8)
@@ -631,32 +690,33 @@ function Meyer_Piening_sandwich_H8()
 
     # The essential boundary conditions are applied on the symmetry planes.
     # First the plane X=0;...
-    lx0 = selectnode(fens, box=[0.0 0.0 -Inf Inf -Inf Inf], inflate=tolerance)
-    ex0 = FDataDict( "displacement"=>  0.0, "component"=> 1, "node_list"=>lx0 )
+    lx0 = selectnode(fens, box = [0.0 0.0 -Inf Inf -Inf Inf], inflate = tolerance)
+    ex0 = FDataDict("displacement" => 0.0, "component" => 1, "node_list" => lx0)
     # ... and then the plane Y=0.
-    ly0 = selectnode(fens, box=[-Inf Inf 0.0 0.0 -Inf Inf], inflate=tolerance)
-    ey0 = FDataDict( "displacement"=>  0.0, "component"=> 2, "node_list"=>ly0 )
+    ly0 = selectnode(fens, box = [-Inf Inf 0.0 0.0 -Inf Inf], inflate = tolerance)
+    ey0 = FDataDict("displacement" => 0.0, "component" => 2, "node_list" => ly0)
     # The transverse displacement is fixed around the circumference.
-    lz0 = vcat(selectnode(fens, box=[Sx/2 Sx/2 -Inf Inf -Inf Inf], inflate=tolerance),
-    selectnode(fens, box=[-Inf Inf Sy/2 Sy/2 -Inf Inf], inflate=tolerance))
-    ez0 = FDataDict( "displacement"=>  0.0, "component"=> 3, "node_list"=>lz0 )
+    lz0 = vcat(selectnode(fens,
+            box = [Sx / 2 Sx / 2 -Inf Inf -Inf Inf],
+            inflate = tolerance),
+        selectnode(fens, box = [-Inf Inf Sy / 2 Sy / 2 -Inf Inf], inflate = tolerance))
+    ez0 = FDataDict("displacement" => 0.0, "component" => 3, "node_list" => lz0)
 
     # The traction boundary condition is applied  along rectangle in the middle of the plate.
     bfes = meshboundary(fes)
     # From  the entire boundary we select those quadrilaterals that lie on the plane
     # Z = thickness
-    tl = selectelem(fens, bfes, box = [0.0 Lx/2 0 Ly/2 TH TH], inflate=tolerance)
-    Trac = FDataDict("traction_vector"=>vec([0.0; 0.0; -q0]),
-    "femm"=>FEMMBase(IntegDomain(subset(bfes, tl), GaussRule(2, 2))))
+    tl = selectelem(fens, bfes, box = [0.0 Lx / 2 0 Ly / 2 TH TH], inflate = tolerance)
+    Trac = FDataDict("traction_vector" => vec([0.0; 0.0; -q0]),
+        "femm" => FEMMBase(IntegDomain(subset(bfes, tl), GaussRule(2, 2))))
 
-    modeldata = FDataDict("fens"=>fens,
-    "regions"=>[botskinregion, coreregion, topskinregion],
-    "essential_bcs"=>[ex0, ey0, ez0],
-    "traction_bcs"=> [Trac]
-    )
+    modeldata = FDataDict("fens" => fens,
+        "regions" => [botskinregion, coreregion, topskinregion],
+        "essential_bcs" => [ex0, ey0, ez0],
+        "traction_bcs" => [Trac])
     modeldata = AlgoDeforLinearModule.linearstatics(modeldata)
 
-    modeldata["postprocessing"] = FDataDict("file"=>"Meyer_Piening_sandwich")
+    modeldata["postprocessing"] = FDataDict("file" => "Meyer_Piening_sandwich")
     modeldata = AlgoDeforLinearModule.exportdeformation(modeldata)
 
     u = modeldata["u"]
@@ -664,11 +724,15 @@ function Meyer_Piening_sandwich_H8()
 
     # The results of the displacement and stresses will be reported at
     # nodes located at the appropriate points.
-    nbottomcenter = selectnode(fens, box=[0.0 0.0 0.0 0.0 0.0 0.0], inflate=tolerance)
-    ntopcenter = selectnode(fens, box=[0.0 0.0 0.0 0.0 TH TH], inflate=tolerance)
-    ncenterline = selectnode(fens, box=[0.0 0.0 0.0 0.0 0.0 TH], inflate=tolerance)
-    nintertop = selectnode(fens, box=[-Inf Inf 0.0 0.0 sum(ts[1:2]) sum(ts[1:2])], inflate=tolerance)
-    ninterbot = selectnode(fens, box=[-Inf Inf 0.0 0.0 sum(ts[1:1]) sum(ts[1:1])], inflate=tolerance)
+    nbottomcenter = selectnode(fens, box = [0.0 0.0 0.0 0.0 0.0 0.0], inflate = tolerance)
+    ntopcenter = selectnode(fens, box = [0.0 0.0 0.0 0.0 TH TH], inflate = tolerance)
+    ncenterline = selectnode(fens, box = [0.0 0.0 0.0 0.0 0.0 TH], inflate = tolerance)
+    nintertop = selectnode(fens,
+        box = [-Inf Inf 0.0 0.0 sum(ts[1:2]) sum(ts[1:2])],
+        inflate = tolerance)
+    ninterbot = selectnode(fens,
+        box = [-Inf Inf 0.0 0.0 sum(ts[1:1]) sum(ts[1:1])],
+        inflate = tolerance)
 
     zclo = sortperm(vec(geom.values[ncenterline, 3]))
     centerz = geom.values[ncenterline[zclo], 3]
@@ -677,9 +741,11 @@ function Meyer_Piening_sandwich_H8()
     xclobot = sortperm(vec(geom.values[ninterbot, 1]))
     botx = geom.values[ninterbot[xclobot], 1]
 
-    conninbotskin = intersect(connectednodes(botskinregion["femm"].integdomain.fes), ncenterline)
+    conninbotskin = intersect(connectednodes(botskinregion["femm"].integdomain.fes),
+        ncenterline)
     connincore = intersect(connectednodes(coreregion["femm"].integdomain.fes), ncenterline)
-    connintopskin = intersect(connectednodes(topskinregion["femm"].integdomain.fes), ncenterline)
+    connintopskin = intersect(connectednodes(topskinregion["femm"].integdomain.fes),
+        ncenterline)
     inbotskin = [n in conninbotskin for n in ncenterline]
     incore = [n in connincore for n in ncenterline]
     intopskin = [n in connintopskin for n in ncenterline]
@@ -695,9 +761,9 @@ function Meyer_Piening_sandwich_H8()
     nodevalmeth = :invdistance
 
     # Normal stress in the X direction
-    modeldata["postprocessing"] = FDataDict("file"=>"Meyer_Piening_sandwich-sx",
-    "quantity"=>:Cauchy, "component"=>1, "outputcsys"=>CSys(3),
-    "nodevalmethod"=>nodevalmeth, "reportat"=>extrap)
+    modeldata["postprocessing"] = FDataDict("file" => "Meyer_Piening_sandwich-sx",
+        "quantity" => :Cauchy, "component" => 1, "outputcsys" => CSys(3),
+        "nodevalmethod" => nodevalmeth, "reportat" => extrap)
     modeldata = AlgoDeforLinearModule.exportstress(modeldata)
     s = modeldata["postprocessing"]["exported"][1]["field"]
     sxbot = s.values[ncenterline[zclo], 1]
@@ -708,24 +774,22 @@ function Meyer_Piening_sandwich_H8()
 
     # The graph data needs to be collected by going through each layer separately.
     # Some quantities may be discontinuous between layers.
-    zs = vcat(  [z for (j,z) in enumerate(centerz) if inbotskin[j]],
-    [z for (j,z) in enumerate(centerz) if incore[j]],
-    [z for (j,z) in enumerate(centerz) if intopskin[j]]
-    )
-    sxs = vcat( [sxbot[j] for (j,z) in enumerate(centerz) if inbotskin[j]],
-    [sxcore[j] for (j,z) in enumerate(centerz) if incore[j]],
-    [sxtop[j] for (j,z) in enumerate(centerz) if intopskin[j]]
-    )
+    zs = vcat([z for (j, z) in enumerate(centerz) if inbotskin[j]],
+        [z for (j, z) in enumerate(centerz) if incore[j]],
+        [z for (j, z) in enumerate(centerz) if intopskin[j]])
+    sxs = vcat([sxbot[j] for (j, z) in enumerate(centerz) if inbotskin[j]],
+        [sxcore[j] for (j, z) in enumerate(centerz) if incore[j]],
+        [sxtop[j] for (j, z) in enumerate(centerz) if intopskin[j]])
 
     File = "Meyer_Piening_sandwich-sx-$(extrap).CSV"
-    savecsv(File, zs=vec(zs)/phun("mm"), sx=vec(sxs)/phun("MPa"))
+    savecsv(File, zs = vec(zs) / phun("mm"), sx = vec(sxs) / phun("MPa"))
 
     # @async run(`"paraview.exe" $File`)
 
     # Inter laminar stress between the skin and the core
-    modeldata["postprocessing"] = FDataDict("file"=>"Meyer_Piening_sandwich-sxz",
-    "quantity"=>:Cauchy, "component"=>5, "outputcsys"=>CSys(3),
-    "nodevalmethod"=>nodevalmeth, "reportat"=>extrap)
+    modeldata["postprocessing"] = FDataDict("file" => "Meyer_Piening_sandwich-sxz",
+        "quantity" => :Cauchy, "component" => 5, "outputcsys" => CSys(3),
+        "nodevalmethod" => nodevalmeth, "reportat" => extrap)
     modeldata = AlgoDeforLinearModule.exportstress(modeldata)
     s = modeldata["postprocessing"]["exported"][1]["field"]
     sxzskinbot = s.values[ninterbot[xclobot], 1]
@@ -736,15 +800,19 @@ function Meyer_Piening_sandwich_H8()
     sxzskintop = s.values[nintertop[xclotop], 1]
 
     File = "Meyer_Piening_sandwich-sxz-$(extrap).CSV"
-    savecsv(File, xstop=vec(topx[xclotop])/phun("mm"), sxzskintop=vec(sxzskintop[xclotop])/phun("MPa"), sxzcoretop=vec(sxzcoretop[xclotop])/phun("MPa"), xsbot=vec(botx[xclobot])/phun("mm"), sxzskinbot=vec(sxzskinbot[xclobot])/phun("MPa"), sxzcorebot=vec(sxzcorebot[xclobot])/phun("MPa"))
+    savecsv(File,
+        xstop = vec(topx[xclotop]) / phun("mm"),
+        sxzskintop = vec(sxzskintop[xclotop]) / phun("MPa"),
+        sxzcoretop = vec(sxzcoretop[xclotop]) / phun("MPa"),
+        xsbot = vec(botx[xclobot]) / phun("mm"),
+        sxzskinbot = vec(sxzskinbot[xclobot]) / phun("MPa"),
+        sxzcorebot = vec(sxzcorebot[xclobot]) / phun("MPa"))
 
     @async run(`"paraview.exe" $File`)
 
     println("Done")
     true
-
 end # Meyer_Piening_sandwich_H8
-
 
 function Meyer_Piening_sandwich_MSH8()
     println("""
@@ -780,96 +848,105 @@ function Meyer_Piening_sandwich_MSH8()
     # Proceedings of the Fifth International Conference On Sandwich Constructions,
     # September 5–7, vol. I, Zurich, Switzerland, 2000, pp. 37–48.
 
-
     filebase = "Meyer-Piening-sandwich-MSH8"
 
     t0 = time()
     # Orthotropic material for the SKIN
-    E1s = 70000.0*phun("MPa")
-    E2s = 71000.0*phun("MPa")
-    E3s = 69000.0*phun("MPa")
+    E1s = 70000.0 * phun("MPa")
+    E2s = 71000.0 * phun("MPa")
+    E3s = 69000.0 * phun("MPa")
     nu12s = nu13s = nu23s = 0.3
-    G12s = G13s = G23s = 26000.0*phun("MPa")
-    CTE1 =  CTE2 =  CTE3 = 0.0
+    G12s = G13s = G23s = 26000.0 * phun("MPa")
+    CTE1 = CTE2 = CTE3 = 0.0
     # Orthotropic material for the CORE
-    E1c = 3.0*phun("MPa")
-    E2c = 3.0*phun("MPa")
-    E3c = 2.8*phun("MPa")
+    E1c = 3.0 * phun("MPa")
+    E2c = 3.0 * phun("MPa")
+    E3c = 2.8 * phun("MPa")
     nu12c = nu13c = nu23c = 0.25
-    G12c = G13c = G23c = 1.0*phun("MPa")
-    CTE1 =  CTE2 =  CTE3 = 0.0
+    G12c = G13c = G23c = 1.0 * phun("MPa")
+    CTE1 = CTE2 = CTE3 = 0.0
 
-    Lx = 5.0*phun("mm") # length  of loaded rectangle
-    Ly = 20.0*phun("mm") # length  of loaded rectangle
-    Sx = 100.0*phun("mm") # span of the plate
-    Sy = 200.0*phun("mm") # span of the plate
+    Lx = 5.0 * phun("mm") # length  of loaded rectangle
+    Ly = 20.0 * phun("mm") # length  of loaded rectangle
+    Sx = 100.0 * phun("mm") # span of the plate
+    Sy = 200.0 * phun("mm") # span of the plate
 
     # Here we define the layout and the thicknesses of the layers.
-    angles = vec([0.0 0.0 0.0]);
-    ts = vec([0.5  11.4  0.1])*phun("mm"); # layer thicknesses
-    TH = sum(ts); # total thickness of the plate
+    angles = vec([0.0 0.0 0.0])
+    ts = vec([0.5 11.4 0.1]) * phun("mm") # layer thicknesses
+    TH = sum(ts) # total thickness of the plate
 
-    tolerance = 0.0001*TH
+    tolerance = 0.0001 * TH
 
     # The line load is in the negative Z direction.
-    q0 = 1*phun("MPa"); #    line load
+    q0 = 1 * phun("MPa") #    line load
 
     # Reference deflection under the load is
-    wtopref = -3.789*phun("mm"); # From [1]
-    wbottomref = -2.16*phun("mm"); # Not given in [1]; guessed from the figure
+    wtopref = -3.789 * phun("mm") # From [1]
+    wbottomref = -2.16 * phun("mm") # Not given in [1]; guessed from the figure
 
     # Select how find the mesh should be
     Refinement = 7
-    nL = Refinement * 1;
-    nSx = nL + Refinement * 4;
-    nSy = 2 * nSx;
+    nL = Refinement * 1
+    nSx = nL + Refinement * 4
+    nSy = 2 * nSx
 
     # Each layer is modeled with a single element.
-    nts= Refinement * [1, 2, 1];# number of elements per layer
+    nts = Refinement * [1, 2, 1]# number of elements per layer
     strength = 1.5
     sp = (a, b, n) -> MeshUtilModule.gradedspace(a, b, n, strength)
     sp = (a, b, n) -> linearspace(a, b, n)
-    xs = unique(vcat(reverse(collect(sp(Lx/2, 0.0, nL+1))),
-    collect(sp(Lx/2, Sx/2, nSx-nL+1))))
-    ys = unique(vcat(reverse(collect(MeshUtilModule.gradedspace(Ly/2, 0.0, nL+1))),
-    collect(sp(Ly/2, Sy/2, nSy-nL+1))))
+    xs = unique(vcat(reverse(collect(sp(Lx / 2, 0.0, nL + 1))),
+        collect(sp(Lx / 2, Sx / 2, nSx - nL + 1))))
+    ys = unique(vcat(reverse(collect(MeshUtilModule.gradedspace(Ly / 2, 0.0, nL + 1))),
+        collect(sp(Ly / 2, Sy / 2, nSy - nL + 1))))
 
-    fens,fes = H8layeredplatex(xs, ys, ts, nts)
-
+    fens, fes = H8layeredplatex(xs, ys, ts, nts)
 
     # This is the material  model
     MR = DeforModelRed3D
     skinmaterial = MatDeforElastOrtho(MR,
-    0.0, E1s, E2s, E3s,
-    nu12s, nu13s, nu23s,
-    G12s, G13s, G23s,
-    CTE1, CTE2, CTE3)
+        0.0, E1s, E2s, E3s,
+        nu12s, nu13s, nu23s,
+        G12s, G13s, G23s,
+        CTE1, CTE2, CTE3)
     corematerial = MatDeforElastOrtho(MR,
-    0.0, E1c, E2c, E3c,
-    nu12c, nu13c, nu23c,
-    G12c, G13c, G23c,
-    CTE1, CTE2, CTE3)
+        0.0, E1c, E2c, E3c,
+        nu12c, nu13c, nu23c,
+        G12c, G13c, G23c,
+        CTE1, CTE2, CTE3)
 
     # The material coordinate system function is defined as:
-        function _updatecs!(csmatout::FFltMat, feid::FInt, label)
-            rotmat3!(csmatout, angles[label]/180.0*pi* [0.0; 0.0; 1.0]);
-            csmatout
-        end
+    function _updatecs!(csmatout::FFltMat, feid::FInt, label)
+        rotmat3!(csmatout, angles[label] / 180.0 * pi * [0.0; 0.0; 1.0])
+        csmatout
+    end
 
     # The vvolume integrals are evaluated using this rule
     gr = GaussRule(3, 2)
 
     # We will create three regions, two for the skin, and one for the core.
     rfes = subset(fes, selectelem(fens, fes, label = 1))
-    botskinregion = FDataDict("femm"=>FEMMDeforLinearMSH8(MR, IntegDomain(rfes, gr), CSys(3, 3, (csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) ->
-        _updatecs!(csmatout, feid, 1)), skinmaterial))
+    botskinregion = FDataDict("femm" => FEMMDeforLinearMSH8(MR, IntegDomain(rfes, gr),
+        CSys(3,
+            3,
+            (csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) -> _updatecs!(csmatout,
+                feid,
+                1)), skinmaterial))
     rfes = subset(fes, selectelem(fens, fes, label = 3))
-    topskinregion = FDataDict("femm"=>FEMMDeforLinearMSH8(MR, IntegDomain(rfes, gr), CSys(3, 3, (csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) ->
-        _updatecs!(csmatout, feid, 3)), skinmaterial))
+    topskinregion = FDataDict("femm" => FEMMDeforLinearMSH8(MR, IntegDomain(rfes, gr),
+        CSys(3,
+            3,
+            (csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) -> _updatecs!(csmatout,
+                feid,
+                3)), skinmaterial))
     rfes = subset(fes, selectelem(fens, fes, label = 2))
-    coreregion = FDataDict("femm"=>FEMMDeforLinearMSH8(MR, IntegDomain(rfes, gr), CSys(3, 3, (csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) ->
-        _updatecs!(csmatout, feid, 2)), corematerial))
-
+    coreregion = FDataDict("femm" => FEMMDeforLinearMSH8(MR, IntegDomain(rfes, gr),
+        CSys(3,
+            3,
+            (csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) -> _updatecs!(csmatout,
+                feid,
+                2)), corematerial))
 
     # File =  "Meyer_Piening_sandwich-r1.vtk"
     # vtkexportmesh(File, skinregion["femm"].integdomain.fes.conn, fens.xyz, FinEtools.MeshExportModule.H8)
@@ -880,32 +957,33 @@ function Meyer_Piening_sandwich_MSH8()
 
     # The essential boundary conditions are applied on the symmetry planes.
     # First the plane X=0;...
-    lx0 = selectnode(fens, box=[0.0 0.0 -Inf Inf -Inf Inf], inflate=tolerance)
-    ex0 = FDataDict( "displacement"=>  0.0, "component"=> 1, "node_list"=>lx0 )
+    lx0 = selectnode(fens, box = [0.0 0.0 -Inf Inf -Inf Inf], inflate = tolerance)
+    ex0 = FDataDict("displacement" => 0.0, "component" => 1, "node_list" => lx0)
     # ... and then the plane Y=0.
-    ly0 = selectnode(fens, box=[-Inf Inf 0.0 0.0 -Inf Inf], inflate=tolerance)
-    ey0 = FDataDict( "displacement"=>  0.0, "component"=> 2, "node_list"=>ly0 )
+    ly0 = selectnode(fens, box = [-Inf Inf 0.0 0.0 -Inf Inf], inflate = tolerance)
+    ey0 = FDataDict("displacement" => 0.0, "component" => 2, "node_list" => ly0)
     # The transverse displacement is fixed around the circumference.
-    lz0 = vcat(selectnode(fens, box=[Sx/2 Sx/2 -Inf Inf -Inf Inf], inflate=tolerance),
-    selectnode(fens, box=[-Inf Inf Sy/2 Sy/2 -Inf Inf], inflate=tolerance))
-    ez0 = FDataDict( "displacement"=>  0.0, "component"=> 3, "node_list"=>lz0 )
+    lz0 = vcat(selectnode(fens,
+            box = [Sx / 2 Sx / 2 -Inf Inf -Inf Inf],
+            inflate = tolerance),
+        selectnode(fens, box = [-Inf Inf Sy / 2 Sy / 2 -Inf Inf], inflate = tolerance))
+    ez0 = FDataDict("displacement" => 0.0, "component" => 3, "node_list" => lz0)
 
     # The traction boundary condition is applied  along rectangle in the middle of the plate.
     bfes = meshboundary(fes)
     # From  the entire boundary we select those quadrilaterals that lie on the plane
     # Z = thickness
-    tl = selectelem(fens, bfes, box = [0.0 Lx/2 0 Ly/2 TH TH], inflate=tolerance)
-    Trac = FDataDict("traction_vector"=>vec([0.0; 0.0; -q0]),
-    "femm"=>FEMMBase(IntegDomain(subset(bfes, tl), GaussRule(2, 2))))
+    tl = selectelem(fens, bfes, box = [0.0 Lx / 2 0 Ly / 2 TH TH], inflate = tolerance)
+    Trac = FDataDict("traction_vector" => vec([0.0; 0.0; -q0]),
+        "femm" => FEMMBase(IntegDomain(subset(bfes, tl), GaussRule(2, 2))))
 
-    modeldata = FDataDict("fens"=>fens,
-    "regions"=>[botskinregion, coreregion, topskinregion],
-    "essential_bcs"=>[ex0, ey0, ez0],
-    "traction_bcs"=> [Trac]
-    )
+    modeldata = FDataDict("fens" => fens,
+        "regions" => [botskinregion, coreregion, topskinregion],
+        "essential_bcs" => [ex0, ey0, ez0],
+        "traction_bcs" => [Trac])
     modeldata = AlgoDeforLinearModule.linearstatics(modeldata)
 
-    modeldata["postprocessing"] = FDataDict("file"=>filebase * "-u")
+    modeldata["postprocessing"] = FDataDict("file" => filebase * "-u")
     modeldata = AlgoDeforLinearModule.exportdeformation(modeldata)
 
     u = modeldata["u"]
@@ -913,11 +991,15 @@ function Meyer_Piening_sandwich_MSH8()
 
     # The results of the displacement and stresses will be reported at
     # nodes located at the appropriate points.
-    nbottomcenter = selectnode(fens, box=[0.0 0.0 0.0 0.0 0.0 0.0], inflate=tolerance)
-    ntopcenter = selectnode(fens, box=[0.0 0.0 0.0 0.0 TH TH], inflate=tolerance)
-    ncenterline = selectnode(fens, box=[0.0 0.0 0.0 0.0 0.0 TH], inflate=tolerance)
-    nintertop = selectnode(fens, box=[-Inf Inf 0.0 0.0 sum(ts[1:2]) sum(ts[1:2])], inflate=tolerance)
-    ninterbot = selectnode(fens, box=[-Inf Inf 0.0 0.0 sum(ts[1:1]) sum(ts[1:1])], inflate=tolerance)
+    nbottomcenter = selectnode(fens, box = [0.0 0.0 0.0 0.0 0.0 0.0], inflate = tolerance)
+    ntopcenter = selectnode(fens, box = [0.0 0.0 0.0 0.0 TH TH], inflate = tolerance)
+    ncenterline = selectnode(fens, box = [0.0 0.0 0.0 0.0 0.0 TH], inflate = tolerance)
+    nintertop = selectnode(fens,
+        box = [-Inf Inf 0.0 0.0 sum(ts[1:2]) sum(ts[1:2])],
+        inflate = tolerance)
+    ninterbot = selectnode(fens,
+        box = [-Inf Inf 0.0 0.0 sum(ts[1:1]) sum(ts[1:1])],
+        inflate = tolerance)
 
     zclo = sortperm(vec(geom.values[ncenterline, 3]))
     ncenterline = ncenterline[zclo]
@@ -932,9 +1014,11 @@ function Meyer_Piening_sandwich_MSH8()
     botx = geom.values[ninterbot, 1]
     xclotop = xclobot = nothing
 
-    conninbotskin = intersect(connectednodes(botskinregion["femm"].integdomain.fes), ncenterline)
+    conninbotskin = intersect(connectednodes(botskinregion["femm"].integdomain.fes),
+        ncenterline)
     connincore = intersect(connectednodes(coreregion["femm"].integdomain.fes), ncenterline)
-    connintopskin = intersect(connectednodes(topskinregion["femm"].integdomain.fes), ncenterline)
+    connintopskin = intersect(connectednodes(topskinregion["femm"].integdomain.fes),
+        ncenterline)
     inbotskin = [n in conninbotskin for n in ncenterline]
     incore = [n in connincore for n in ncenterline]
     intopskin = [n in connintopskin for n in ncenterline]
@@ -950,9 +1034,9 @@ function Meyer_Piening_sandwich_MSH8()
     # nodevalmeth = :invdistance
 
     # Normal stress in the X direction
-    modeldata["postprocessing"] = FDataDict("file"=>filebase * "-sx",
-    "quantity"=>:Cauchy, "component"=>1, "outputcsys"=>CSys(3),
-    "nodevalmethod"=>nodevalmeth, "reportat"=>extrap)
+    modeldata["postprocessing"] = FDataDict("file" => filebase * "-sx",
+        "quantity" => :Cauchy, "component" => 1, "outputcsys" => CSys(3),
+        "nodevalmethod" => nodevalmeth, "reportat" => extrap)
     modeldata = AlgoDeforLinearModule.exportstress(modeldata)
     s = modeldata["postprocessing"]["exported"][1]["field"]
     sxbot = s.values[ncenterline, 1]
@@ -963,24 +1047,22 @@ function Meyer_Piening_sandwich_MSH8()
 
     # The graph data needs to be collected by going through each layer separately.
     # Some quantities may be discontinuous between layers.
-    zs = vcat(  [z for (j,z) in enumerate(centerz) if inbotskin[j]],
-    [z for (j,z) in enumerate(centerz) if incore[j]],
-    [z for (j,z) in enumerate(centerz) if intopskin[j]]
-    )
-    sxs = vcat( [sxbot[j] for (j,z) in enumerate(centerz) if inbotskin[j]],
-    [sxcore[j] for (j,z) in enumerate(centerz) if incore[j]],
-    [sxtop[j] for (j,z) in enumerate(centerz) if intopskin[j]]
-    )
+    zs = vcat([z for (j, z) in enumerate(centerz) if inbotskin[j]],
+        [z for (j, z) in enumerate(centerz) if incore[j]],
+        [z for (j, z) in enumerate(centerz) if intopskin[j]])
+    sxs = vcat([sxbot[j] for (j, z) in enumerate(centerz) if inbotskin[j]],
+        [sxcore[j] for (j, z) in enumerate(centerz) if incore[j]],
+        [sxtop[j] for (j, z) in enumerate(centerz) if intopskin[j]])
 
     File = filebase * "-sx-$(extrap).CSV"
-    savecsv(File, zs=vec(zs)/phun("mm"), sx=vec(sxs)/phun("MPa"))
+    savecsv(File, zs = vec(zs) / phun("mm"), sx = vec(sxs) / phun("MPa"))
 
     # @async run(`"paraview.exe" $File`)
 
     # Inter laminar stress between the skin and the core
-    modeldata["postprocessing"] = FDataDict("file"=>filebase * "-sxz",
-    "quantity"=>:Cauchy, "component"=>5, "outputcsys"=>CSys(3),
-    "nodevalmethod"=>nodevalmeth, "reportat"=>extrap)
+    modeldata["postprocessing"] = FDataDict("file" => filebase * "-sxz",
+        "quantity" => :Cauchy, "component" => 5, "outputcsys" => CSys(3),
+        "nodevalmethod" => nodevalmeth, "reportat" => extrap)
     modeldata = AlgoDeforLinearModule.exportstress(modeldata)
     s = modeldata["postprocessing"]["exported"][1]["field"]
     sxzskinbot = s.values[ninterbot, 1]
@@ -991,15 +1073,19 @@ function Meyer_Piening_sandwich_MSH8()
     sxzskintop = s.values[nintertop, 1]
 
     File = filebase * "-sxz-$(extrap).CSV"
-    savecsv(File, xstop=vec(topx)/phun("mm"), sxzskintop=vec(sxzskintop)/phun("MPa"), sxzcoretop=vec(sxzcoretop)/phun("MPa"), xsbot=vec(botx)/phun("mm"), sxzskinbot=vec(sxzskinbot)/phun("MPa"), sxzcorebot=vec(sxzcorebot)/phun("MPa"))
+    savecsv(File,
+        xstop = vec(topx) / phun("mm"),
+        sxzskintop = vec(sxzskintop) / phun("MPa"),
+        sxzcoretop = vec(sxzcoretop) / phun("MPa"),
+        xsbot = vec(botx) / phun("mm"),
+        sxzskinbot = vec(sxzskinbot) / phun("MPa"),
+        sxzcorebot = vec(sxzcorebot) / phun("MPa"))
 
     @async run(`"paraview.exe" $File`)
 
     println("Done")
     true
-
 end # Meyer_Piening_sandwich_MSH8
-
 
 function Meyer_Piening_sandwich_MST10()
     println("""
@@ -1039,90 +1125,101 @@ function Meyer_Piening_sandwich_MST10()
 
     t0 = time()
     # Orthotropic material for the SKIN
-    E1s = 70000.0*phun("MPa")
-    E2s = 71000.0*phun("MPa")
-    E3s = 69000.0*phun("MPa")
+    E1s = 70000.0 * phun("MPa")
+    E2s = 71000.0 * phun("MPa")
+    E3s = 69000.0 * phun("MPa")
     nu12s = nu13s = nu23s = 0.3
-    G12s = G13s = G23s = 26000.0*phun("MPa")
-    CTE1 =  CTE2 =  CTE3 = 0.0
+    G12s = G13s = G23s = 26000.0 * phun("MPa")
+    CTE1 = CTE2 = CTE3 = 0.0
     # Orthotropic material for the CORE
-    E1c = 3.0*phun("MPa")
-    E2c = 3.0*phun("MPa")
-    E3c = 2.8*phun("MPa")
+    E1c = 3.0 * phun("MPa")
+    E2c = 3.0 * phun("MPa")
+    E3c = 2.8 * phun("MPa")
     nu12c = nu13c = nu23c = 0.25
-    G12c = G13c = G23c = 1.0*phun("MPa")
-    CTE1 =  CTE2 =  CTE3 = 0.0
+    G12c = G13c = G23c = 1.0 * phun("MPa")
+    CTE1 = CTE2 = CTE3 = 0.0
 
-    Lx = 5.0*phun("mm") # length  of loaded rectangle
-    Ly = 20.0*phun("mm") # length  of loaded rectangle
-    Sx = 100.0*phun("mm") # span of the plate
-    Sy = 200.0*phun("mm") # span of the plate
+    Lx = 5.0 * phun("mm") # length  of loaded rectangle
+    Ly = 20.0 * phun("mm") # length  of loaded rectangle
+    Sx = 100.0 * phun("mm") # span of the plate
+    Sy = 200.0 * phun("mm") # span of the plate
 
     # Here we define the layout and the thicknesses of the layers.
-    angles = vec([0.0 0.0 0.0]);
-    ts = vec([0.5  11.4  0.1])*phun("mm"); # layer thicknesses
-    TH = sum(ts); # total thickness of the plate
+    angles = vec([0.0 0.0 0.0])
+    ts = vec([0.5 11.4 0.1]) * phun("mm") # layer thicknesses
+    TH = sum(ts) # total thickness of the plate
 
-    tolerance = 0.0001*TH
+    tolerance = 0.0001 * TH
 
     # The line load is in the negative Z direction.
-    q0 = 1*phun("MPa"); #    line load
+    q0 = 1 * phun("MPa") #    line load
 
     # Reference deflection under the load is
-    wtopref = -3.789*phun("mm"); # From [1]
-    wbottomref = -2.16*phun("mm"); # Not given in [1]; guessed from the figure
+    wtopref = -3.789 * phun("mm") # From [1]
+    wbottomref = -2.16 * phun("mm") # Not given in [1]; guessed from the figure
 
     # Select how find the mesh should be
     Refinement = 3
-    nL = Refinement * 1;
-    nSx = nL + Refinement * 4;
-    nSy = 2 * nSx;
+    nL = Refinement * 1
+    nSx = nL + Refinement * 4
+    nSy = 2 * nSx
 
     # Each layer is modeled with a single element.
-    nts= Refinement * [1, 2, 1];# number of elements per layer
+    nts = Refinement * [1, 2, 1]# number of elements per layer
     strength = 1.5
     sp = (a, b, n) -> MeshUtilModule.gradedspace(a, b, n, strength)
     sp = (a, b, n) -> linearspace(a, b, n)
-    xs = unique(vcat(reverse(collect(sp(Lx/2, 0.0, nL+1))),
-    collect(sp(Lx/2, Sx/2, nSx-nL+1))))
-    ys = unique(vcat(reverse(collect(MeshUtilModule.gradedspace(Ly/2, 0.0, nL+1))),
-    collect(sp(Ly/2, Sy/2, nSy-nL+1))))
+    xs = unique(vcat(reverse(collect(sp(Lx / 2, 0.0, nL + 1))),
+        collect(sp(Lx / 2, Sx / 2, nSx - nL + 1))))
+    ys = unique(vcat(reverse(collect(MeshUtilModule.gradedspace(Ly / 2, 0.0, nL + 1))),
+        collect(sp(Ly / 2, Sy / 2, nSy - nL + 1))))
 
-    fens,fes = T10layeredplatex(xs, ys, ts, nts)
+    fens, fes = T10layeredplatex(xs, ys, ts, nts)
 
     # This is the material  model
     MR = DeforModelRed3D
     skinmaterial = MatDeforElastOrtho(MR,
-    0.0, E1s, E2s, E3s,
-    nu12s, nu13s, nu23s,
-    G12s, G13s, G23s,
-    CTE1, CTE2, CTE3)
+        0.0, E1s, E2s, E3s,
+        nu12s, nu13s, nu23s,
+        G12s, G13s, G23s,
+        CTE1, CTE2, CTE3)
     corematerial = MatDeforElastOrtho(MR,
-    0.0, E1c, E2c, E3c,
-    nu12c, nu13c, nu23c,
-    G12c, G13c, G23c,
-    CTE1, CTE2, CTE3)
+        0.0, E1c, E2c, E3c,
+        nu12c, nu13c, nu23c,
+        G12c, G13c, G23c,
+        CTE1, CTE2, CTE3)
 
     # The material coordinate system function is defined as:
-        function _updatecs!(csmatout::FFltMat, feid::FInt, label)
-            rotmat3!(csmatout, angles[label]/180.0*pi* [0.0; 0.0; 1.0]);
-            csmatout
-        end
+    function _updatecs!(csmatout::FFltMat, feid::FInt, label)
+        rotmat3!(csmatout, angles[label] / 180.0 * pi * [0.0; 0.0; 1.0])
+        csmatout
+    end
 
     # The volume integrals are evaluated using this rule
     gr = SimplexRule(3, 4)
 
     # We will create three regions, two for the skin, and one for the core.
     rfes = subset(fes, selectelem(fens, fes, label = 1))
-    botskinregion = FDataDict("femm"=>FEMMDeforLinearMST10(MR, IntegDomain(rfes, gr), CSys(3, 3, (csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) ->
-        _updatecs!(csmatout, feid, 1)), skinmaterial))
+    botskinregion = FDataDict("femm" => FEMMDeforLinearMST10(MR, IntegDomain(rfes, gr),
+        CSys(3,
+            3,
+            (csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) -> _updatecs!(csmatout,
+                feid,
+                1)), skinmaterial))
     rfes = subset(fes, selectelem(fens, fes, label = 3))
-    topskinregion = FDataDict("femm"=>FEMMDeforLinearMST10(MR, IntegDomain(rfes, gr), CSys(3, 3, (csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) ->
-        _updatecs!(csmatout, feid, 3)), skinmaterial))
+    topskinregion = FDataDict("femm" => FEMMDeforLinearMST10(MR, IntegDomain(rfes, gr),
+        CSys(3,
+            3,
+            (csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) -> _updatecs!(csmatout,
+                feid,
+                3)), skinmaterial))
     rfes = subset(fes, selectelem(fens, fes, label = 2))
-    coreregion = FDataDict("femm"=>FEMMDeforLinearMST10(MR, IntegDomain(rfes, gr), CSys(3, 3, (csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) ->
-        _updatecs!(csmatout, feid, 2)), corematerial))
-
+    coreregion = FDataDict("femm" => FEMMDeforLinearMST10(MR, IntegDomain(rfes, gr),
+        CSys(3,
+            3,
+            (csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) -> _updatecs!(csmatout,
+                feid,
+                2)), corematerial))
 
     # File =  "Meyer_Piening_sandwich-r1.vtk"
     # vtkexportmesh(File, botskinregion["femm"].integdomain.fes.conn, fens.xyz,
@@ -1135,32 +1232,33 @@ function Meyer_Piening_sandwich_MST10()
 
     # The essential boundary conditions are applied on the symmetry planes.
     # First the plane X=0;...
-    lx0 = selectnode(fens, box=[0.0 0.0 -Inf Inf -Inf Inf], inflate=tolerance)
-    ex0 = FDataDict( "displacement"=>  0.0, "component"=> 1, "node_list"=>lx0 )
+    lx0 = selectnode(fens, box = [0.0 0.0 -Inf Inf -Inf Inf], inflate = tolerance)
+    ex0 = FDataDict("displacement" => 0.0, "component" => 1, "node_list" => lx0)
     # ... and then the plane Y=0.
-    ly0 = selectnode(fens, box=[-Inf Inf 0.0 0.0 -Inf Inf], inflate=tolerance)
-    ey0 = FDataDict( "displacement"=>  0.0, "component"=> 2, "node_list"=>ly0 )
+    ly0 = selectnode(fens, box = [-Inf Inf 0.0 0.0 -Inf Inf], inflate = tolerance)
+    ey0 = FDataDict("displacement" => 0.0, "component" => 2, "node_list" => ly0)
     # The transverse displacement is fixed around the circumference.
-    lz0 = vcat(selectnode(fens, box=[Sx/2 Sx/2 -Inf Inf -Inf Inf], inflate=tolerance),
-    selectnode(fens, box=[-Inf Inf Sy/2 Sy/2 -Inf Inf], inflate=tolerance))
-    ez0 = FDataDict( "displacement"=>  0.0, "component"=> 3, "node_list"=>lz0 )
+    lz0 = vcat(selectnode(fens,
+            box = [Sx / 2 Sx / 2 -Inf Inf -Inf Inf],
+            inflate = tolerance),
+        selectnode(fens, box = [-Inf Inf Sy / 2 Sy / 2 -Inf Inf], inflate = tolerance))
+    ez0 = FDataDict("displacement" => 0.0, "component" => 3, "node_list" => lz0)
 
     # The traction boundary condition is applied  along rectangle in the middle of the plate.
     bfes = meshboundary(fes)
     # From  the entire boundary we select those quadrilaterals that lie on the plane
     # Z = thickness
-    tl = selectelem(fens, bfes, box = [0.0 Lx/2 0 Ly/2 TH TH], inflate=tolerance)
-    Trac = FDataDict("traction_vector"=>vec([0.0; 0.0; -q0]),
-    "femm"=>FEMMBase(IntegDomain(subset(bfes, tl), SimplexRule(2, 3))))
+    tl = selectelem(fens, bfes, box = [0.0 Lx / 2 0 Ly / 2 TH TH], inflate = tolerance)
+    Trac = FDataDict("traction_vector" => vec([0.0; 0.0; -q0]),
+        "femm" => FEMMBase(IntegDomain(subset(bfes, tl), SimplexRule(2, 3))))
 
-    modeldata = FDataDict("fens"=>fens,
-    "regions"=>[botskinregion, coreregion, topskinregion],
-    "essential_bcs"=>[ex0, ey0, ez0],
-    "traction_bcs"=> [Trac]
-    )
+    modeldata = FDataDict("fens" => fens,
+        "regions" => [botskinregion, coreregion, topskinregion],
+        "essential_bcs" => [ex0, ey0, ez0],
+        "traction_bcs" => [Trac])
     modeldata = AlgoDeforLinearModule.linearstatics(modeldata)
 
-    modeldata["postprocessing"] = FDataDict("file"=>filebase * "-u")
+    modeldata["postprocessing"] = FDataDict("file" => filebase * "-u")
     modeldata = AlgoDeforLinearModule.exportdeformation(modeldata)
 
     u = modeldata["u"]
@@ -1168,11 +1266,15 @@ function Meyer_Piening_sandwich_MST10()
 
     # The results of the displacement and stresses will be reported at
     # nodes located at the appropriate points.
-    nbottomcenter = selectnode(fens, box=[0.0 0.0 0.0 0.0 0.0 0.0], inflate=tolerance)
-    ntopcenter = selectnode(fens, box=[0.0 0.0 0.0 0.0 TH TH], inflate=tolerance)
-    ncenterline = selectnode(fens, box=[0.0 0.0 0.0 0.0 0.0 TH], inflate=tolerance)
-    nintertop = selectnode(fens, box=[-Inf Inf 0.0 0.0 sum(ts[1:2]) sum(ts[1:2])], inflate=tolerance)
-    ninterbot = selectnode(fens, box=[-Inf Inf 0.0 0.0 sum(ts[1:1]) sum(ts[1:1])], inflate=tolerance)
+    nbottomcenter = selectnode(fens, box = [0.0 0.0 0.0 0.0 0.0 0.0], inflate = tolerance)
+    ntopcenter = selectnode(fens, box = [0.0 0.0 0.0 0.0 TH TH], inflate = tolerance)
+    ncenterline = selectnode(fens, box = [0.0 0.0 0.0 0.0 0.0 TH], inflate = tolerance)
+    nintertop = selectnode(fens,
+        box = [-Inf Inf 0.0 0.0 sum(ts[1:2]) sum(ts[1:2])],
+        inflate = tolerance)
+    ninterbot = selectnode(fens,
+        box = [-Inf Inf 0.0 0.0 sum(ts[1:1]) sum(ts[1:1])],
+        inflate = tolerance)
 
     zclo = sortperm(vec(geom.values[ncenterline, 3]))
     ncenterline = ncenterline[zclo]
@@ -1187,9 +1289,11 @@ function Meyer_Piening_sandwich_MST10()
     botx = geom.values[ninterbot, 1]
     xclotop = xclobot = nothing
 
-    conninbotskin = intersect(connectednodes(botskinregion["femm"].integdomain.fes), ncenterline)
+    conninbotskin = intersect(connectednodes(botskinregion["femm"].integdomain.fes),
+        ncenterline)
     connincore = intersect(connectednodes(coreregion["femm"].integdomain.fes), ncenterline)
-    connintopskin = intersect(connectednodes(topskinregion["femm"].integdomain.fes), ncenterline)
+    connintopskin = intersect(connectednodes(topskinregion["femm"].integdomain.fes),
+        ncenterline)
     inbotskin = [n in conninbotskin for n in ncenterline]
     incore = [n in connincore for n in ncenterline]
     intopskin = [n in connintopskin for n in ncenterline]
@@ -1205,9 +1309,9 @@ function Meyer_Piening_sandwich_MST10()
     # nodevalmeth = :invdistance
 
     # Normal stress in the X direction
-    modeldata["postprocessing"] = FDataDict("file"=>filebase * "-sx",
-    "quantity"=>:Cauchy, "component"=>1, "outputcsys"=>CSys(3),
-    "nodevalmethod"=>nodevalmeth, "reportat"=>extrap)
+    modeldata["postprocessing"] = FDataDict("file" => filebase * "-sx",
+        "quantity" => :Cauchy, "component" => 1, "outputcsys" => CSys(3),
+        "nodevalmethod" => nodevalmeth, "reportat" => extrap)
     modeldata = AlgoDeforLinearModule.exportstress(modeldata)
     s = modeldata["postprocessing"]["exported"][1]["field"]
     sxbot = s.values[ncenterline, 1]
@@ -1218,24 +1322,22 @@ function Meyer_Piening_sandwich_MST10()
 
     # The graph data needs to be collected by going through each layer separately.
     # Some quantities may be discontinuous between layers.
-    zs = vcat(  [z for (j,z) in enumerate(centerz) if inbotskin[j]],
-    [z for (j,z) in enumerate(centerz) if incore[j]],
-    [z for (j,z) in enumerate(centerz) if intopskin[j]]
-    )
-    sxs = vcat( [sxbot[j] for (j,z) in enumerate(centerz) if inbotskin[j]],
-    [sxcore[j] for (j,z) in enumerate(centerz) if incore[j]],
-    [sxtop[j] for (j,z) in enumerate(centerz) if intopskin[j]]
-    )
+    zs = vcat([z for (j, z) in enumerate(centerz) if inbotskin[j]],
+        [z for (j, z) in enumerate(centerz) if incore[j]],
+        [z for (j, z) in enumerate(centerz) if intopskin[j]])
+    sxs = vcat([sxbot[j] for (j, z) in enumerate(centerz) if inbotskin[j]],
+        [sxcore[j] for (j, z) in enumerate(centerz) if incore[j]],
+        [sxtop[j] for (j, z) in enumerate(centerz) if intopskin[j]])
 
     File = filebase * "-sx-$(extrap).CSV"
-    savecsv(File, zs=vec(zs)/phun("mm"), sx=vec(sxs)/phun("MPa"))
+    savecsv(File, zs = vec(zs) / phun("mm"), sx = vec(sxs) / phun("MPa"))
 
     # @async run(`"paraview.exe" $File`)
 
     # Inter laminar stress between the skin and the core
-    modeldata["postprocessing"] = FDataDict("file"=>filebase * "-sxz",
-    "quantity"=>:Cauchy, "component"=>5, "outputcsys"=>CSys(3),
-    "nodevalmethod"=>nodevalmeth, "reportat"=>extrap)
+    modeldata["postprocessing"] = FDataDict("file" => filebase * "-sxz",
+        "quantity" => :Cauchy, "component" => 5, "outputcsys" => CSys(3),
+        "nodevalmethod" => nodevalmeth, "reportat" => extrap)
     modeldata = AlgoDeforLinearModule.exportstress(modeldata)
     s = modeldata["postprocessing"]["exported"][1]["field"]
     sxzskinbot = s.values[ninterbot, 1]
@@ -1246,20 +1348,18 @@ function Meyer_Piening_sandwich_MST10()
     sxzskintop = s.values[nintertop, 1]
 
     File = filebase * "-sxz-$(extrap).CSV"
-    savecsv(File, xstop=vec(topx)/phun("mm"),
-    sxzskintop=vec(sxzskintop)/phun("MPa"),
-    sxzcoretop=vec(sxzcoretop)/phun("MPa"),
-    xsbot=vec(botx)/phun("mm"),
-    sxzskinbot=vec(sxzskinbot)/phun("MPa"),
-    sxzcorebot=vec(sxzcorebot)/phun("MPa"))
+    savecsv(File, xstop = vec(topx) / phun("mm"),
+        sxzskintop = vec(sxzskintop) / phun("MPa"),
+        sxzcoretop = vec(sxzcoretop) / phun("MPa"),
+        xsbot = vec(botx) / phun("mm"),
+        sxzskinbot = vec(sxzskinbot) / phun("MPa"),
+        sxzcorebot = vec(sxzcorebot) / phun("MPa"))
 
     @async run(`"paraview.exe" $File`)
 
     println("Done")
     true
-
 end # Meyer_Piening_sandwich_MST10
-
 
 function Meyer_Piening_sandwich_MST10_timing()
     println("""
@@ -1299,90 +1399,101 @@ function Meyer_Piening_sandwich_MST10_timing()
 
     t0 = time()
     # Orthotropic material for the SKIN
-    E1s = 70000.0*phun("MPa")
-    E2s = 71000.0*phun("MPa")
-    E3s = 69000.0*phun("MPa")
+    E1s = 70000.0 * phun("MPa")
+    E2s = 71000.0 * phun("MPa")
+    E3s = 69000.0 * phun("MPa")
     nu12s = nu13s = nu23s = 0.3
-    G12s = G13s = G23s = 26000.0*phun("MPa")
-    CTE1 =  CTE2 =  CTE3 = 0.0
+    G12s = G13s = G23s = 26000.0 * phun("MPa")
+    CTE1 = CTE2 = CTE3 = 0.0
     # Orthotropic material for the CORE
-    E1c = 3.0*phun("MPa")
-    E2c = 3.0*phun("MPa")
-    E3c = 2.8*phun("MPa")
+    E1c = 3.0 * phun("MPa")
+    E2c = 3.0 * phun("MPa")
+    E3c = 2.8 * phun("MPa")
     nu12c = nu13c = nu23c = 0.25
-    G12c = G13c = G23c = 1.0*phun("MPa")
-    CTE1 =  CTE2 =  CTE3 = 0.0
+    G12c = G13c = G23c = 1.0 * phun("MPa")
+    CTE1 = CTE2 = CTE3 = 0.0
 
-    Lx = 5.0*phun("mm") # length  of loaded rectangle
-    Ly = 20.0*phun("mm") # length  of loaded rectangle
-    Sx = 100.0*phun("mm") # span of the plate
-    Sy = 200.0*phun("mm") # span of the plate
+    Lx = 5.0 * phun("mm") # length  of loaded rectangle
+    Ly = 20.0 * phun("mm") # length  of loaded rectangle
+    Sx = 100.0 * phun("mm") # span of the plate
+    Sy = 200.0 * phun("mm") # span of the plate
 
     # Here we define the layout and the thicknesses of the layers.
-    angles = vec([0.0 0.0 0.0]);
-    ts = vec([0.5  11.4  0.1])*phun("mm"); # layer thicknesses
-    TH = sum(ts); # total thickness of the plate
+    angles = vec([0.0 0.0 0.0])
+    ts = vec([0.5 11.4 0.1]) * phun("mm") # layer thicknesses
+    TH = sum(ts) # total thickness of the plate
 
-    tolerance = 0.0001*TH
+    tolerance = 0.0001 * TH
 
     # The line load is in the negative Z direction.
-    q0 = 1*phun("MPa"); #    line load
+    q0 = 1 * phun("MPa") #    line load
 
     # Reference deflection under the load is
-    wtopref = -3.789*phun("mm"); # From [1]
-    wbottomref = -2.16*phun("mm"); # Not given in [1]; guessed from the figure
+    wtopref = -3.789 * phun("mm") # From [1]
+    wbottomref = -2.16 * phun("mm") # Not given in [1]; guessed from the figure
 
     # Select how find the mesh should be
     Refinement = 3
-    nL = Refinement * 1;
-    nSx = nL + Refinement * 4;
-    nSy = 2 * nSx;
+    nL = Refinement * 1
+    nSx = nL + Refinement * 4
+    nSy = 2 * nSx
 
     # Each layer is modeled with a single element.
-    nts= Refinement * [1, 2, 1];# number of elements per layer
+    nts = Refinement * [1, 2, 1]# number of elements per layer
     strength = 1.5
     sp = (a, b, n) -> MeshUtilModule.gradedspace(a, b, n, strength)
     sp = (a, b, n) -> linearspace(a, b, n)
-    xs = unique(vcat(reverse(collect(sp(Lx/2, 0.0, nL+1))),
-    collect(sp(Lx/2, Sx/2, nSx-nL+1))))
-    ys = unique(vcat(reverse(collect(MeshUtilModule.gradedspace(Ly/2, 0.0, nL+1))),
-    collect(sp(Ly/2, Sy/2, nSy-nL+1))))
+    xs = unique(vcat(reverse(collect(sp(Lx / 2, 0.0, nL + 1))),
+        collect(sp(Lx / 2, Sx / 2, nSx - nL + 1))))
+    ys = unique(vcat(reverse(collect(MeshUtilModule.gradedspace(Ly / 2, 0.0, nL + 1))),
+        collect(sp(Ly / 2, Sy / 2, nSy - nL + 1))))
 
-    fens,fes = T10layeredplatex(xs, ys, ts, nts)
+    fens, fes = T10layeredplatex(xs, ys, ts, nts)
 
     # This is the material  model
     MR = DeforModelRed3D
     skinmaterial = MatDeforElastOrtho(MR,
-    0.0, E1s, E2s, E3s,
-    nu12s, nu13s, nu23s,
-    G12s, G13s, G23s,
-    CTE1, CTE2, CTE3)
+        0.0, E1s, E2s, E3s,
+        nu12s, nu13s, nu23s,
+        G12s, G13s, G23s,
+        CTE1, CTE2, CTE3)
     corematerial = MatDeforElastOrtho(MR,
-    0.0, E1c, E2c, E3c,
-    nu12c, nu13c, nu23c,
-    G12c, G13c, G23c,
-    CTE1, CTE2, CTE3)
+        0.0, E1c, E2c, E3c,
+        nu12c, nu13c, nu23c,
+        G12c, G13c, G23c,
+        CTE1, CTE2, CTE3)
 
     # The material coordinate system function is defined as:
-        function _updatecs!(csmatout::FFltMat, feid::FInt, label)
-            rotmat3!(csmatout, angles[label]/180.0*pi* [0.0; 0.0; 1.0]);
-            csmatout
-        end
+    function _updatecs!(csmatout::FFltMat, feid::FInt, label)
+        rotmat3!(csmatout, angles[label] / 180.0 * pi * [0.0; 0.0; 1.0])
+        csmatout
+    end
 
     # The volume integrals are evaluated using this rule
     gr = SimplexRule(3, 4)
 
     # We will create three regions, two for the skin, and one for the core.
     rfes = subset(fes, selectelem(fens, fes, label = 1))
-    botskinregion = FDataDict("femm"=>FEMMDeforLinearMST10(MR, IntegDomain(rfes, gr), CSys(3, 3, (csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) ->
-        _updatecs!(csmatout, feid, 1)), skinmaterial))
+    botskinregion = FDataDict("femm" => FEMMDeforLinearMST10(MR, IntegDomain(rfes, gr),
+        CSys(3,
+            3,
+            (csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) -> _updatecs!(csmatout,
+                feid,
+                1)), skinmaterial))
     rfes = subset(fes, selectelem(fens, fes, label = 3))
-    topskinregion = FDataDict("femm"=>FEMMDeforLinearMST10(MR, IntegDomain(rfes, gr), CSys(3, 3, (csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) ->
-        _updatecs!(csmatout, feid, 3)), skinmaterial))
+    topskinregion = FDataDict("femm" => FEMMDeforLinearMST10(MR, IntegDomain(rfes, gr),
+        CSys(3,
+            3,
+            (csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) -> _updatecs!(csmatout,
+                feid,
+                3)), skinmaterial))
     rfes = subset(fes, selectelem(fens, fes, label = 2))
-    coreregion = FDataDict("femm"=>FEMMDeforLinearMST10(MR, IntegDomain(rfes, gr), CSys(3, 3, (csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) ->
-        _updatecs!(csmatout, feid, 2)), corematerial))
-
+    coreregion = FDataDict("femm" => FEMMDeforLinearMST10(MR, IntegDomain(rfes, gr),
+        CSys(3,
+            3,
+            (csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) -> _updatecs!(csmatout,
+                feid,
+                2)), corematerial))
 
     # File =  "Meyer_Piening_sandwich-r1.vtk"
     # vtkexportmesh(File, botskinregion["femm"].integdomain.fes.conn, fens.xyz,
@@ -1395,29 +1506,30 @@ function Meyer_Piening_sandwich_MST10_timing()
 
     # The essential boundary conditions are applied on the symmetry planes.
     # First the plane X=0;...
-    lx0 = selectnode(fens, box=[0.0 0.0 -Inf Inf -Inf Inf], inflate=tolerance)
-    ex0 = FDataDict( "displacement"=>  0.0, "component"=> 1, "node_list"=>lx0 )
+    lx0 = selectnode(fens, box = [0.0 0.0 -Inf Inf -Inf Inf], inflate = tolerance)
+    ex0 = FDataDict("displacement" => 0.0, "component" => 1, "node_list" => lx0)
     # ... and then the plane Y=0.
-    ly0 = selectnode(fens, box=[-Inf Inf 0.0 0.0 -Inf Inf], inflate=tolerance)
-    ey0 = FDataDict( "displacement"=>  0.0, "component"=> 2, "node_list"=>ly0 )
+    ly0 = selectnode(fens, box = [-Inf Inf 0.0 0.0 -Inf Inf], inflate = tolerance)
+    ey0 = FDataDict("displacement" => 0.0, "component" => 2, "node_list" => ly0)
     # The transverse displacement is fixed around the circumference.
-    lz0 = vcat(selectnode(fens, box=[Sx/2 Sx/2 -Inf Inf -Inf Inf], inflate=tolerance),
-    selectnode(fens, box=[-Inf Inf Sy/2 Sy/2 -Inf Inf], inflate=tolerance))
-    ez0 = FDataDict( "displacement"=>  0.0, "component"=> 3, "node_list"=>lz0 )
+    lz0 = vcat(selectnode(fens,
+            box = [Sx / 2 Sx / 2 -Inf Inf -Inf Inf],
+            inflate = tolerance),
+        selectnode(fens, box = [-Inf Inf Sy / 2 Sy / 2 -Inf Inf], inflate = tolerance))
+    ez0 = FDataDict("displacement" => 0.0, "component" => 3, "node_list" => lz0)
 
     # The traction boundary condition is applied  along rectangle in the middle of the plate.
     bfes = meshboundary(fes)
     # From  the entire boundary we select those quadrilaterals that lie on the plane
     # Z = thickness
-    tl = selectelem(fens, bfes, box = [0.0 Lx/2 0 Ly/2 TH TH], inflate=tolerance)
-    Trac = FDataDict("traction_vector"=>vec([0.0; 0.0; -q0]),
-    "femm"=>FEMMBase(IntegDomain(subset(bfes, tl), SimplexRule(2, 3))))
+    tl = selectelem(fens, bfes, box = [0.0 Lx / 2 0 Ly / 2 TH TH], inflate = tolerance)
+    Trac = FDataDict("traction_vector" => vec([0.0; 0.0; -q0]),
+        "femm" => FEMMBase(IntegDomain(subset(bfes, tl), SimplexRule(2, 3))))
 
-    modeldata = FDataDict("fens"=>fens,
-    "regions"=>[botskinregion, coreregion, topskinregion],
-    "essential_bcs"=>[ex0, ey0, ez0],
-    "traction_bcs"=> [Trac]
-    )
+    modeldata = FDataDict("fens" => fens,
+        "regions" => [botskinregion, coreregion, topskinregion],
+        "essential_bcs" => [ex0, ey0, ez0],
+        "traction_bcs" => [Trac])
     t0 = time()
     modeldata = AlgoDeforLinearModule.linearstatics(modeldata)
     tstiffness = modeldata["timing"]["stiffness"]
@@ -1425,7 +1537,7 @@ function Meyer_Piening_sandwich_MST10_timing()
     println("count(fes) = $(count(fes))")
     println("Timing: Assembly $(tstiffness), Solution $(tsolution)")
 
-    modeldata["postprocessing"] = FDataDict("file"=>filebase * "-u")
+    modeldata["postprocessing"] = FDataDict("file" => filebase * "-u")
     modeldata = AlgoDeforLinearModule.exportdeformation(modeldata)
 
     u = modeldata["u"]
@@ -1433,8 +1545,8 @@ function Meyer_Piening_sandwich_MST10_timing()
 
     # The results of the displacement and stresses will be reported at
     # nodes located at the appropriate points.
-    nbottomcenter = selectnode(fens, box=[0.0 0.0 0.0 0.0 0.0 0.0], inflate=tolerance)
-    ntopcenter = selectnode(fens, box=[0.0 0.0 0.0 0.0 TH TH], inflate=tolerance)
+    nbottomcenter = selectnode(fens, box = [0.0 0.0 0.0 0.0 0.0 0.0], inflate = tolerance)
+    ntopcenter = selectnode(fens, box = [0.0 0.0 0.0 0.0 TH TH], inflate = tolerance)
     # ncenterline = selectnode(fens, box=[0.0 0.0 0.0 0.0 0.0 TH], inflate=tolerance)
     # nintertop = selectnode(fens, box=[-Inf Inf 0.0 0.0 sum(ts[1:2]) sum(ts[1:2])], inflate=tolerance)
     # ninterbot = selectnode(fens, box=[-Inf Inf 0.0 0.0 sum(ts[1:1]) sum(ts[1:1])], inflate=tolerance)
@@ -1523,9 +1635,7 @@ function Meyer_Piening_sandwich_MST10_timing()
     println("count(fes) = $(count(fes))")
     println("Timing: $( time() - t0 )")
     true
-
 end # Meyer_Piening_sandwich_MST10_timing
-
 
 function Meyer_Piening_sandwich_T10_timing()
     println("""
@@ -1563,91 +1673,102 @@ function Meyer_Piening_sandwich_T10_timing()
 
     filebase = "Meyer-Piening-sandwich-T10"
 
-
     # Orthotropic material for the SKIN
-    E1s = 70000.0*phun("MPa")
-    E2s = 71000.0*phun("MPa")
-    E3s = 69000.0*phun("MPa")
+    E1s = 70000.0 * phun("MPa")
+    E2s = 71000.0 * phun("MPa")
+    E3s = 69000.0 * phun("MPa")
     nu12s = nu13s = nu23s = 0.3
-    G12s = G13s = G23s = 26000.0*phun("MPa")
-    CTE1 =  CTE2 =  CTE3 = 0.0
+    G12s = G13s = G23s = 26000.0 * phun("MPa")
+    CTE1 = CTE2 = CTE3 = 0.0
     # Orthotropic material for the CORE
-    E1c = 3.0*phun("MPa")
-    E2c = 3.0*phun("MPa")
-    E3c = 2.8*phun("MPa")
+    E1c = 3.0 * phun("MPa")
+    E2c = 3.0 * phun("MPa")
+    E3c = 2.8 * phun("MPa")
     nu12c = nu13c = nu23c = 0.25
-    G12c = G13c = G23c = 1.0*phun("MPa")
-    CTE1 =  CTE2 =  CTE3 = 0.0
+    G12c = G13c = G23c = 1.0 * phun("MPa")
+    CTE1 = CTE2 = CTE3 = 0.0
 
-    Lx = 5.0*phun("mm") # length  of loaded rectangle
-    Ly = 20.0*phun("mm") # length  of loaded rectangle
-    Sx = 100.0*phun("mm") # span of the plate
-    Sy = 200.0*phun("mm") # span of the plate
+    Lx = 5.0 * phun("mm") # length  of loaded rectangle
+    Ly = 20.0 * phun("mm") # length  of loaded rectangle
+    Sx = 100.0 * phun("mm") # span of the plate
+    Sy = 200.0 * phun("mm") # span of the plate
 
     # Here we define the layout and the thicknesses of the layers.
-    angles = vec([0.0 0.0 0.0]);
-    ts = vec([0.5  11.4  0.1])*phun("mm"); # layer thicknesses
-    TH = sum(ts); # total thickness of the plate
+    angles = vec([0.0 0.0 0.0])
+    ts = vec([0.5 11.4 0.1]) * phun("mm") # layer thicknesses
+    TH = sum(ts) # total thickness of the plate
 
-    tolerance = 0.0001*TH
+    tolerance = 0.0001 * TH
 
     # The line load is in the negative Z direction.
-    q0 = 1*phun("MPa"); #    line load
+    q0 = 1 * phun("MPa") #    line load
 
     # Reference deflection under the load is
-    wtopref = -3.789*phun("mm"); # From [1]
-    wbottomref = -2.16*phun("mm"); # Not given in [1]; guessed from the figure
+    wtopref = -3.789 * phun("mm") # From [1]
+    wbottomref = -2.16 * phun("mm") # Not given in [1]; guessed from the figure
 
     # Select how find the mesh should be
     Refinement = 3
-    nL = Refinement * 1;
-    nSx = nL + Refinement * 4;
-    nSy = 2 * nSx;
+    nL = Refinement * 1
+    nSx = nL + Refinement * 4
+    nSy = 2 * nSx
 
     # Each layer is modeled with a single element.
-    nts= Refinement * [1, 2, 1];# number of elements per layer
+    nts = Refinement * [1, 2, 1]# number of elements per layer
     strength = 1.5
     sp = (a, b, n) -> MeshUtilModule.gradedspace(a, b, n, strength)
     sp = (a, b, n) -> linearspace(a, b, n)
-    xs = unique(vcat(reverse(collect(sp(Lx/2, 0.0, nL+1))),
-    collect(sp(Lx/2, Sx/2, nSx-nL+1))))
-    ys = unique(vcat(reverse(collect(MeshUtilModule.gradedspace(Ly/2, 0.0, nL+1))),
-    collect(sp(Ly/2, Sy/2, nSy-nL+1))))
+    xs = unique(vcat(reverse(collect(sp(Lx / 2, 0.0, nL + 1))),
+        collect(sp(Lx / 2, Sx / 2, nSx - nL + 1))))
+    ys = unique(vcat(reverse(collect(MeshUtilModule.gradedspace(Ly / 2, 0.0, nL + 1))),
+        collect(sp(Ly / 2, Sy / 2, nSy - nL + 1))))
 
-    fens,fes = T10layeredplatex(xs, ys, ts, nts)
+    fens, fes = T10layeredplatex(xs, ys, ts, nts)
 
     # This is the material  model
     MR = DeforModelRed3D
     skinmaterial = MatDeforElastOrtho(MR,
-    0.0, E1s, E2s, E3s,
-    nu12s, nu13s, nu23s,
-    G12s, G13s, G23s,
-    CTE1, CTE2, CTE3)
+        0.0, E1s, E2s, E3s,
+        nu12s, nu13s, nu23s,
+        G12s, G13s, G23s,
+        CTE1, CTE2, CTE3)
     corematerial = MatDeforElastOrtho(MR,
-    0.0, E1c, E2c, E3c,
-    nu12c, nu13c, nu23c,
-    G12c, G13c, G23c,
-    CTE1, CTE2, CTE3)
+        0.0, E1c, E2c, E3c,
+        nu12c, nu13c, nu23c,
+        G12c, G13c, G23c,
+        CTE1, CTE2, CTE3)
 
     # The material coordinate system function is defined as:
-        function _updatecs!(csmatout::FFltMat, feid::FInt, label)
-            rotmat3!(csmatout, angles[label]/180.0*pi* [0.0; 0.0; 1.0]);
-            csmatout
-        end
+    function _updatecs!(csmatout::FFltMat, feid::FInt, label)
+        rotmat3!(csmatout, angles[label] / 180.0 * pi * [0.0; 0.0; 1.0])
+        csmatout
+    end
 
     # The volume integrals are evaluated using this rule
     gr = SimplexRule(3, 4)
 
     # We will create three regions, two for the skin, and one for the core.
     rfes = subset(fes, selectelem(fens, fes, label = 1))
-    botskinregion = FDataDict("femm"=>FEMMDeforLinearMST10(MR, IntegDomain(rfes, gr), CSys(3, 3, (csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) ->
-        _updatecs!(csmatout, feid, 1)), skinmaterial))
+    botskinregion = FDataDict("femm" => FEMMDeforLinearMST10(MR, IntegDomain(rfes, gr),
+        CSys(3,
+            3,
+            (csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) -> _updatecs!(csmatout,
+                feid,
+                1)), skinmaterial))
     rfes = subset(fes, selectelem(fens, fes, label = 3))
-    topskinregion = FDataDict("femm"=>FEMMDeforLinearMST10(MR, IntegDomain(rfes, gr), CSys(3, 3, (csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) ->
-        _updatecs!(csmatout, feid, 3)), skinmaterial))
+    topskinregion = FDataDict("femm" => FEMMDeforLinearMST10(MR, IntegDomain(rfes, gr),
+        CSys(3,
+            3,
+            (csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) -> _updatecs!(csmatout,
+                feid,
+                3)), skinmaterial))
     rfes = subset(fes, selectelem(fens, fes, label = 2))
-    coreregion = FDataDict("femm"=>FEMMDeforLinearMST10(MR, IntegDomain(rfes, gr), CSys(3, 3, (csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) ->
-        _updatecs!(csmatout, feid, 2)), corematerial))
+    coreregion = FDataDict("femm" => FEMMDeforLinearMST10(MR, IntegDomain(rfes, gr),
+        CSys(3,
+            3,
+            (csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) -> _updatecs!(csmatout,
+                feid,
+                2)), corematerial))
 
     # File =  "Meyer_Piening_sandwich-r1.vtk"
     # vtkexportmesh(File, botskinregion["femm"].integdomain.fes.conn, fens.xyz,
@@ -1660,29 +1781,30 @@ function Meyer_Piening_sandwich_T10_timing()
 
     # The essential boundary conditions are applied on the symmetry planes.
     # First the plane X=0;...
-    lx0 = selectnode(fens, box=[0.0 0.0 -Inf Inf -Inf Inf], inflate=tolerance)
-    ex0 = FDataDict( "displacement"=>  0.0, "component"=> 1, "node_list"=>lx0 )
+    lx0 = selectnode(fens, box = [0.0 0.0 -Inf Inf -Inf Inf], inflate = tolerance)
+    ex0 = FDataDict("displacement" => 0.0, "component" => 1, "node_list" => lx0)
     # ... and then the plane Y=0.
-    ly0 = selectnode(fens, box=[-Inf Inf 0.0 0.0 -Inf Inf], inflate=tolerance)
-    ey0 = FDataDict( "displacement"=>  0.0, "component"=> 2, "node_list"=>ly0 )
+    ly0 = selectnode(fens, box = [-Inf Inf 0.0 0.0 -Inf Inf], inflate = tolerance)
+    ey0 = FDataDict("displacement" => 0.0, "component" => 2, "node_list" => ly0)
     # The transverse displacement is fixed around the circumference.
-    lz0 = vcat(selectnode(fens, box=[Sx/2 Sx/2 -Inf Inf -Inf Inf], inflate=tolerance),
-    selectnode(fens, box=[-Inf Inf Sy/2 Sy/2 -Inf Inf], inflate=tolerance))
-    ez0 = FDataDict( "displacement"=>  0.0, "component"=> 3, "node_list"=>lz0 )
+    lz0 = vcat(selectnode(fens,
+            box = [Sx / 2 Sx / 2 -Inf Inf -Inf Inf],
+            inflate = tolerance),
+        selectnode(fens, box = [-Inf Inf Sy / 2 Sy / 2 -Inf Inf], inflate = tolerance))
+    ez0 = FDataDict("displacement" => 0.0, "component" => 3, "node_list" => lz0)
 
     # The traction boundary condition is applied  along rectangle in the middle of the plate.
     bfes = meshboundary(fes)
     # From  the entire boundary we select those quadrilaterals that lie on the plane
     # Z = thickness
-    tl = selectelem(fens, bfes, box = [0.0 Lx/2 0 Ly/2 TH TH], inflate=tolerance)
-    Trac = FDataDict("traction_vector"=>vec([0.0; 0.0; -q0]),
-    "femm"=>FEMMBase(IntegDomain(subset(bfes, tl), SimplexRule(2, 3))))
+    tl = selectelem(fens, bfes, box = [0.0 Lx / 2 0 Ly / 2 TH TH], inflate = tolerance)
+    Trac = FDataDict("traction_vector" => vec([0.0; 0.0; -q0]),
+        "femm" => FEMMBase(IntegDomain(subset(bfes, tl), SimplexRule(2, 3))))
 
-    modeldata = FDataDict("fens"=>fens,
-    "regions"=>[botskinregion, coreregion, topskinregion],
-    "essential_bcs"=>[ex0, ey0, ez0],
-    "traction_bcs"=> [Trac]
-    )
+    modeldata = FDataDict("fens" => fens,
+        "regions" => [botskinregion, coreregion, topskinregion],
+        "essential_bcs" => [ex0, ey0, ez0],
+        "traction_bcs" => [Trac])
     t0 = time()
     modeldata = AlgoDeforLinearModule.linearstatics(modeldata)
     tstiffness = modeldata["timing"]["stiffness"]
@@ -1690,7 +1812,7 @@ function Meyer_Piening_sandwich_T10_timing()
     println("count(fes) = $(count(fes))")
     println("Timing: Assembly $(tstiffness), Solution $(tsolution)")
 
-    modeldata["postprocessing"] = FDataDict("file"=>filebase * "-u")
+    modeldata["postprocessing"] = FDataDict("file" => filebase * "-u")
     modeldata = AlgoDeforLinearModule.exportdeformation(modeldata)
 
     u = modeldata["u"]
@@ -1698,8 +1820,8 @@ function Meyer_Piening_sandwich_T10_timing()
 
     # The results of the displacement and stresses will be reported at
     # nodes located at the appropriate points.
-    nbottomcenter = selectnode(fens, box=[0.0 0.0 0.0 0.0 0.0 0.0], inflate=tolerance)
-    ntopcenter = selectnode(fens, box=[0.0 0.0 0.0 0.0 TH TH], inflate=tolerance)
+    nbottomcenter = selectnode(fens, box = [0.0 0.0 0.0 0.0 0.0 0.0], inflate = tolerance)
+    ntopcenter = selectnode(fens, box = [0.0 0.0 0.0 0.0 TH TH], inflate = tolerance)
     # ncenterline = selectnode(fens, box=[0.0 0.0 0.0 0.0 0.0 TH], inflate=tolerance)
     # nintertop = selectnode(fens, box=[-Inf Inf 0.0 0.0 sum(ts[1:2]) sum(ts[1:2])], inflate=tolerance)
     # ninterbot = selectnode(fens, box=[-Inf Inf 0.0 0.0 sum(ts[1:1]) sum(ts[1:1])], inflate=tolerance)
@@ -1785,9 +1907,7 @@ function Meyer_Piening_sandwich_T10_timing()
     #
     # @async run(`"paraview.exe" $File`)
 
-
     true
-
 end # Meyer_Piening_sandwich_T10_timing
 
 function allrun()
@@ -1818,7 +1938,5 @@ end # function allrun
 @info "All examples may be executed with "
 println("using .$(@__MODULE__); $(@__MODULE__).allrun()")
 
-
 end # module 
 nothing
-    

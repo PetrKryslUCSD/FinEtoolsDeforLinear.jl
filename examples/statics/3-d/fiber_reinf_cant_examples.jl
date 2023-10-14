@@ -31,34 +31,34 @@ function fiber_reinf_cant_iso()
     # CTE2 = 2.0e-5
     # CTE3 = 2.0e-5
     # Isotropic material
-    E = 1.0e9*phun("Pa")
+    E = 1.0e9 * phun("Pa")
     nu = 0.25
     CTE = 0.0
 
     # Reference value for  the vertical deflection of the tip
-    uz_ref =  -7.516310912734678e-06;
+    uz_ref = -7.516310912734678e-06
 
-    a = 90.0*phun("mm") # length of the cantilever
-    b = 10.0*phun("mm") # width of the cross-section
-    t = 20.0*phun("mm") # height of the cross-section
-    q0 = -1000.0*phun("Pa") # shear traction
-    dT = 0*phun("K") # temperature rise
+    a = 90.0 * phun("mm") # length of the cantilever
+    b = 10.0 * phun("mm") # width of the cross-section
+    t = 20.0 * phun("mm") # height of the cross-section
+    q0 = -1000.0 * phun("Pa") # shear traction
+    dT = 0 * phun("K") # temperature rise
 
-    tolerance = 0.00001*t
+    tolerance = 0.00001 * t
 
     # Generate mesh
     n = 16
     na = n # number of elements lengthwise
     nb = n # number of elements through the wwith
     nt = n # number of elements through the thickness
-    xs = collect(linearspace(0.0, a, na+1))
-    ys = collect(linearspace(0.0, b, nb+1))
-    ts = collect(linearspace(0.0, t, nt+1))
-    fens,fes = H8blockx(xs, ys, ts)
-    fens,fes = H8toH20(fens,fes)
+    xs = collect(linearspace(0.0, a, na + 1))
+    ys = collect(linearspace(0.0, b, nb + 1))
+    ts = collect(linearspace(0.0, t, nt + 1))
+    fens, fes = H8blockx(xs, ys, ts)
+    fens, fes = H8toH20(fens, fes)
     bfes = meshboundary(fes)
     # end cross-section surface  for the shear loading
-    sshearl = selectelem(fens, bfes; facing=true, direction = [+1.0 0.0 0.0])
+    sshearl = selectelem(fens, bfes; facing = true, direction = [+1.0 0.0 0.0])
 
     MR = DeforModelRed3D
     # externalmaterial = MatDeforElastOrtho(MR,
@@ -67,10 +67,10 @@ function fiber_reinf_cant_iso()
     #   G12s, G13s, G23s,
     #   CTE1, CTE2, CTE3)
     material = MatDeforElastIso(MR,
-    0.0, E, nu, CTE)
+        0.0, E, nu, CTE)
 
     # Material orientation matrix
-    csmat = [i==j ? one(FFlt) : zero(FFlt) for i=1:3, j=1:3]
+    csmat = [i == j ? one(FFlt) : zero(FFlt) for i in 1:3, j in 1:3]
 
     function updatecs!(csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, fe_label::FInt)
         copyto!(csmatout, csmat)
@@ -78,32 +78,32 @@ function fiber_reinf_cant_iso()
 
     gr = GaussRule(3, 2)
 
-    region = FDataDict("femm"=>FEMMDeforLinear(MR, IntegDomain(fes, gr), material))
+    region = FDataDict("femm" => FEMMDeforLinear(MR, IntegDomain(fes, gr), material))
 
-    lx0 = selectnode(fens, box=[0.0 0.0 -Inf Inf -Inf Inf], inflate=tolerance)
+    lx0 = selectnode(fens, box = [0.0 0.0 -Inf Inf -Inf Inf], inflate = tolerance)
 
-    ex01 = FDataDict( "displacement"=>  0.0, "component"=> 1, "node_list"=>lx0 )
-    ex02 = FDataDict( "displacement"=>  0.0, "component"=> 2, "node_list"=>lx0 )
-    ex03 = FDataDict( "displacement"=>  0.0, "component"=> 3, "node_list"=>lx0 )
+    ex01 = FDataDict("displacement" => 0.0, "component" => 1, "node_list" => lx0)
+    ex02 = FDataDict("displacement" => 0.0, "component" => 2, "node_list" => lx0)
+    ex03 = FDataDict("displacement" => 0.0, "component" => 3, "node_list" => lx0)
 
     function getshr!(forceout::FFltVec, XYZ::FFltMat, tangents::FFltMat, fe_label::FInt)
-        copyto!(forceout, q0*[0.0; 0.0; 1.0])
+        copyto!(forceout, q0 * [0.0; 0.0; 1.0])
     end
 
-    Trac = FDataDict("traction_vector"=>getshr!, "femm"=>FEMMBase(IntegDomain(subset(bfes, sshearl), GaussRule(2, 3))))
+    Trac = FDataDict("traction_vector" => getshr!,
+        "femm" => FEMMBase(IntegDomain(subset(bfes, sshearl), GaussRule(2, 3))))
 
-    modeldata = FDataDict("fens"=>fens,
-    "regions"=>[region],
-    "essential_bcs"=>[ex01, ex02, ex03],
-    "traction_bcs"=>[Trac],
-    "temperature_change"=>FDataDict("temperature"=>dT)
-    )
+    modeldata = FDataDict("fens" => fens,
+        "regions" => [region],
+        "essential_bcs" => [ex01, ex02, ex03],
+        "traction_bcs" => [Trac],
+        "temperature_change" => FDataDict("temperature" => dT))
     modeldata = AlgoDeforLinearModule.linearstatics(modeldata)
 
     u = modeldata["u"]
     geom = modeldata["geom"]
 
-    Tipl = selectnode(fens, box=[a a b b 0. 0.], inflate=tolerance)
+    Tipl = selectnode(fens, box = [a a b b 0.0 0.0], inflate = tolerance)
     utip = mean(u.values[Tipl, 3])
     println(" Normalized deflection: $(utip/uz_ref)")
     println("Solution: $(  time()-t0 )")
@@ -113,16 +113,14 @@ function fiber_reinf_cant_iso()
     #     scalars = [("Layer", fes.label)], vectors = [("displacement", u.values)])
     # @async run(`"paraview.exe" $File`)
 
-    modeldata["postprocessing"] = FDataDict("file"=>"fiber_reinf_cant_iso",
-    "outputcsys"=>CSys(3, 3, updatecs!), "quantity"=>:Cauchy, "component"=>5)
+    modeldata["postprocessing"] = FDataDict("file" => "fiber_reinf_cant_iso",
+        "outputcsys" => CSys(3, 3, updatecs!), "quantity" => :Cauchy, "component" => 5)
     # modeldata = AlgoDeforLinearModule.exportstress(modeldata)
     modeldata = AlgoDeforLinearModule.exportdeformation(modeldata)
 
     println("Done: $(  time()-t0 )")
     true
-
 end # fiber_reinf_cant_iso
-
 
 function fiber_reinf_cant_iso_stresses()
     println("""
@@ -136,35 +134,34 @@ function fiber_reinf_cant_iso_stresses()
     """)
 
     # Isotropic material
-    E = 1.0e9*phun("Pa")
+    E = 1.0e9 * phun("Pa")
     nu = 0.25
     CTE = 0.0
 
     # Reference value for  the vertical deflection of the tip
-    uz_ref =  -7.516310912734678e-06;
+    uz_ref = -7.516310912734678e-06
 
-    a = 90.0*phun("mm") # length of the cantilever
-    b = 10.0*phun("mm") # width of the cross-section
-    t = 20.0*phun("mm") # height of the cross-section
-    q0 = -1000.0*phun("Pa") # shear traction
-    dT = 0*phun("K") # temperature rise
+    a = 90.0 * phun("mm") # length of the cantilever
+    b = 10.0 * phun("mm") # width of the cross-section
+    t = 20.0 * phun("mm") # height of the cross-section
+    q0 = -1000.0 * phun("Pa") # shear traction
+    dT = 0 * phun("K") # temperature rise
 
-    tolerance = 0.00001*t
+    tolerance = 0.00001 * t
 
     # Generate mesh
-    for n = [2 4 8 16 32]
-
+    for n in [2 4 8 16 32]
         na = n # number of elements lengthwise
         nb = n # number of elements through the wwith
         nt = n # number of elements through the thickness
-        xs = collect(linearspace(0.0, a, na+1))
-        ys = collect(linearspace(0.0, b, nb+1))
-        ts = collect(linearspace(0.0, t, nt+1))
-        fens,fes = H8blockx(xs, ys, ts)
+        xs = collect(linearspace(0.0, a, na + 1))
+        ys = collect(linearspace(0.0, b, nb + 1))
+        ts = collect(linearspace(0.0, t, nt + 1))
+        fens, fes = H8blockx(xs, ys, ts)
         # fens,fes = H8toH20(fens,fes)
         bfes = meshboundary(fes)
         # end cross-section surface  for the shear loading
-        sshearl = selectelem(fens, bfes; facing=true, direction = [+1.0 0.0 0.0])
+        sshearl = selectelem(fens, bfes; facing = true, direction = [+1.0 0.0 0.0])
 
         MR = DeforModelRed3D
         # externalmaterial = MatDeforElastOrtho(MR,
@@ -173,52 +170,55 @@ function fiber_reinf_cant_iso_stresses()
         #   G12s, G13s, G23s,
         #   CTE1, CTE2, CTE3)
         material = MatDeforElastIso(MR,
-        0.0, E, nu, CTE)
+            0.0, E, nu, CTE)
 
         # Material orientation matrix
-        csmat = [i==j ? one(FFlt) : zero(FFlt) for i=1:3, j=1:3]
+        csmat = [i == j ? one(FFlt) : zero(FFlt) for i in 1:3, j in 1:3]
 
-        function updatecs!(csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, fe_label::FInt)
+        function updatecs!(csmatout::FFltMat,
+            XYZ::FFltMat,
+            tangents::FFltMat,
+            fe_label::FInt)
             copyto!(csmatout, csmat)
         end
 
         gr = GaussRule(3, 2)
 
-        region = FDataDict("femm"=>FEMMDeforLinearMSH8(MR,
-        IntegDomain(fes, gr), material))
+        region = FDataDict("femm" => FEMMDeforLinearMSH8(MR,
+            IntegDomain(fes, gr), material))
 
-        lx0 = selectnode(fens, box=[0.0 0.0 -Inf Inf -Inf Inf], inflate=tolerance)
+        lx0 = selectnode(fens, box = [0.0 0.0 -Inf Inf -Inf Inf], inflate = tolerance)
 
-        ex01 = FDataDict( "displacement"=>  0.0, "component"=> 1, "node_list"=>lx0 )
-        ex02 = FDataDict( "displacement"=>  0.0, "component"=> 2, "node_list"=>lx0 )
-        ex03 = FDataDict( "displacement"=>  0.0, "component"=> 3, "node_list"=>lx0 )
+        ex01 = FDataDict("displacement" => 0.0, "component" => 1, "node_list" => lx0)
+        ex02 = FDataDict("displacement" => 0.0, "component" => 2, "node_list" => lx0)
+        ex03 = FDataDict("displacement" => 0.0, "component" => 3, "node_list" => lx0)
 
         function getshr!(forceout::FFltVec, XYZ::FFltMat, tangents::FFltMat, fe_label::FInt)
-            copyto!(forceout, q0*[0.0; 0.0; 1.0])
+            copyto!(forceout, q0 * [0.0; 0.0; 1.0])
         end
 
-        Trac = FDataDict("traction_vector"=>getshr!,
-        "femm"=>FEMMBase(IntegDomain(subset(bfes, sshearl), GaussRule(2, 3))))
+        Trac = FDataDict("traction_vector" => getshr!,
+            "femm" => FEMMBase(IntegDomain(subset(bfes, sshearl), GaussRule(2, 3))))
 
-        modeldata = FDataDict("fens"=>fens,
-        "regions"=>[region],
-        "essential_bcs"=>[ex01, ex02, ex03],
-        "traction_bcs"=>[Trac],
-        "temperature_change"=>FDataDict("temperature"=>dT)
-        )
+        modeldata = FDataDict("fens" => fens,
+            "regions" => [region],
+            "essential_bcs" => [ex01, ex02, ex03],
+            "traction_bcs" => [Trac],
+            "temperature_change" => FDataDict("temperature" => dT))
         modeldata = AlgoDeforLinearModule.linearstatics(modeldata)
 
         u = modeldata["u"]
         geom = modeldata["geom"]
 
-        Tipl = selectnode(fens, box=[a a b b 0. 0.], inflate=tolerance)
+        Tipl = selectnode(fens, box = [a a b b 0.0 0.0], inflate = tolerance)
         utip = mean(u.values[Tipl, 3])
         println(" Normalized deflection: $(utip/uz_ref)")
 
         stressfields = NodalField[]
-        for c = 1:6
-            modeldata["postprocessing"] = FDataDict("file"=>"fiber_reinf_cant_iso",
-            "outputcsys"=>CSys(3, 3, updatecs!), "quantity"=>:Cauchy, "component"=>c)
+        for c in 1:6
+            modeldata["postprocessing"] = FDataDict("file" => "fiber_reinf_cant_iso",
+                "outputcsys" => CSys(3, 3, updatecs!), "quantity" => :Cauchy,
+                "component" => c)
             modeldata = AlgoDeforLinearModule.exportstress(modeldata)
             push!(stressfields, modeldata["postprocessing"]["exported"][1]["field"])
         end
@@ -238,9 +238,7 @@ function fiber_reinf_cant_iso_stresses()
 
     end
     true
-
 end # fiber_reinf_cant_iso_stresses
-
 
 function fiber_reinf_cant_iso_stresses_MST10()
     elementtag = "MST10"
@@ -256,34 +254,33 @@ function fiber_reinf_cant_iso_stresses_MST10()
     """)
 
     # Isotropic material
-    E = 1.0e9*phun("Pa")
+    E = 1.0e9 * phun("Pa")
     nu = 0.25
     CTE = 0.0
 
     # Reference value for  the vertical deflection of the tip
-    uz_ref =  -7.516310912734678e-06;
+    uz_ref = -7.516310912734678e-06
 
-    a = 90.0*phun("mm") # length of the cantilever
-    b = 10.0*phun("mm") # width of the cross-section
-    t = 20.0*phun("mm") # height of the cross-section
-    q0 = -1000.0*phun("Pa") # shear traction
-    dT = 0*phun("K") # temperature rise
+    a = 90.0 * phun("mm") # length of the cantilever
+    b = 10.0 * phun("mm") # width of the cross-section
+    t = 20.0 * phun("mm") # height of the cross-section
+    q0 = -1000.0 * phun("Pa") # shear traction
+    dT = 0 * phun("K") # temperature rise
 
-    tolerance = 0.00001*t
+    tolerance = 0.00001 * t
 
     convergencestudy = FDataDict[]
-    for n = [1 2 4 8 16]
-
+    for n in [1 2 4 8 16]
         na = n # number of elements lengthwise
         nb = n # number of elements through the wwith
         nt = n # number of elements through the thickness
-        xs = collect(linearspace(0.0, a, na+1))
-        ys = collect(linearspace(0.0, b, nb+1))
-        ts = collect(linearspace(0.0, t, nt+1))
-        fens,fes = T10blockx(xs, ys, ts)
+        xs = collect(linearspace(0.0, a, na + 1))
+        ys = collect(linearspace(0.0, b, nb + 1))
+        ts = collect(linearspace(0.0, t, nt + 1))
+        fens, fes = T10blockx(xs, ys, ts)
         bfes = meshboundary(fes)
         # end cross-section surface  for the shear loading
-        sshearl = selectelem(fens, bfes; facing=true, direction = [+1.0 0.0 0.0])
+        sshearl = selectelem(fens, bfes; facing = true, direction = [+1.0 0.0 0.0])
 
         MR = DeforModelRed3D
         # externalmaterial = MatDeforElastOrtho(MR,
@@ -292,70 +289,71 @@ function fiber_reinf_cant_iso_stresses_MST10()
         #   G12s, G13s, G23s,
         #   CTE1, CTE2, CTE3)
         material = MatDeforElastIso(MR,
-        0.0, E, nu, CTE)
+            0.0, E, nu, CTE)
 
         # Material orientation matrix
-        csmat = [i==j ? one(FFlt) : zero(FFlt) for i=1:3, j=1:3]
+        csmat = [i == j ? one(FFlt) : zero(FFlt) for i in 1:3, j in 1:3]
 
-        function updatecs!(csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, fe_label::FInt)
+        function updatecs!(csmatout::FFltMat,
+            XYZ::FFltMat,
+            tangents::FFltMat,
+            fe_label::FInt)
             copyto!(csmatout, csmat)
         end
 
         gr = SimplexRule(3, 4)
 
-        region = FDataDict("femm"=>FEMMDeforLinearMST10(MR,
-        IntegDomain(fes, gr), material))
+        region = FDataDict("femm" => FEMMDeforLinearMST10(MR,
+            IntegDomain(fes, gr), material))
 
-        lx0 = selectnode(fens, box=[0.0 0.0 -Inf Inf -Inf Inf], inflate=tolerance)
+        lx0 = selectnode(fens, box = [0.0 0.0 -Inf Inf -Inf Inf], inflate = tolerance)
 
-        ex01 = FDataDict( "displacement"=>  0.0, "component"=> 1, "node_list"=>lx0 )
-        ex02 = FDataDict( "displacement"=>  0.0, "component"=> 2, "node_list"=>lx0 )
-        ex03 = FDataDict( "displacement"=>  0.0, "component"=> 3, "node_list"=>lx0 )
+        ex01 = FDataDict("displacement" => 0.0, "component" => 1, "node_list" => lx0)
+        ex02 = FDataDict("displacement" => 0.0, "component" => 2, "node_list" => lx0)
+        ex03 = FDataDict("displacement" => 0.0, "component" => 3, "node_list" => lx0)
 
         function getshr!(forceout::FFltVec, XYZ::FFltMat, tangents::FFltMat, fe_label::FInt)
-            copyto!(forceout, q0*[0.0; 0.0; 1.0])
+            copyto!(forceout, q0 * [0.0; 0.0; 1.0])
         end
 
-        Trac = FDataDict("traction_vector"=>getshr!,
-        "femm"=>FEMMBase(IntegDomain(subset(bfes, sshearl), SimplexRule(2, 3))))
+        Trac = FDataDict("traction_vector" => getshr!,
+            "femm" => FEMMBase(IntegDomain(subset(bfes, sshearl), SimplexRule(2, 3))))
 
-        modeldata = FDataDict("fens"=>fens,
-        "regions"=>[region],
-        "essential_bcs"=>[ex01, ex02, ex03],
-        "traction_bcs"=>[Trac],
-        "temperature_change"=>FDataDict("temperature"=>dT)
-        )
+        modeldata = FDataDict("fens" => fens,
+            "regions" => [region],
+            "essential_bcs" => [ex01, ex02, ex03],
+            "traction_bcs" => [Trac],
+            "temperature_change" => FDataDict("temperature" => dT))
         modeldata = AlgoDeforLinearModule.linearstatics(modeldata)
 
         u = modeldata["u"]
         geom = modeldata["geom"]
 
-        Tipl = selectnode(fens, box=[a a b b 0. 0.], inflate=tolerance)
+        Tipl = selectnode(fens, box = [a a b b 0.0 0.0], inflate = tolerance)
         utip = mean(u.values[Tipl, 3])
         println(" Normalized deflection: $(utip/uz_ref)")
 
-        modeldata["postprocessing"] = FDataDict("file"=>"fiber_reinf_cant_iso_stresses_$(elementtag)",
-        "outputcsys"=>CSys(3, 3, updatecs!), "quantity"=>:Cauchy,
-        "component"=>[5])
+        modeldata["postprocessing"] = FDataDict("file" => "fiber_reinf_cant_iso_stresses_$(elementtag)",
+            "outputcsys" => CSys(3, 3, updatecs!), "quantity" => :Cauchy,
+            "component" => [5])
         modeldata = AlgoDeforLinearModule.exportstresselementwise(modeldata)
 
-        modeldata["postprocessing"] = FDataDict("file"=>"fiber_reinf_cant_iso_stresses_$(elementtag)",
-        "outputcsys"=>CSys(3, 3, updatecs!), "quantity"=>:Cauchy,
-        "component"=>collect(1:6))
+        modeldata["postprocessing"] = FDataDict("file" => "fiber_reinf_cant_iso_stresses_$(elementtag)",
+            "outputcsys" => CSys(3, 3, updatecs!), "quantity" => :Cauchy,
+            "component" => collect(1:6))
         modeldata = AlgoDeforLinearModule.exportstresselementwise(modeldata)
         stressfields = ElementalField[modeldata["postprocessing"]["exported"][1]["field"]]
 
-        push!(convergencestudy, FDataDict(
-        "elementsize"=> 1.0 / n,
-        "fens"=>fens,
-        "fes"=>fes,
-        "geom"=>geom,
-        "u"=>u,
-        "femm"=>region["femm"],
-        "integrationrule"=>region["femm"].integdomain.integration_rule,
-        "stressfields"=>stressfields,
-        "tolerance"=>tolerance)
-        )
+        push!(convergencestudy,
+            FDataDict("elementsize" => 1.0 / n,
+                "fens" => fens,
+                "fes" => fes,
+                "geom" => geom,
+                "u" => u,
+                "femm" => region["femm"],
+                "integrationrule" => region["femm"].integdomain.integration_rule,
+                "stressfields" => stressfields,
+                "tolerance" => tolerance))
     end
 
     # File = "fiber_reinf_cant_iso_stresses_$(elementtag)"
@@ -364,9 +362,7 @@ function fiber_reinf_cant_iso_stresses_MST10()
     # end
 
     true
-
 end # fiber_reinf_cant_iso_stresses_MST10
-
 
 function fiber_reinf_cant_iso_stresses_T10()
     elementtag = "T10"
@@ -382,34 +378,33 @@ function fiber_reinf_cant_iso_stresses_T10()
     """)
 
     # Isotropic material
-    E = 1.0e9*phun("Pa")
+    E = 1.0e9 * phun("Pa")
     nu = 0.25
     CTE = 0.0
 
     # Reference value for  the vertical deflection of the tip
-    uz_ref =  -7.516310912734678e-06;
+    uz_ref = -7.516310912734678e-06
 
-    a = 90.0*phun("mm") # length of the cantilever
-    b = 10.0*phun("mm") # width of the cross-section
-    t = 20.0*phun("mm") # height of the cross-section
-    q0 = -1000.0*phun("Pa") # shear traction
-    dT = 0*phun("K") # temperature rise
+    a = 90.0 * phun("mm") # length of the cantilever
+    b = 10.0 * phun("mm") # width of the cross-section
+    t = 20.0 * phun("mm") # height of the cross-section
+    q0 = -1000.0 * phun("Pa") # shear traction
+    dT = 0 * phun("K") # temperature rise
 
-    tolerance = 0.00001*t
+    tolerance = 0.00001 * t
 
     convergencestudy = FDataDict[]
-    for n = [1 2 4 8 16]
-
+    for n in [1 2 4 8 16]
         na = n # number of elements lengthwise
         nb = n # number of elements through the wwith
         nt = n # number of elements through the thickness
-        xs = collect(linearspace(0.0, a, na+1))
-        ys = collect(linearspace(0.0, b, nb+1))
-        ts = collect(linearspace(0.0, t, nt+1))
-        fens,fes = T10blockx(xs, ys, ts)
+        xs = collect(linearspace(0.0, a, na + 1))
+        ys = collect(linearspace(0.0, b, nb + 1))
+        ts = collect(linearspace(0.0, t, nt + 1))
+        fens, fes = T10blockx(xs, ys, ts)
         bfes = meshboundary(fes)
         # end cross-section surface  for the shear loading
-        sshearl = selectelem(fens, bfes; facing=true, direction = [+1.0 0.0 0.0])
+        sshearl = selectelem(fens, bfes; facing = true, direction = [+1.0 0.0 0.0])
 
         MR = DeforModelRed3D
         # externalmaterial = MatDeforElastOrtho(MR,
@@ -418,70 +413,71 @@ function fiber_reinf_cant_iso_stresses_T10()
         #   G12s, G13s, G23s,
         #   CTE1, CTE2, CTE3)
         material = MatDeforElastIso(MR,
-        0.0, E, nu, CTE)
+            0.0, E, nu, CTE)
 
         # Material orientation matrix
-        csmat = [i==j ? one(FFlt) : zero(FFlt) for i=1:3, j=1:3]
+        csmat = [i == j ? one(FFlt) : zero(FFlt) for i in 1:3, j in 1:3]
 
-        function updatecs!(csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, fe_label::FInt)
+        function updatecs!(csmatout::FFltMat,
+            XYZ::FFltMat,
+            tangents::FFltMat,
+            fe_label::FInt)
             copyto!(csmatout, csmat)
         end
 
         gr = SimplexRule(3, 4)
 
-        region = FDataDict("femm"=>FEMMDeforLinear(MR,
-        IntegDomain(fes, gr), material))
+        region = FDataDict("femm" => FEMMDeforLinear(MR,
+            IntegDomain(fes, gr), material))
 
-        lx0 = selectnode(fens, box=[0.0 0.0 -Inf Inf -Inf Inf], inflate=tolerance)
+        lx0 = selectnode(fens, box = [0.0 0.0 -Inf Inf -Inf Inf], inflate = tolerance)
 
-        ex01 = FDataDict( "displacement"=>  0.0, "component"=> 1, "node_list"=>lx0 )
-        ex02 = FDataDict( "displacement"=>  0.0, "component"=> 2, "node_list"=>lx0 )
-        ex03 = FDataDict( "displacement"=>  0.0, "component"=> 3, "node_list"=>lx0 )
+        ex01 = FDataDict("displacement" => 0.0, "component" => 1, "node_list" => lx0)
+        ex02 = FDataDict("displacement" => 0.0, "component" => 2, "node_list" => lx0)
+        ex03 = FDataDict("displacement" => 0.0, "component" => 3, "node_list" => lx0)
 
         function getshr!(forceout::FFltVec, XYZ::FFltMat, tangents::FFltMat, fe_label::FInt)
-            copyto!(forceout, q0*[0.0; 0.0; 1.0])
+            copyto!(forceout, q0 * [0.0; 0.0; 1.0])
         end
 
-        Trac = FDataDict("traction_vector"=>getshr!,
-        "femm"=>FEMMBase(IntegDomain(subset(bfes, sshearl), SimplexRule(2, 3))))
+        Trac = FDataDict("traction_vector" => getshr!,
+            "femm" => FEMMBase(IntegDomain(subset(bfes, sshearl), SimplexRule(2, 3))))
 
-        modeldata = FDataDict("fens"=>fens,
-        "regions"=>[region],
-        "essential_bcs"=>[ex01, ex02, ex03],
-        "traction_bcs"=>[Trac],
-        "temperature_change"=>FDataDict("temperature"=>dT)
-        )
+        modeldata = FDataDict("fens" => fens,
+            "regions" => [region],
+            "essential_bcs" => [ex01, ex02, ex03],
+            "traction_bcs" => [Trac],
+            "temperature_change" => FDataDict("temperature" => dT))
         modeldata = AlgoDeforLinearModule.linearstatics(modeldata)
 
         u = modeldata["u"]
         geom = modeldata["geom"]
 
-        Tipl = selectnode(fens, box=[a a b b 0. 0.], inflate=tolerance)
+        Tipl = selectnode(fens, box = [a a b b 0.0 0.0], inflate = tolerance)
         utip = mean(u.values[Tipl, 3])
         println(" Normalized deflection: $(utip/uz_ref)")
 
-        modeldata["postprocessing"] = FDataDict("file"=>"fiber_reinf_cant_iso_stresses_$(elementtag)",
-        "outputcsys"=>CSys(3, 3, updatecs!), "quantity"=>:Cauchy,
-        "component"=>[5])
+        modeldata["postprocessing"] = FDataDict("file" => "fiber_reinf_cant_iso_stresses_$(elementtag)",
+            "outputcsys" => CSys(3, 3, updatecs!), "quantity" => :Cauchy,
+            "component" => [5])
         modeldata = AlgoDeforLinearModule.exportstresselementwise(modeldata)
 
-        modeldata["postprocessing"] = FDataDict("file"=>"fiber_reinf_cant_iso_stresses_$(elementtag)",
-        "outputcsys"=>CSys(3, 3, updatecs!), "quantity"=>:Cauchy,
-        "component"=>collect(1:6))
+        modeldata["postprocessing"] = FDataDict("file" => "fiber_reinf_cant_iso_stresses_$(elementtag)",
+            "outputcsys" => CSys(3, 3, updatecs!), "quantity" => :Cauchy,
+            "component" => collect(1:6))
         modeldata = AlgoDeforLinearModule.exportstresselementwise(modeldata)
         stressfields = ElementalField[modeldata["postprocessing"]["exported"][1]["field"]]
 
-        push!(convergencestudy, FDataDict(
-        "elementsize"=> 1.0 / n,
-        "fens"=>fens,
-        "fes"=>fes,
-        "geom"=>geom,
-        "u"=>u,
-        "femm"=>region["femm"],
-        "integrationrule"=>region["femm"].integdomain.integration_rule,
-        "stressfields"=>stressfields,
-        "tolerance"=>tolerance)
-        )
+        push!(convergencestudy,
+            FDataDict("elementsize" => 1.0 / n,
+                "fens" => fens,
+                "fes" => fes,
+                "geom" => geom,
+                "u" => u,
+                "femm" => region["femm"],
+                "integrationrule" => region["femm"].integdomain.integration_rule,
+                "stressfields" => stressfields,
+                "tolerance" => tolerance))
     end
 
     # File = "fiber_reinf_cant_iso_stresses_$(elementtag)"
@@ -490,9 +486,7 @@ function fiber_reinf_cant_iso_stresses_T10()
     # end
 
     true
-
 end # fiber_reinf_cant_iso_stresses_T10
-
 
 function fiber_reinf_cant_yn_strong()
     println("""
@@ -507,11 +501,11 @@ function fiber_reinf_cant_yn_strong()
 
     t0 = time()
     # # Orthotropic material
-    E1s = 100000.0*phun("GPa")
-    E2s = 1.0*phun("GPa")
+    E1s = 100000.0 * phun("GPa")
+    E2s = 1.0 * phun("GPa")
     E3s = E2s
     nu23s = nu12s = nu13s = 0.25
-    G12s = 0.2*phun("GPa")
+    G12s = 0.2 * phun("GPa")
     G23s = G13s = G12s
     CTE1 = 0.0
     CTE2 = 0.0
@@ -522,42 +516,42 @@ function fiber_reinf_cant_yn_strong()
     # CTE = 0.0
 
     # Reference value for  the vertical deflection of the tip
-    uz_ref = -1.027498445054843e-05;
+    uz_ref = -1.027498445054843e-05
 
-    a = 90.0*phun("mm") # length of the cantilever
-    b = 10.0*phun("mm") # width of the cross-section
-    t = 20.0*phun("mm") # height of the cross-section
-    q0 = -1000.0*phun("Pa") # shear traction
-    dT = 0*phun("K") # temperature rise
+    a = 90.0 * phun("mm") # length of the cantilever
+    b = 10.0 * phun("mm") # width of the cross-section
+    t = 20.0 * phun("mm") # height of the cross-section
+    q0 = -1000.0 * phun("Pa") # shear traction
+    dT = 0 * phun("K") # temperature rise
 
-    tolerance = 0.00001*t
+    tolerance = 0.00001 * t
 
     # Generate mesh
     n = 4
-    na = 8*n # number of elements lengthwise
+    na = 8 * n # number of elements lengthwise
     nb = n # number of elements through the wwith
     nt = n # number of elements through the thickness
-    xs = collect(linearspace(0.0, a, na+1))
-    ys = collect(linearspace(0.0, b, nb+1))
-    ts = collect(linearspace(0.0, t, nt+1))
-    fens,fes = H8blockx(xs, ys, ts)
-    fens,fes = H8toH20(fens,fes)
+    xs = collect(linearspace(0.0, a, na + 1))
+    ys = collect(linearspace(0.0, b, nb + 1))
+    ts = collect(linearspace(0.0, t, nt + 1))
+    fens, fes = H8blockx(xs, ys, ts)
+    fens, fes = H8toH20(fens, fes)
     bfes = meshboundary(fes)
     # end cross-section surface  for the shear loading
-    sshearl = selectelem(fens, bfes; facing=true, direction = [+1.0 0.0 0.0])
+    sshearl = selectelem(fens, bfes; facing = true, direction = [+1.0 0.0 0.0])
 
     MR = DeforModelRed3D
     material = MatDeforElastOrtho(MR,
-    0.0, E1s, E2s, E3s,
-    nu12s, nu13s, nu23s,
-    G12s, G13s, G23s,
-    CTE1, CTE2, CTE3)
+        0.0, E1s, E2s, E3s,
+        nu12s, nu13s, nu23s,
+        G12s, G13s, G23s,
+        CTE1, CTE2, CTE3)
     # material = MatDeforElastIso(MR,
     #   0.0, E, nu, CTE)
 
     # Material orientation matrix
     csmat = zeros(3, 3)
-    rotmat3!(csmat, -45.0/180.0*pi*[0,1,0])
+    rotmat3!(csmat, -45.0 / 180.0 * pi * [0, 1, 0])
 
     function updatecs!(csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, fe_label::FInt)
         copyto!(csmatout, csmat)
@@ -565,32 +559,35 @@ function fiber_reinf_cant_yn_strong()
 
     gr = GaussRule(3, 2)
 
-    region = FDataDict("femm"=>FEMMDeforLinear(MR, IntegDomain(fes, gr), CSys(3, 3, updatecs!), material))
+    region = FDataDict("femm" => FEMMDeforLinear(MR,
+        IntegDomain(fes, gr),
+        CSys(3, 3, updatecs!),
+        material))
 
-    lx0 = selectnode(fens, box=[0.0 0.0 -Inf Inf -Inf Inf], inflate=tolerance)
+    lx0 = selectnode(fens, box = [0.0 0.0 -Inf Inf -Inf Inf], inflate = tolerance)
 
-    ex01 = FDataDict( "displacement"=>  0.0, "component"=> 1, "node_list"=>lx0 )
-    ex02 = FDataDict( "displacement"=>  0.0, "component"=> 2, "node_list"=>lx0 )
-    ex03 = FDataDict( "displacement"=>  0.0, "component"=> 3, "node_list"=>lx0 )
+    ex01 = FDataDict("displacement" => 0.0, "component" => 1, "node_list" => lx0)
+    ex02 = FDataDict("displacement" => 0.0, "component" => 2, "node_list" => lx0)
+    ex03 = FDataDict("displacement" => 0.0, "component" => 3, "node_list" => lx0)
 
     function getshr!(forceout::FFltVec, XYZ::FFltMat, tangents::FFltMat, fe_label::FInt)
-        copyto!(forceout, q0*[0.0; 0.0; 1.0])
+        copyto!(forceout, q0 * [0.0; 0.0; 1.0])
     end
 
-    Trac = FDataDict("traction_vector"=>getshr!, "femm"=>FEMMBase(IntegDomain(subset(bfes, sshearl), GaussRule(2, 3))))
+    Trac = FDataDict("traction_vector" => getshr!,
+        "femm" => FEMMBase(IntegDomain(subset(bfes, sshearl), GaussRule(2, 3))))
 
-    modeldata = FDataDict("fens"=>fens,
-    "regions"=>[region],
-    "essential_bcs"=>[ex01, ex02, ex03],
-    "traction_bcs"=>[Trac],
-    "temperature_change"=>FDataDict("temperature"=>dT)
-    )
+    modeldata = FDataDict("fens" => fens,
+        "regions" => [region],
+        "essential_bcs" => [ex01, ex02, ex03],
+        "traction_bcs" => [Trac],
+        "temperature_change" => FDataDict("temperature" => dT))
     modeldata = AlgoDeforLinearModule.linearstatics(modeldata)
 
     u = modeldata["u"]
     geom = modeldata["geom"]
 
-    Tipl = selectnode(fens, box=[a a b b 0. 0.], inflate=tolerance)
+    Tipl = selectnode(fens, box = [a a b b 0.0 0.0], inflate = tolerance)
     utip = mean(u.values[Tipl, 3])
     println("Deflection $utip, normalized: $(utip/uz_ref)")
     println("Solution: $(  time()-t0 )")
@@ -600,7 +597,10 @@ function fiber_reinf_cant_yn_strong()
     #     scalars = [("Layer", fes.label)], vectors = [("displacement", u.values)])
     # @async run(`"paraview.exe" $File`)
 
-    modeldata["postprocessing"] = FDataDict("file"=>"fiber_reinf_cant_yn_strong", "outputcsys"=>CSys(3, 3, updatecs!), "quantity"=>:Cauchy, "component"=>5)
+    modeldata["postprocessing"] = FDataDict("file" => "fiber_reinf_cant_yn_strong",
+        "outputcsys" => CSys(3, 3, updatecs!),
+        "quantity" => :Cauchy,
+        "component" => 5)
     modeldata = AlgoDeforLinearModule.exportstress(modeldata)
     File = modeldata["postprocessing"]["exported"][1]["file"]
     @async run(`"paraview.exe" $File`)
@@ -611,9 +611,7 @@ function fiber_reinf_cant_yn_strong()
 
     println("Done: $(  time()-t0 )")
     true
-
 end # fiber_reinf_cant_yn_strong
-
 
 function fiber_reinf_cant_yn_strong_no_algo()
     println("""
@@ -630,11 +628,11 @@ function fiber_reinf_cant_yn_strong_no_algo()
     pu = ustring -> phun(ustring; system_of_units = :SIMM)
 
     # # Orthotropic material
-    E1s = 100000.0*pu("GPa")
-    E2s = 1.0*pu("GPa")
+    E1s = 100000.0 * pu("GPa")
+    E2s = 1.0 * pu("GPa")
     E3s = E2s
     nu23s = nu12s = nu13s = 0.25
-    G12s = 0.2*pu("GPa")
+    G12s = 0.2 * pu("GPa")
     G23s = G13s = G12s
     CTE1 = 0.0
     CTE2 = 0.0
@@ -645,45 +643,45 @@ function fiber_reinf_cant_yn_strong_no_algo()
     # CTE = 0.0
 
     # Reference value for  the vertical deflection of the tip
-    uz_ref = -1.027498445054843e-05*pu("m");
+    uz_ref = -1.027498445054843e-05 * pu("m")
 
-    a = 90.0*pu("mm") # length of the cantilever
-    b = 10.0*pu("mm") # width of the cross-section
-    t = 20.0*pu("mm") # height of the cross-section
-    q0 = -1000.0*pu("Pa") # shear traction
-    dT = 0*pu("K") # temperature rise
+    a = 90.0 * pu("mm") # length of the cantilever
+    b = 10.0 * pu("mm") # width of the cross-section
+    t = 20.0 * pu("mm") # height of the cross-section
+    q0 = -1000.0 * pu("Pa") # shear traction
+    dT = 0 * pu("K") # temperature rise
 
-    tolerance = 0.00001*t
+    tolerance = 0.00001 * t
 
     # Generate mesh
     n = 10
     na = n # number of elements lengthwise
     nb = n # number of elements through the wwith
     nt = n # number of elements through the thickness
-    xs = collect(linearspace(0.0, a, na+1))
-    ys = collect(linearspace(0.0, b, nb+1))
-    ts = collect(linearspace(0.0, t, nt+1))
+    xs = collect(linearspace(0.0, a, na + 1))
+    ys = collect(linearspace(0.0, b, nb + 1))
+    ts = collect(linearspace(0.0, t, nt + 1))
     println("fens,fes = H8blockx(xs, ys, ts)")
-    @time fens,fes = H8blockx(xs, ys, ts)
+    @time fens, fes = H8blockx(xs, ys, ts)
     println("fens,fes = H8toH20(fens,fes)")
-    @time fens,fes = H8toH20(fens,fes)
+    @time fens, fes = H8toH20(fens, fes)
     println("bfes = meshboundary(fes)")
     @time bfes = meshboundary(fes)
     # end cross-section surface  for the shear loading
-    sshearl = selectelem(fens, bfes; facing=true, direction = [+1.0 0.0 0.0])
+    sshearl = selectelem(fens, bfes; facing = true, direction = [+1.0 0.0 0.0])
 
     MR = DeforModelRed3D
     material = MatDeforElastOrtho(MR,
-    0.0, E1s, E2s, E3s,
-    nu12s, nu13s, nu23s,
-    G12s, G13s, G23s,
-    CTE1, CTE2, CTE3)
+        0.0, E1s, E2s, E3s,
+        nu12s, nu13s, nu23s,
+        G12s, G13s, G23s,
+        CTE1, CTE2, CTE3)
     # material = MatDeforElastIso(MR,
     #   0.0, E, nu, CTE)
 
     # Material orientation matrix
     csmat = zeros(3, 3)
-    rotmat3!(csmat, -45.0/180.0*pi*[0,1,0])
+    rotmat3!(csmat, -45.0 / 180.0 * pi * [0, 1, 0])
 
     function updatecs!(csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, fe_label::FInt)
         copyto!(csmatout, csmat)
@@ -693,10 +691,10 @@ function fiber_reinf_cant_yn_strong_no_algo()
 
     femm = FEMMDeforLinear(MR, IntegDomain(fes, gr), CSys(3, 3, updatecs!), material)
 
-    lx0 = selectnode(fens, box=[0.0 0.0 -Inf Inf -Inf Inf], inflate=tolerance)
+    lx0 = selectnode(fens, box = [0.0 0.0 -Inf Inf -Inf Inf], inflate = tolerance)
 
     geom = NodalField(fens.xyz)
-    u = NodalField(zeros(size(fens.xyz,1),3)) # displacement field
+    u = NodalField(zeros(size(fens.xyz, 1), 3)) # displacement field
     nnodes(geom)
 
     setebc!(u, lx0, true, 1, zeros(size(lx0)))
@@ -709,34 +707,33 @@ function fiber_reinf_cant_yn_strong_no_algo()
     numberdofs!(u)
 
     function getshr!(forceout::FFltVec, XYZ::FFltMat, tangents::FFltMat, fe_label::FInt)
-        copyto!(forceout, q0*[0.0; 0.0; 1.0])
+        copyto!(forceout, q0 * [0.0; 0.0; 1.0])
     end
 
     Tracfemm = FEMMBase(IntegDomain(subset(bfes, sshearl), GaussRule(2, 3)))
 
     println("K = stiffness(femm, geom, u)")
     @time K = stiffness(femm, geom, u)
-    fi = ForceIntensity(Float64, 3, getshr!);
+    fi = ForceIntensity(Float64, 3, getshr!)
     println("F =  distribloads(Tracfemm, geom, u, fi, 2);")
-    @time F =  distribloads(Tracfemm, geom, u, fi, 2);
+    @time F = distribloads(Tracfemm, geom, u, fi, 2)
 
     println("K = cholesky(K)")
-    K = (K + K')/2;
+    K = (K + K') / 2
     @time K = cholesky(Symmetric(K))
     println("U = K\\F")
-    @time U = K\F
+    @time U = K \ F
     # println("U = cg(K, F; tol=1e-3, maxiter=2000)")
     # @time U = cg(K, F; tol=1e-3, maxiter=2000)
     scattersysvec!(u, U[:])
 
-    Tipl = selectnode(fens, box=[a a b b 0. 0.], inflate=tolerance)
+    Tipl = selectnode(fens, box = [a a b b 0.0 0.0], inflate = tolerance)
     utip = mean(u.values[Tipl, 3])
     println("Deflection $utip, normalized: $(utip/uz_ref)")
     println("Solution: $(  time()-t0 )")
 
     println("Done: $(  time()-t0 )")
     true
-
 end # fiber_reinf_cant_yn_strong_no_algo
 
 function fiber_reinf_cant_zn_strong()
@@ -752,11 +749,11 @@ function fiber_reinf_cant_zn_strong()
 
     t0 = time()
     # # Orthotropic material
-    E1s = 100000.0*phun("GPa")
-    E2s = 1.0*phun("GPa")
+    E1s = 100000.0 * phun("GPa")
+    E2s = 1.0 * phun("GPa")
     E3s = E2s
     nu23s = nu12s = nu13s = 0.25
-    G12s = 0.2*phun("GPa")
+    G12s = 0.2 * phun("GPa")
     G23s = G13s = G12s
     CTE1 = 0.0
     CTE2 = 0.0
@@ -767,42 +764,42 @@ function fiber_reinf_cant_zn_strong()
     # CTE = 0.0
 
     # Reference value for  the vertical deflection of the tip
-    uz_ref = -1.119145781010554e-05;
+    uz_ref = -1.119145781010554e-05
 
-    a = 90.0*phun("mm") # length of the cantilever
-    b = 10.0*phun("mm") # width of the cross-section
-    t = 20.0*phun("mm") # height of the cross-section
-    q0 = -1000.0*phun("Pa") # shear traction
-    dT = 0*phun("K") # temperature rise
+    a = 90.0 * phun("mm") # length of the cantilever
+    b = 10.0 * phun("mm") # width of the cross-section
+    t = 20.0 * phun("mm") # height of the cross-section
+    q0 = -1000.0 * phun("Pa") # shear traction
+    dT = 0 * phun("K") # temperature rise
 
-    tolerance = 0.00001*t
+    tolerance = 0.00001 * t
 
     # Generate mesh
     n = 8
-    na = 8*n # number of elements lengthwise
+    na = 8 * n # number of elements lengthwise
     nb = n # number of elements through the wwith
     nt = n # number of elements through the thickness
-    xs = collect(linearspace(0.0, a, na+1))
-    ys = collect(linearspace(0.0, b, nb+1))
-    ts = collect(linearspace(0.0, t, nt+1))
-    fens,fes = H8blockx(xs, ys, ts)
-    fens,fes = H8toH20(fens,fes)
+    xs = collect(linearspace(0.0, a, na + 1))
+    ys = collect(linearspace(0.0, b, nb + 1))
+    ts = collect(linearspace(0.0, t, nt + 1))
+    fens, fes = H8blockx(xs, ys, ts)
+    fens, fes = H8toH20(fens, fes)
     bfes = meshboundary(fes)
     # end cross-section surface  for the shear loading
-    sshearl = selectelem(fens, bfes; facing=true, direction = [+1.0 0.0 0.0])
+    sshearl = selectelem(fens, bfes; facing = true, direction = [+1.0 0.0 0.0])
 
     MR = DeforModelRed3D
     material = MatDeforElastOrtho(MR,
-    0.0, E1s, E2s, E3s,
-    nu12s, nu13s, nu23s,
-    G12s, G13s, G23s,
-    CTE1, CTE2, CTE3)
+        0.0, E1s, E2s, E3s,
+        nu12s, nu13s, nu23s,
+        G12s, G13s, G23s,
+        CTE1, CTE2, CTE3)
     # material = MatDeforElastIso(MR,
     #   0.0, E, nu, CTE)
 
     # Material orientation matrix
     csmat = zeros(3, 3)
-    rotmat3!(csmat, -45.0/180.0*pi*[0,0,1])
+    rotmat3!(csmat, -45.0 / 180.0 * pi * [0, 0, 1])
 
     function updatecs!(csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, fe_label::FInt)
         copyto!(csmatout, csmat)
@@ -810,32 +807,35 @@ function fiber_reinf_cant_zn_strong()
 
     gr = GaussRule(3, 2)
 
-    region = FDataDict("femm"=>FEMMDeforLinear(MR, IntegDomain(fes, gr), CSys(3, 3, updatecs!), material))
+    region = FDataDict("femm" => FEMMDeforLinear(MR,
+        IntegDomain(fes, gr),
+        CSys(3, 3, updatecs!),
+        material))
 
-    lx0 = selectnode(fens, box=[0.0 0.0 -Inf Inf -Inf Inf], inflate=tolerance)
+    lx0 = selectnode(fens, box = [0.0 0.0 -Inf Inf -Inf Inf], inflate = tolerance)
 
-    ex01 = FDataDict( "displacement"=>  0.0, "component"=> 1, "node_list"=>lx0 )
-    ex02 = FDataDict( "displacement"=>  0.0, "component"=> 2, "node_list"=>lx0 )
-    ex03 = FDataDict( "displacement"=>  0.0, "component"=> 3, "node_list"=>lx0 )
+    ex01 = FDataDict("displacement" => 0.0, "component" => 1, "node_list" => lx0)
+    ex02 = FDataDict("displacement" => 0.0, "component" => 2, "node_list" => lx0)
+    ex03 = FDataDict("displacement" => 0.0, "component" => 3, "node_list" => lx0)
 
     function getshr!(forceout::FFltVec, XYZ::FFltMat, tangents::FFltMat, fe_label::FInt)
-        copyto!(forceout, q0*[0.0; 0.0; 1.0])
+        copyto!(forceout, q0 * [0.0; 0.0; 1.0])
     end
 
-    Trac = FDataDict("traction_vector"=>getshr!, "femm"=>FEMMBase(IntegDomain(subset(bfes, sshearl), GaussRule(2, 3))))
+    Trac = FDataDict("traction_vector" => getshr!,
+        "femm" => FEMMBase(IntegDomain(subset(bfes, sshearl), GaussRule(2, 3))))
 
-    modeldata = FDataDict("fens"=>fens,
-    "regions"=>[region],
-    "essential_bcs"=>[ex01, ex02, ex03],
-    "traction_bcs"=>[Trac],
-    "temperature_change"=>FDataDict("temperature"=>dT)
-    )
+    modeldata = FDataDict("fens" => fens,
+        "regions" => [region],
+        "essential_bcs" => [ex01, ex02, ex03],
+        "traction_bcs" => [Trac],
+        "temperature_change" => FDataDict("temperature" => dT))
     modeldata = AlgoDeforLinearModule.linearstatics(modeldata)
 
     u = modeldata["u"]
     geom = modeldata["geom"]
 
-    Tipl = selectnode(fens, box=[a a b b 0. 0.], inflate=tolerance)
+    Tipl = selectnode(fens, box = [a a b b 0.0 0.0], inflate = tolerance)
     utip = mean(u.values[Tipl, 3])
     println("Deflection $utip, normalized: $(utip/uz_ref)")
     println("Solution: $(  time()-t0 )")
@@ -845,7 +845,10 @@ function fiber_reinf_cant_zn_strong()
     #     scalars = [("Layer", fes.label)], vectors = [("displacement", u.values)])
     # @async run(`"paraview.exe" $File`)
 
-    modeldata["postprocessing"] = FDataDict("file"=>"fiber_reinf_cant_yn_strong", "outputcsys"=>CSys(3, 3, updatecs!), "quantity"=>:Cauchy, "component"=>5)
+    modeldata["postprocessing"] = FDataDict("file" => "fiber_reinf_cant_yn_strong",
+        "outputcsys" => CSys(3, 3, updatecs!),
+        "quantity" => :Cauchy,
+        "component" => 5)
     modeldata = AlgoDeforLinearModule.exportstress(modeldata)
     File = modeldata["postprocessing"]["exported"][1]["file"]
     @async run(`"paraview.exe" $File`)
@@ -856,7 +859,6 @@ function fiber_reinf_cant_zn_strong()
 
     println("Done: $(  time()-t0 )")
     true
-
 end # fiber_reinf_cant_zn_strong
 
 function allrun()
@@ -884,7 +886,5 @@ end # function allrun
 @info "All examples may be executed with "
 println("using .$(@__MODULE__); $(@__MODULE__).allrun()")
 
-
 end # module 
 nothing
-    

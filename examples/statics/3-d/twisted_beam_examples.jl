@@ -18,50 +18,60 @@ using Statistics
 # and Design 40: 1445-1451.
 
 function twisted_beam_algo()
-    E = 0.29e8;
-    nu = 0.22;
-    W = 1.1;
-    L = 12.;
-    t =  0.32;
-    nl = 2; nt = 1; nw = 1; ref = 7;
-    p =   1/W/t;
+    E = 0.29e8
+    nu = 0.22
+    W = 1.1
+    L = 12.0
+    t = 0.32
+    nl = 2
+    nt = 1
+    nw = 1
+    ref = 7
+    p = 1 / W / t
     #  Loading in the Z direction
-    loadv = [0;0;p]; dir = 3; uex = 0.005424534868469; # Harder: 5.424e-3;
+    loadv = [0; 0; p]
+    dir = 3
+    uex = 0.005424534868469 # Harder: 5.424e-3;
     #   Loading in the Y direction
     #loadv = [0;p;0]; dir = 2; uex = 0.001753248285256; # Harder: 1.754e-3;
-    tolerance  = t/1000;
+    tolerance = t / 1000
 
-    fens,fes  = H20block(L,W,t, nl*ref,nw*ref,nt*ref)
+    fens, fes = H20block(L, W, t, nl * ref, nw * ref, nt * ref)
 
     # Reshape into a twisted beam shape
-    for i = 1:count(fens)
-        a = fens.xyz[i,1]/L*(pi/2); y = fens.xyz[i,2]-(W/2); z = fens.xyz[i,3]-(t/2);
-        fens.xyz[i,:] = [fens.xyz[i,1],y*cos(a)-z*sin(a),y*sin(a)+z*cos(a)];
+    for i in 1:count(fens)
+        a = fens.xyz[i, 1] / L * (pi / 2)
+        y = fens.xyz[i, 2] - (W / 2)
+        z = fens.xyz[i, 3] - (t / 2)
+        fens.xyz[i, :] = [fens.xyz[i, 1], y * cos(a) - z * sin(a), y * sin(a) + z * cos(a)]
     end
 
     # Clamped end of the beam
-    l1  = selectnode(fens; box = [0 0 -100*W 100*W -100*W 100*W], inflate  =  tolerance)
-    e1 = FDataDict("node_list"=>l1, "component"=>1, "displacement"=>0.0)
-    e2 = FDataDict("node_list"=>l1, "component"=>2, "displacement"=>0.0)
-    e3 = FDataDict("node_list"=>l1, "component"=>3, "displacement"=>0.0)
+    l1 = selectnode(fens;
+        box = [0 0 -100 * W 100 * W -100 * W 100 * W],
+        inflate = tolerance)
+    e1 = FDataDict("node_list" => l1, "component" => 1, "displacement" => 0.0)
+    e2 = FDataDict("node_list" => l1, "component" => 2, "displacement" => 0.0)
+    e3 = FDataDict("node_list" => l1, "component" => 3, "displacement" => 0.0)
 
     # Traction on the opposite edge
-    boundaryfes  =   meshboundary(fes);
-    Toplist   = selectelem(fens,boundaryfes, box =  [L L -100*W 100*W -100*W 100*W], inflate =   tolerance);
-    el1femm  = FEMMBase(IntegDomain(subset(boundaryfes,Toplist), GaussRule(2, 2)))
-    flux1 = FDataDict("femm"=>el1femm, "traction_vector"=>loadv)
-
+    boundaryfes = meshboundary(fes)
+    Toplist = selectelem(fens,
+        boundaryfes,
+        box = [L L -100 * W 100 * W -100 * W 100 * W],
+        inflate = tolerance)
+    el1femm = FEMMBase(IntegDomain(subset(boundaryfes, Toplist), GaussRule(2, 2)))
+    flux1 = FDataDict("femm" => el1femm, "traction_vector" => loadv)
 
     # Make the region
     MR = DeforModelRed3D
     material = MatDeforElastIso(MR, 00.0, E, nu, 0.0)
-    region1 = FDataDict("femm"=>FEMMDeforLinear(MR, IntegDomain(fes, GaussRule(3,2)),
-    material))
+    region1 = FDataDict("femm" => FEMMDeforLinear(MR, IntegDomain(fes, GaussRule(3, 2)),
+        material))
 
     # Make model data
-    modeldata =  FDataDict(
-    "fens"=> fens, "regions"=>  [region1],
-    "essential_bcs"=>[e1, e2, e3], "traction_bcs"=>  [flux1])
+    modeldata = FDataDict("fens" => fens, "regions" => [region1],
+        "essential_bcs" => [e1, e2, e3], "traction_bcs" => [flux1])
 
     # Call the solver
     modeldata = AlgoDeforLinearModule.linearstatics(modeldata)
@@ -69,92 +79,103 @@ function twisted_beam_algo()
     u = modeldata["u"]
 
     # Extract the solution
-    nl = selectnode(fens, box = [L L -100*W 100*W -100*W 100*W],inflate = tolerance);
-    theutip = mean(u.values[nl,:],dims=1)
+    nl = selectnode(fens,
+        box = [L L -100 * W 100 * W -100 * W 100 * W],
+        inflate = tolerance)
+    theutip = mean(u.values[nl, :], dims = 1)
     println("displacement  = $(theutip[dir]) as compared to converged $uex")
     println("normalized displacement  = $(theutip[dir]/uex*100) %")
 
     # Write out mesh with displacements
-    modeldata["postprocessing"] = FDataDict("file"=>"twisted_beam")
+    modeldata["postprocessing"] = FDataDict("file" => "twisted_beam")
     modeldata = AlgoDeforLinearModule.exportdeformation(modeldata)
 
     # Write out mesh with stresses
-    modeldata["postprocessing"] = FDataDict("file"=>"twisted_beam",
-    "quantity"=> :Cauchy, "component"=> :xy)
+    modeldata["postprocessing"] = FDataDict("file" => "twisted_beam",
+        "quantity" => :Cauchy, "component" => :xy)
     modeldata = AlgoDeforLinearModule.exportstress(modeldata)
 
     # Write out mesh with stresses
-    modeldata["postprocessing"] = FDataDict("file"=>"twisted_beam",
-    "quantity"=> :Cauchy, "component"=> :xz)
+    modeldata["postprocessing"] = FDataDict("file" => "twisted_beam",
+        "quantity" => :Cauchy, "component" => :xz)
     modeldata = AlgoDeforLinearModule.exportstress(modeldata)
 
     # Write out mesh with von Mises stresses
-    modeldata["postprocessing"] = FDataDict("file"=>"twisted_beam",
-    "quantity"=> :vm)
+    modeldata["postprocessing"] = FDataDict("file" => "twisted_beam",
+        "quantity" => :vm)
     modeldata = AlgoDeforLinearModule.exportstress(modeldata)
 
     # Write out mesh with von Mises stresses, elementwise
-    modeldata["postprocessing"] = FDataDict("file"=>"twisted_beam-ew",
-    "quantity"=> :vm)
+    modeldata["postprocessing"] = FDataDict("file" => "twisted_beam-ew",
+        "quantity" => :vm)
     modeldata = AlgoDeforLinearModule.exportstresselementwise(modeldata)
-    vm  = modeldata["postprocessing"]["exported"][1]["field"]
+    vm = modeldata["postprocessing"]["exported"][1]["field"]
     println("extremes of von Mises: $([minimum(vm.values),   maximum(vm.values)])")
 
     # Write out mesh with von Mises stresses, elementwise
-    modeldata["postprocessing"] = FDataDict("file"=>"twisted_beam-ew",
-    "quantity"=> :Cauchy, "component"=> :xz)
+    modeldata["postprocessing"] = FDataDict("file" => "twisted_beam-ew",
+        "quantity" => :Cauchy, "component" => :xz)
     modeldata = AlgoDeforLinearModule.exportstresselementwise(modeldata)
 
     println("Done")
     true
 end # twisted_beam_algo
 
-
 function twisted_beam_algo_stress()
-    E = 0.29e8;
-    nu = 0.22;
-    W = 1.1;
-    L = 12.;
-    t =  0.32;
-    nl = 2; nt = 1; nw = 1; ref = 4;
-    p =   1/W/t;
+    E = 0.29e8
+    nu = 0.22
+    W = 1.1
+    L = 12.0
+    t = 0.32
+    nl = 2
+    nt = 1
+    nw = 1
+    ref = 4
+    p = 1 / W / t
     #  Loading in the Z direction
-    loadv = [0;0;p]; dir = 3; uex = 0.005424534868469; # Harder: 5.424e-3;
+    loadv = [0; 0; p]
+    dir = 3
+    uex = 0.005424534868469 # Harder: 5.424e-3;
     #   Loading in the Y direction
     #loadv = [0;p;0]; dir = 2; uex = 0.001753248285256; # Harder: 1.754e-3;
-    tolerance  = t/1000;
+    tolerance = t / 1000
 
-    fens,fes  = H20block(L,W,t, nl*ref,nw*ref,nt*ref)
+    fens, fes = H20block(L, W, t, nl * ref, nw * ref, nt * ref)
 
     # Reshape into a twisted beam shape
-    for i = 1:count(fens)
-        a = fens.xyz[i,1]/L*(pi/2); y = fens.xyz[i,2]-(W/2); z = fens.xyz[i,3]-(t/2);
-        fens.xyz[i,:] = [fens.xyz[i,1],y*cos(a)-z*sin(a),y*sin(a)+z*cos(a)];
+    for i in 1:count(fens)
+        a = fens.xyz[i, 1] / L * (pi / 2)
+        y = fens.xyz[i, 2] - (W / 2)
+        z = fens.xyz[i, 3] - (t / 2)
+        fens.xyz[i, :] = [fens.xyz[i, 1], y * cos(a) - z * sin(a), y * sin(a) + z * cos(a)]
     end
 
     # Clamped end of the beam
-    l1  = selectnode(fens; box = [0 0 -100*W 100*W -100*W 100*W], inflate  =  tolerance)
-    e1 = FDataDict("node_list"=>l1, "component"=>1, "displacement"=>0.0)
-    e2 = FDataDict("node_list"=>l1, "component"=>2, "displacement"=>0.0)
-    e3 = FDataDict("node_list"=>l1, "component"=>3, "displacement"=>0.0)
+    l1 = selectnode(fens;
+        box = [0 0 -100 * W 100 * W -100 * W 100 * W],
+        inflate = tolerance)
+    e1 = FDataDict("node_list" => l1, "component" => 1, "displacement" => 0.0)
+    e2 = FDataDict("node_list" => l1, "component" => 2, "displacement" => 0.0)
+    e3 = FDataDict("node_list" => l1, "component" => 3, "displacement" => 0.0)
 
     # Traction on the opposite edge
-    boundaryfes  =   meshboundary(fes);
-    Toplist   = selectelem(fens,boundaryfes, box =  [L L -100*W 100*W -100*W 100*W], inflate =   tolerance);
-    el1femm  = FEMMBase(IntegDomain(subset(boundaryfes,Toplist), GaussRule(2, 2)))
-    flux1 = FDataDict("femm"=>el1femm, "traction_vector"=>loadv)
-
+    boundaryfes = meshboundary(fes)
+    Toplist = selectelem(fens,
+        boundaryfes,
+        box = [L L -100 * W 100 * W -100 * W 100 * W],
+        inflate = tolerance)
+    el1femm = FEMMBase(IntegDomain(subset(boundaryfes, Toplist), GaussRule(2, 2)))
+    flux1 = FDataDict("femm" => el1femm, "traction_vector" => loadv)
 
     # Make the region
     MR = DeforModelRed3D
     material = MatDeforElastIso(MR, 00.0, E, nu, 0.0)
-    region1 = FDataDict("femm"=>FEMMDeforLinear(MR, IntegDomain(fes, GaussRule(3,2)),
-    material))
+    region1 = FDataDict("femm" => FEMMDeforLinear(MR, IntegDomain(fes, GaussRule(3, 2)),
+        material))
 
     # Make model data
-    modeldata =  FDataDict(
-    "fens"=> fens, "regions"=>  [region1],
-    "essential_bcs"=>[e1, e2, e3], "traction_bcs"=>  [flux1])
+    modeldata = FDataDict("fens" => fens, "regions" => [region1],
+        "essential_bcs" => [e1, e2, e3], "traction_bcs" => [flux1])
 
     # Call the solver
     modeldata = AlgoDeforLinearModule.linearstatics(modeldata)
@@ -162,131 +183,141 @@ function twisted_beam_algo_stress()
     u = modeldata["u"]
 
     # Extract the solution
-    nl = selectnode(fens, box = [L L -100*W 100*W -100*W 100*W],inflate = tolerance);
-    theutip = mean(u.values[nl,:],dims=1)
+    nl = selectnode(fens,
+        box = [L L -100 * W 100 * W -100 * W 100 * W],
+        inflate = tolerance)
+    theutip = mean(u.values[nl, :], dims = 1)
     println("displacement  = $(theutip[dir]) as compared to converged $uex")
     println("normalized displacement  = $(theutip[dir]/uex*100) %")
 
     # Write out mesh with displacements
-    modeldata["postprocessing"] = FDataDict("file"=>"twisted_beam")
+    modeldata["postprocessing"] = FDataDict("file" => "twisted_beam")
     modeldata = AlgoDeforLinearModule.exportdeformation(modeldata)
 
     # Write out mesh with stresses
-    modeldata["postprocessing"] = FDataDict("file"=>"twisted_beam",
-    "quantity"=> :Cauchy, "component"=> :xy)
+    modeldata["postprocessing"] = FDataDict("file" => "twisted_beam",
+        "quantity" => :Cauchy, "component" => :xy)
     modeldata = AlgoDeforLinearModule.exportstress(modeldata)
 
     # Write out mesh with stresses
-    modeldata["postprocessing"] = FDataDict("file"=>"twisted_beam",
-    "quantity"=> :Cauchy, "component"=> :xz)
+    modeldata["postprocessing"] = FDataDict("file" => "twisted_beam",
+        "quantity" => :Cauchy, "component" => :xz)
     modeldata = AlgoDeforLinearModule.exportstress(modeldata)
 
     # Write out mesh with von Mises stresses
-    modeldata["postprocessing"] = FDataDict("file"=>"twisted_beam",
-    "quantity"=> :vm)
+    modeldata["postprocessing"] = FDataDict("file" => "twisted_beam",
+        "quantity" => :vm)
     modeldata = AlgoDeforLinearModule.exportstress(modeldata)
 
     # Write out mesh with von Mises stresses, elementwise
-    modeldata["postprocessing"] = FDataDict("file"=>"twisted_beam-ew",
-    "quantity"=> :vm)
+    modeldata["postprocessing"] = FDataDict("file" => "twisted_beam-ew",
+        "quantity" => :vm)
     modeldata = AlgoDeforLinearModule.exportstresselementwise(modeldata)
-    vm  = modeldata["postprocessing"]["exported"][1]["field"]
+    vm = modeldata["postprocessing"]["exported"][1]["field"]
     println("extremes of von Mises: $([minimum(vm.values),   maximum(vm.values)])")
 
     # Write out mesh with von Mises stresses, elementwise
-    modeldata["postprocessing"] = FDataDict("file"=>"twisted_beam-ew",
-    "quantity"=> :Cauchy, "component"=> :xz)
+    modeldata["postprocessing"] = FDataDict("file" => "twisted_beam-ew",
+        "quantity" => :Cauchy, "component" => :xz)
     modeldata = AlgoDeforLinearModule.exportstresselementwise(modeldata)
 
     # Write out mesh with principal stresses, elementwise
-    modeldata["postprocessing"] = FDataDict("file"=>"twisted_beam-principal-1-ew",
-    "quantity"=> :princCauchy, "component"=> 1)
+    modeldata["postprocessing"] = FDataDict("file" => "twisted_beam-principal-1-ew",
+        "quantity" => :princCauchy, "component" => 1)
     modeldata = AlgoDeforLinearModule.exportstresselementwise(modeldata)
-    ps  = modeldata["postprocessing"]["exported"][1]["field"]
+    ps = modeldata["postprocessing"]["exported"][1]["field"]
     println("extremes of first principal stress: $([minimum(ps.values),   maximum(ps.values)])")
 
     # Write out mesh with principal stresses, elementwise
-    modeldata["postprocessing"] = FDataDict("file"=>"twisted_beam-principal-3-ew",
-    "quantity"=> :princCauchy, "component"=> 3)
+    modeldata["postprocessing"] = FDataDict("file" => "twisted_beam-principal-3-ew",
+        "quantity" => :princCauchy, "component" => 3)
     modeldata = AlgoDeforLinearModule.exportstresselementwise(modeldata)
-    ps  = modeldata["postprocessing"]["exported"][1]["field"]
+    ps = modeldata["postprocessing"]["exported"][1]["field"]
     println("extremes of third principal stress: $([minimum(ps.values),   maximum(ps.values)])")
 
     # Write out mesh with principal stresses, elementwise
-    modeldata["postprocessing"] = FDataDict("file"=>"twisted_beam-press-ew",
-    "quantity"=> :pressure, "component"=> 1)
+    modeldata["postprocessing"] = FDataDict("file" => "twisted_beam-press-ew",
+        "quantity" => :pressure, "component" => 1)
     modeldata = AlgoDeforLinearModule.exportstresselementwise(modeldata)
-    ps  = modeldata["postprocessing"]["exported"][1]["field"]
+    ps = modeldata["postprocessing"]["exported"][1]["field"]
     println("extremes of pressure: $([minimum(ps.values),   maximum(ps.values)])")
 
     println("Done")
     true
 end # twisted_beam_algo_stress
 
-
 function twisted_beam_export()
-    E = 0.29e8;
-    nu = 0.22;
-    W = 1.1;
-    L = 12.;
-    t =  0.32;
-    nl = 2; nt = 1; nw = 1; ref = 5;
-    p =   1/W/t;
+    E = 0.29e8
+    nu = 0.22
+    W = 1.1
+    L = 12.0
+    t = 0.32
+    nl = 2
+    nt = 1
+    nw = 1
+    ref = 5
+    p = 1 / W / t
     #  Loading in the Z direction
-    loadv = [0;0;p]; dir = 3; uex = 0.005424534868469; # Harder: 5.424e-3;
+    loadv = [0; 0; p]
+    dir = 3
+    uex = 0.005424534868469 # Harder: 5.424e-3;
     #   Loading in the Y direction
     #loadv = [0;p;0]; dir = 2; uex = 0.001753248285256; # Harder: 1.754e-3;
-    tolerance  = t/1000;
+    tolerance = t / 1000
 
-    fens,fes  = H8block(L,W,t, nl*ref,nw*ref,nt*ref)
+    fens, fes = H8block(L, W, t, nl * ref, nw * ref, nt * ref)
 
     # Reshape into a twisted beam shape
-    for i = 1:count(fens)
-        a = fens.xyz[i,1]/L*(pi/2); y = fens.xyz[i,2]-(W/2); z = fens.xyz[i,3]-(t/2);
-        fens.xyz[i,:] = [fens.xyz[i,1],y*cos(a)-z*sin(a),y*sin(a)+z*cos(a)];
+    for i in 1:count(fens)
+        a = fens.xyz[i, 1] / L * (pi / 2)
+        y = fens.xyz[i, 2] - (W / 2)
+        z = fens.xyz[i, 3] - (t / 2)
+        fens.xyz[i, :] = [fens.xyz[i, 1], y * cos(a) - z * sin(a), y * sin(a) + z * cos(a)]
     end
 
     # Clamped end of the beam
-    l1  = selectnode(fens; box = [0 0 -100*W 100*W -100*W 100*W], inflate  =  tolerance)
-    e1 = FDataDict("node_list"=>l1, "component"=>1, "displacement"=>0.0)
-    e2 = FDataDict("node_list"=>l1, "component"=>2, "displacement"=>0.0)
-    e3 = FDataDict("node_list"=>l1, "component"=>3, "displacement"=>0.0)
+    l1 = selectnode(fens;
+        box = [0 0 -100 * W 100 * W -100 * W 100 * W],
+        inflate = tolerance)
+    e1 = FDataDict("node_list" => l1, "component" => 1, "displacement" => 0.0)
+    e2 = FDataDict("node_list" => l1, "component" => 2, "displacement" => 0.0)
+    e3 = FDataDict("node_list" => l1, "component" => 3, "displacement" => 0.0)
 
     # Traction on the opposite edge
-    boundaryfes  =   meshboundary(fes);
-    Toplist   = selectelem(fens,boundaryfes, box =  [L L -100*W 100*W -100*W 100*W], inflate =   tolerance);
-    el1femm  = FEMMBase(IntegDomain(subset(boundaryfes,Toplist), GaussRule(2, 2)))
-    flux1 = FDataDict("femm"=>el1femm, "traction_vector"=>loadv)
-
+    boundaryfes = meshboundary(fes)
+    Toplist = selectelem(fens,
+        boundaryfes,
+        box = [L L -100 * W 100 * W -100 * W 100 * W],
+        inflate = tolerance)
+    el1femm = FEMMBase(IntegDomain(subset(boundaryfes, Toplist), GaussRule(2, 2)))
+    flux1 = FDataDict("femm" => el1femm, "traction_vector" => loadv)
 
     # Make the region
     MR = DeforModelRed3D
     material = MatDeforElastIso(MR, 00.0, E, nu, 0.0)
-    region1 = FDataDict("femm"=>FEMMDeforLinearMSH8(MR, IntegDomain(fes, GaussRule(3,2)),
-    material))
+    region1 = FDataDict("femm" => FEMMDeforLinearMSH8(MR, IntegDomain(fes, GaussRule(3, 2)),
+        material))
 
     # Make model data
-    modeldata =  FDataDict(
-    "fens"=> fens, "regions"=>  [region1],
-    "essential_bcs"=>[e1, e2, e3], "traction_bcs"=>  [flux1])
+    modeldata = FDataDict("fens" => fens, "regions" => [region1],
+        "essential_bcs" => [e1, e2, e3], "traction_bcs" => [flux1])
 
-
-    AE = AbaqusExporter("twisted_beam");
-    HEADING(AE, "Twisted beam example");
-    PART(AE, "part1");
-    END_PART(AE);
-    ASSEMBLY(AE, "ASSEM1");
-    INSTANCE(AE, "INSTNC1", "PART1");
-    NODE(AE, fens.xyz);
+    AE = AbaqusExporter("twisted_beam")
+    HEADING(AE, "Twisted beam example")
+    PART(AE, "part1")
+    END_PART(AE)
+    ASSEMBLY(AE, "ASSEM1")
+    INSTANCE(AE, "INSTNC1", "PART1")
+    NODE(AE, fens.xyz)
     ELEMENT(AE, "c3d8rh", "AllElements", 1, region1["femm"].integdomain.fes.conn)
     ELEMENT(AE, "SFM3D4", "TractionElements",
-    1+count(region1["femm"].integdomain.fes), flux1["femm"].integdomain.fes.conn)
+        1 + count(region1["femm"].integdomain.fes), flux1["femm"].integdomain.fes.conn)
     NSET_NSET(AE, "l1", l1)
-    ORIENTATION(AE, "GlobalOrientation", vec([1. 0 0]), vec([0 1. 0]));
-    SOLID_SECTION(AE, "elasticity", "GlobalOrientation", "AllElements", "Hourglassctl");
+    ORIENTATION(AE, "GlobalOrientation", vec([1.0 0 0]), vec([0 1.0 0]))
+    SOLID_SECTION(AE, "elasticity", "GlobalOrientation", "AllElements", "Hourglassctl")
     SURFACE_SECTION(AE, "TractionElements")
-    END_INSTANCE(AE);
-    END_ASSEMBLY(AE);
+    END_INSTANCE(AE)
+    END_ASSEMBLY(AE)
     MATERIAL(AE, "elasticity")
     ELASTIC(AE, E, nu)
     SECTION_CONTROLS(AE, "Hourglassctl", "HOURGLASS=ENHANCED")
@@ -301,71 +332,79 @@ function twisted_beam_export()
     true
 end # twisted_beam_export
 
-
 function twisted_beam_export_nb()
-    E = 0.29e8;
-    nu = 0.22;
-    W = 1.1;
-    L = 12.;
-    t =  0.32;
-    nl = 2; nt = 1; nw = 1; ref = 4;
-    p =   1/W/t;
+    E = 0.29e8
+    nu = 0.22
+    W = 1.1
+    L = 12.0
+    t = 0.32
+    nl = 2
+    nt = 1
+    nw = 1
+    ref = 4
+    p = 1 / W / t
     #  Loading in the Z direction
-    loadv = [0;0;p]; dir = 3; uex = 0.005424534868469; # Harder: 5.424e-3;
+    loadv = [0; 0; p]
+    dir = 3
+    uex = 0.005424534868469 # Harder: 5.424e-3;
     #   Loading in the Y direction
     #loadv = [0;p;0]; dir = 2; uex = 0.001753248285256; # Harder: 1.754e-3;
-    tolerance  = t/1000;
+    tolerance = t / 1000
 
-    fens,fes  = H8block(L,W,t, nl*ref,nw*ref,nt*ref)
+    fens, fes = H8block(L, W, t, nl * ref, nw * ref, nt * ref)
 
     # Reshape into a twisted beam shape
-    for i = 1:count(fens)
-        a = fens.xyz[i,1]/L*(pi/2); y = fens.xyz[i,2]-(W/2); z = fens.xyz[i,3]-(t/2);
-        fens.xyz[i,:] = [fens.xyz[i,1],y*cos(a)-z*sin(a),y*sin(a)+z*cos(a)];
+    for i in 1:count(fens)
+        a = fens.xyz[i, 1] / L * (pi / 2)
+        y = fens.xyz[i, 2] - (W / 2)
+        z = fens.xyz[i, 3] - (t / 2)
+        fens.xyz[i, :] = [fens.xyz[i, 1], y * cos(a) - z * sin(a), y * sin(a) + z * cos(a)]
     end
 
     # Clamped end of the beam
-    l1  = selectnode(fens; box = [0 0 -100*W 100*W -100*W 100*W], inflate  =  tolerance)
-    e1 = FDataDict("node_list"=>l1, "component"=>1, "displacement"=>0.0)
-    e2 = FDataDict("node_list"=>l1, "component"=>2, "displacement"=>0.0)
-    e3 = FDataDict("node_list"=>l1, "component"=>3, "displacement"=>0.0)
+    l1 = selectnode(fens;
+        box = [0 0 -100 * W 100 * W -100 * W 100 * W],
+        inflate = tolerance)
+    e1 = FDataDict("node_list" => l1, "component" => 1, "displacement" => 0.0)
+    e2 = FDataDict("node_list" => l1, "component" => 2, "displacement" => 0.0)
+    e3 = FDataDict("node_list" => l1, "component" => 3, "displacement" => 0.0)
 
     # Traction on the opposite edge
-    boundaryfes  =   meshboundary(fes);
-    Toplist   = selectelem(fens,boundaryfes, box =  [L L -100*W 100*W -100*W 100*W], inflate =   tolerance);
-    el1femm  = FEMMBase(IntegDomain(subset(boundaryfes,Toplist), GaussRule(2, 2)))
-    flux1 = FDataDict("femm"=>el1femm, "traction_vector"=>loadv)
-
+    boundaryfes = meshboundary(fes)
+    Toplist = selectelem(fens,
+        boundaryfes,
+        box = [L L -100 * W 100 * W -100 * W 100 * W],
+        inflate = tolerance)
+    el1femm = FEMMBase(IntegDomain(subset(boundaryfes, Toplist), GaussRule(2, 2)))
+    flux1 = FDataDict("femm" => el1femm, "traction_vector" => loadv)
 
     # Make the region
     MR = DeforModelRed3D
     material = MatDeforElastIso(MR, 00.0, E, nu, 0.0)
-    region1 = FDataDict("femm"=>FEMMDeforLinearMSH8(MR, IntegDomain(fes, GaussRule(3,2)),
-    material))
+    region1 = FDataDict("femm" => FEMMDeforLinearMSH8(MR, IntegDomain(fes, GaussRule(3, 2)),
+        material))
 
     # Make model data
-    modeldata =  FDataDict(
-    "fens"=> fens, "regions"=>  [region1],
-    "essential_bcs"=>[e1, e2, e3], "traction_bcs"=>  [flux1])
+    modeldata = FDataDict("fens" => fens, "regions" => [region1],
+        "essential_bcs" => [e1, e2, e3], "traction_bcs" => [flux1])
 
-
-    AE = AbaqusExporter("twisted_beam");
+    AE = AbaqusExporter("twisted_beam")
     # AE.ios = STDOUT;
-    HEADING(AE, "Twisted beam example");
-    PART(AE, "part1");
-    END_PART(AE);
-    ASSEMBLY(AE, "ASSEM1");
-    INSTANCE(AE, "INSTNC1", "PART1");
-    NODE(AE, fens.xyz);
+    HEADING(AE, "Twisted beam example")
+    PART(AE, "part1")
+    END_PART(AE)
+    ASSEMBLY(AE, "ASSEM1")
+    INSTANCE(AE, "INSTNC1", "PART1")
+    NODE(AE, fens.xyz)
     ELEMENT(AE, "c3d8rh", "AllElements", 1, region1["femm"].integdomain.fes.conn)
     ELEMENT(AE, "SFM3D4", "TractionElements",
-    1+count(region1["femm"].integdomain.fes), flux1["femm"].integdomain.fes.conn)
+        1 + count(region1["femm"].integdomain.fes), flux1["femm"].integdomain.fes.conn)
     NSET_NSET(AE, "l1", l1)
-    ORIENTATION(AE, "GlobalOrientation", vec([1. 0 0]), vec([0 1. 0]));
-    SOLID_SECTION(AE, "elasticity", "GlobalOrientation", "AllElements", "Hourglassctl");
+    ORIENTATION(AE, "GlobalOrientation", vec([1.0 0 0]), vec([0 1.0 0]))
+    SOLID_SECTION(AE, "elasticity", "GlobalOrientation", "AllElements", "Hourglassctl")
     SURFACE_SECTION(AE, "TractionElements")
-    END_INSTANCE(AE);
-    END_ASSEMBLY(AE);
+    END_INSTANCE(AE)
+    END_ASSEMBLY(AE)
     MATERIAL(AE, "elasticity")
     ELASTIC(AE, E, nu)
     SECTION_CONTROLS(AE, "Hourglassctl", "HOURGLASS=ENHANCED")
@@ -376,58 +415,65 @@ function twisted_beam_export_nb()
     DLOAD(AE, "ASSEM1.INSTNC1.TractionElements", vec(flux1["traction_vector"]))
     END_STEP(AE)
     close(AE)
-
 end # twisted_beam_export_nb
 
-
 function twisted_beam_msh8(dir = 2, ref = 7)
-    E = 0.29e8;
-    nu = 0.22;
-    W = 1.1;
-    L = 12.;
-    t =  0.0032;
-    nl = 12; nt = 1; nw = 1; 
-    p =   1/W/t;
+    E = 0.29e8
+    nu = 0.22
+    W = 1.1
+    L = 12.0
+    t = 0.0032
+    nl = 12
+    nt = 1
+    nw = 1
+    p = 1 / W / t
     if dir == 3
         #  Loading in the Z direction
-        loadv = [0;0;p]; uex = 0.005424534868469; # Harder: 5.424e-3;
+        loadv = [0; 0; p]
+        uex = 0.005424534868469 # Harder: 5.424e-3;
     else
         #   Loading in the Y direction
-        loadv = [0;p;0]; uex = 0.001753248285256; # Harder: 1.754e-3;
+        loadv = [0; p; 0]
+        uex = 0.001753248285256 # Harder: 1.754e-3;
     end
-    tolerance  = t/1000;
+    tolerance = t / 1000
 
-    fens,fes  = H8block(L,W,t, nl*ref, nw*ref, nt*ref)
+    fens, fes = H8block(L, W, t, nl * ref, nw * ref, nt * ref)
 
     # Reshape into a twisted beam shape
-    for i = 1:count(fens)
-        a = fens.xyz[i,1]/L*(pi/2); y = fens.xyz[i,2]-(W/2); z = fens.xyz[i,3]-(t/2);
-        fens.xyz[i,:] = [fens.xyz[i,1],y*cos(a)-z*sin(a),y*sin(a)+z*cos(a)];
+    for i in 1:count(fens)
+        a = fens.xyz[i, 1] / L * (pi / 2)
+        y = fens.xyz[i, 2] - (W / 2)
+        z = fens.xyz[i, 3] - (t / 2)
+        fens.xyz[i, :] = [fens.xyz[i, 1], y * cos(a) - z * sin(a), y * sin(a) + z * cos(a)]
     end
 
     # Clamped end of the beam
-    l1  = selectnode(fens; box = [0 0 -100*W 100*W -100*W 100*W], inflate  =  tolerance)
-    e1 = FDataDict("node_list"=>l1, "component"=>1, "displacement"=>0.0)
-    e2 = FDataDict("node_list"=>l1, "component"=>2, "displacement"=>0.0)
-    e3 = FDataDict("node_list"=>l1, "component"=>3, "displacement"=>0.0)
+    l1 = selectnode(fens;
+        box = [0 0 -100 * W 100 * W -100 * W 100 * W],
+        inflate = tolerance)
+    e1 = FDataDict("node_list" => l1, "component" => 1, "displacement" => 0.0)
+    e2 = FDataDict("node_list" => l1, "component" => 2, "displacement" => 0.0)
+    e3 = FDataDict("node_list" => l1, "component" => 3, "displacement" => 0.0)
 
     # Traction on the opposite edge
-    boundaryfes  =   meshboundary(fes);
-    Toplist   = selectelem(fens,boundaryfes, box =  [L L -100*W 100*W -100*W 100*W], inflate =   tolerance);
-    el1femm  = FEMMBase(IntegDomain(subset(boundaryfes,Toplist), GaussRule(2, 2)))
-    flux1 = FDataDict("femm"=>el1femm, "traction_vector"=>loadv)
-
+    boundaryfes = meshboundary(fes)
+    Toplist = selectelem(fens,
+        boundaryfes,
+        box = [L L -100 * W 100 * W -100 * W 100 * W],
+        inflate = tolerance)
+    el1femm = FEMMBase(IntegDomain(subset(boundaryfes, Toplist), GaussRule(2, 2)))
+    flux1 = FDataDict("femm" => el1femm, "traction_vector" => loadv)
 
     # Make the region
     MR = DeforModelRed3D
     material = MatDeforElastIso(MR, 00.0, E, nu, 0.0)
-    region1 = FDataDict("femm"=>FEMMDeforLinearMSH8(MR, IntegDomain(fes, GaussRule(3,2)),
-    material))
+    region1 = FDataDict("femm" => FEMMDeforLinearMSH8(MR, IntegDomain(fes, GaussRule(3, 2)),
+        material))
 
     # Make model data
-    modeldata =  FDataDict(
-    "fens"=> fens, "regions"=>  [region1],
-    "essential_bcs"=>[e1, e2, e3], "traction_bcs"=>  [flux1])
+    modeldata = FDataDict("fens" => fens, "regions" => [region1],
+        "essential_bcs" => [e1, e2, e3], "traction_bcs" => [flux1])
 
     # Call the solver
     modeldata = AlgoDeforLinearModule.linearstatics(modeldata)
@@ -435,95 +481,108 @@ function twisted_beam_msh8(dir = 2, ref = 7)
     u = modeldata["u"]
 
     # Extract the solution
-    nl = selectnode(fens, box = [L L -100*W 100*W -100*W 100*W],inflate = tolerance);
-    theutip = mean(u.values[nl,:],dims=1)
+    nl = selectnode(fens,
+        box = [L L -100 * W 100 * W -100 * W 100 * W],
+        inflate = tolerance)
+    theutip = mean(u.values[nl, :], dims = 1)
     println("displacement  = $(theutip[dir]) as compared to converged $uex")
 
     # Write out mesh with displacements
-    modeldata["postprocessing"] = FDataDict("file"=>"twisted_beam_msh8")
+    modeldata["postprocessing"] = FDataDict("file" => "twisted_beam_msh8")
     modeldata = AlgoDeforLinearModule.exportdeformation(modeldata)
 
     # Write out mesh with stresses
-    modeldata["postprocessing"] = FDataDict("file"=>"twisted_beam_msh8",
-    "quantity"=> :Cauchy, "component"=> :xy)
+    modeldata["postprocessing"] = FDataDict("file" => "twisted_beam_msh8",
+        "quantity" => :Cauchy, "component" => :xy)
     modeldata = AlgoDeforLinearModule.exportstress(modeldata)
 
     # Write out mesh with stresses
-    modeldata["postprocessing"] = FDataDict("file"=>"twisted_beam_msh8",
-    "quantity"=> :Cauchy, "component"=> :xz)
+    modeldata["postprocessing"] = FDataDict("file" => "twisted_beam_msh8",
+        "quantity" => :Cauchy, "component" => :xz)
     modeldata = AlgoDeforLinearModule.exportstress(modeldata)
 
     # Write out mesh with von Mises stresses
-    modeldata["postprocessing"] = FDataDict("file"=>"twisted_beam_msh8",
-    "quantity"=> :vm)
+    modeldata["postprocessing"] = FDataDict("file" => "twisted_beam_msh8",
+        "quantity" => :vm)
     modeldata = AlgoDeforLinearModule.exportstress(modeldata)
-    vm  = modeldata["postprocessing"]["exported"][1]["field"]
+    vm = modeldata["postprocessing"]["exported"][1]["field"]
     println("extremes of vm, nodal: $([minimum(vm.values),   maximum(vm.values)])")
 
     # Write out mesh with von Mises stresses, elementwise
-    modeldata["postprocessing"] = FDataDict("file"=>"twisted_beam_msh8-ew",
-    "quantity"=> :vm)
+    modeldata["postprocessing"] = FDataDict("file" => "twisted_beam_msh8-ew",
+        "quantity" => :vm)
     modeldata = AlgoDeforLinearModule.exportstresselementwise(modeldata)
-    vm  = modeldata["postprocessing"]["exported"][1]["field"]
+    vm = modeldata["postprocessing"]["exported"][1]["field"]
     println("extremes of vm, elemental: $([minimum(vm.values),   maximum(vm.values)])")
 
     # Write out mesh with von Mises stresses, elementwise
-    modeldata["postprocessing"] = FDataDict("file"=>"twisted_beam_msh8-ew",
-    "quantity"=> :Cauchy, "component"=> :xz)
+    modeldata["postprocessing"] = FDataDict("file" => "twisted_beam_msh8-ew",
+        "quantity" => :Cauchy, "component" => :xz)
     modeldata = AlgoDeforLinearModule.exportstresselementwise(modeldata)
 
     println("Done")
     true
 end # twisted_beam_msh8
 
-
 function twisted_beam_msh8_algo_stress()
     println("""
-    
+
     """)
-    E = 0.29e8;
-    nu = 0.22;
-    W = 1.1;
-    L = 12.;
-    t =  0.32;
-    nl = 2; nt = 1; nw = 1; ref = 4;
-    p =   1/W/t;
+    E = 0.29e8
+    nu = 0.22
+    W = 1.1
+    L = 12.0
+    t = 0.32
+    nl = 2
+    nt = 1
+    nw = 1
+    ref = 4
+    p = 1 / W / t
     #  Loading in the Z direction
-    loadv = [0;0;p]; dir = 3; uex = 0.005424534868469; # Harder: 5.424e-3;
+    loadv = [0; 0; p]
+    dir = 3
+    uex = 0.005424534868469 # Harder: 5.424e-3;
     #   Loading in the Y direction
     #loadv = [0;p;0]; dir = 2; uex = 0.001753248285256; # Harder: 1.754e-3;
-    tolerance  = t/1000;
+    tolerance = t / 1000
 
-    fens,fes  = H8block(L,W,t, nl*ref,nw*ref,nt*ref)
+    fens, fes = H8block(L, W, t, nl * ref, nw * ref, nt * ref)
 
     # Reshape into a twisted beam shape
-    for i = 1:count(fens)
-        a = fens.xyz[i,1]/L*(pi/2); y = fens.xyz[i,2]-(W/2); z = fens.xyz[i,3]-(t/2);
-        fens.xyz[i,:] = [fens.xyz[i,1],y*cos(a)-z*sin(a),y*sin(a)+z*cos(a)];
+    for i in 1:count(fens)
+        a = fens.xyz[i, 1] / L * (pi / 2)
+        y = fens.xyz[i, 2] - (W / 2)
+        z = fens.xyz[i, 3] - (t / 2)
+        fens.xyz[i, :] = [fens.xyz[i, 1], y * cos(a) - z * sin(a), y * sin(a) + z * cos(a)]
     end
 
     # Clamped end of the beam
-    l1  = selectnode(fens; box = [0 0 -100*W 100*W -100*W 100*W], inflate  =  tolerance)
-    e1 = FDataDict("node_list"=>l1, "component"=>1, "displacement"=>0.0)
-    e2 = FDataDict("node_list"=>l1, "component"=>2, "displacement"=>0.0)
-    e3 = FDataDict("node_list"=>l1, "component"=>3, "displacement"=>0.0)
+    l1 = selectnode(fens;
+        box = [0 0 -100 * W 100 * W -100 * W 100 * W],
+        inflate = tolerance)
+    e1 = FDataDict("node_list" => l1, "component" => 1, "displacement" => 0.0)
+    e2 = FDataDict("node_list" => l1, "component" => 2, "displacement" => 0.0)
+    e3 = FDataDict("node_list" => l1, "component" => 3, "displacement" => 0.0)
 
     # Traction on the opposite edge
-    boundaryfes  =   meshboundary(fes);
-    Toplist   = selectelem(fens,boundaryfes, box =  [L L -100*W 100*W -100*W 100*W], inflate =   tolerance);
-    el1femm  = FEMMBase(IntegDomain(subset(boundaryfes,Toplist), GaussRule(2, 2)))
-    flux1 = FDataDict("femm"=>el1femm, "traction_vector"=>loadv)
-
+    boundaryfes = meshboundary(fes)
+    Toplist = selectelem(fens,
+        boundaryfes,
+        box = [L L -100 * W 100 * W -100 * W 100 * W],
+        inflate = tolerance)
+    el1femm = FEMMBase(IntegDomain(subset(boundaryfes, Toplist), GaussRule(2, 2)))
+    flux1 = FDataDict("femm" => el1femm, "traction_vector" => loadv)
 
     # Make the region
     MR = DeforModelRed3D
     material = MatDeforElastIso(MR, 00.0, E, nu, 0.0)
-    region1 = FDataDict("femm"=>FEMMDeforLinearMSH8(MR, IntegDomain(fes, GaussRule(3,2)),    material))
+    region1 = FDataDict("femm" => FEMMDeforLinearMSH8(MR,
+        IntegDomain(fes, GaussRule(3, 2)),
+        material))
 
     # Make model data
-    modeldata =  FDataDict(
-    "fens"=> fens, "regions"=>  [region1],
-    "essential_bcs"=>[e1, e2, e3], "traction_bcs"=>  [flux1])
+    modeldata = FDataDict("fens" => fens, "regions" => [region1],
+        "essential_bcs" => [e1, e2, e3], "traction_bcs" => [flux1])
 
     # Call the solver
     modeldata = AlgoDeforLinearModule.linearstatics(modeldata)
@@ -531,61 +590,63 @@ function twisted_beam_msh8_algo_stress()
     u = modeldata["u"]
 
     # Extract the solution
-    nl = selectnode(fens, box = [L L -100*W 100*W -100*W 100*W],inflate = tolerance);
-    theutip = mean(u.values[nl,:],dims=1)
+    nl = selectnode(fens,
+        box = [L L -100 * W 100 * W -100 * W 100 * W],
+        inflate = tolerance)
+    theutip = mean(u.values[nl, :], dims = 1)
     println("displacement  = $(theutip[dir]) as compared to converged $uex")
     println("normalized displacement  = $(theutip[dir]/uex*100) %")
 
     # Write out mesh with displacements
-    modeldata["postprocessing"] = FDataDict("file"=>"twisted_beam")
+    modeldata["postprocessing"] = FDataDict("file" => "twisted_beam")
     modeldata = AlgoDeforLinearModule.exportdeformation(modeldata)
 
     # Write out mesh with stresses
-    modeldata["postprocessing"] = FDataDict("file"=>"twisted_beam",
-    "quantity"=> :Cauchy, "component"=> :xy)
+    modeldata["postprocessing"] = FDataDict("file" => "twisted_beam",
+        "quantity" => :Cauchy, "component" => :xy)
     modeldata = AlgoDeforLinearModule.exportstress(modeldata)
 
     # Write out mesh with stresses
-    modeldata["postprocessing"] = FDataDict("file"=>"twisted_beam",
-    "quantity"=> :Cauchy, "component"=> :xz)
+    modeldata["postprocessing"] = FDataDict("file" => "twisted_beam",
+        "quantity" => :Cauchy, "component" => :xz)
     modeldata = AlgoDeforLinearModule.exportstress(modeldata)
 
     # Write out mesh with von Mises stresses
-    modeldata["postprocessing"] = FDataDict("file"=>"twisted_beam",
-    "quantity"=> :vm)
+    modeldata["postprocessing"] = FDataDict("file" => "twisted_beam",
+        "quantity" => :vm)
     modeldata = AlgoDeforLinearModule.exportstress(modeldata)
 
     # Write out mesh with von Mises stresses, elementwise
-    modeldata["postprocessing"] = FDataDict("file"=>"twisted_beam-ew",
-    "quantity"=> :vm)
+    modeldata["postprocessing"] = FDataDict("file" => "twisted_beam-ew",
+        "quantity" => :vm)
     modeldata = AlgoDeforLinearModule.exportstresselementwise(modeldata)
-    vm  = modeldata["postprocessing"]["exported"][1]["field"]
+    vm = modeldata["postprocessing"]["exported"][1]["field"]
     println("extremes of von Mises: $([minimum(vm.values),   maximum(vm.values)])")
 
     # Write out mesh with von Mises stresses, elementwise
-    modeldata["postprocessing"] = FDataDict("file"=>"twisted_beam-ew",
-    "quantity"=> :Cauchy, "component"=> :xz)
+    modeldata["postprocessing"] = FDataDict("file" => "twisted_beam-ew",
+        "quantity" => :Cauchy, "component" => :xz)
     modeldata = AlgoDeforLinearModule.exportstresselementwise(modeldata)
 
     # Write out mesh with principal stresses, elementwise
-    modeldata["postprocessing"] = FDataDict("file"=>"twisted_beam-principal-1-ew",
-    "quantity"=> :princCauchy, "component"=> 1)
+    modeldata["postprocessing"] = FDataDict("file" => "twisted_beam-principal-1-ew",
+        "quantity" => :princCauchy, "component" => 1)
     modeldata = AlgoDeforLinearModule.exportstresselementwise(modeldata)
-    ps  = modeldata["postprocessing"]["exported"][1]["field"]
+    ps = modeldata["postprocessing"]["exported"][1]["field"]
     println("extremes of first principal stress: $([minimum(ps.values),   maximum(ps.values)])")
 
     # Write out mesh with principal stresses, elementwise
-    modeldata["postprocessing"] = FDataDict("file"=>"twisted_beam-principal-3-ew",
-    "quantity"=> :princCauchy, "component"=> 3)
+    modeldata["postprocessing"] = FDataDict("file" => "twisted_beam-principal-3-ew",
+        "quantity" => :princCauchy, "component" => 3)
     modeldata = AlgoDeforLinearModule.exportstresselementwise(modeldata)
-    ps  = modeldata["postprocessing"]["exported"][1]["field"]
+    ps = modeldata["postprocessing"]["exported"][1]["field"]
     println("extremes of third principal stress: $([minimum(ps.values),   maximum(ps.values)])")
 
     # Write out mesh with principal stresses, elementwise
-    modeldata["postprocessing"] = FDataDict("file"=>"twisted_beam-press-ew",
-    "quantity"=> :pressure, "component"=> 1)
+    modeldata["postprocessing"] = FDataDict("file" => "twisted_beam-press-ew",
+        "quantity" => :pressure, "component" => 1)
     modeldata = AlgoDeforLinearModule.exportstresselementwise(modeldata)
-    ps  = modeldata["postprocessing"]["exported"][1]["field"]
+    ps = modeldata["postprocessing"]["exported"][1]["field"]
     println("extremes of pressure: $([minimum(ps.values),   maximum(ps.values)])")
 
     println("Done")
@@ -617,7 +678,5 @@ end # function allrun
 @info "All examples may be executed with "
 println("using .$(@__MODULE__); $(@__MODULE__).allrun()")
 
-
 end # module stubby_corbel_examples
 nothing
-    

@@ -15,7 +15,6 @@ using LinearAlgebra: Symmetric, cholesky, norm
 #     Thickness = Thick0
 #     tolerance = Thickness/2^ref/300.; # Geometrical tolerance
 
-
 #     fens,fes = T10block(1.0, pi/2, Thickness, 2^ref*5, 2^ref*6, 1; orientation = :b)
 #     for i=1:count(fens)
 #         t=fens.xyz[i,1]; a=fens.xyz[i,2]; z=fens.xyz[i,3]
@@ -40,7 +39,6 @@ using LinearAlgebra: Symmetric, cholesky, norm
 #     FinEtools.MeshExportModule.T10)
 #     @async run(`"paraview.exe" $File`)
 
-
 #     #
 #     # fens,fes = H8block(1.0, pi/2, Thickness, 2^ref*5, 2^ref*6, 1)
 #     # for i=1:count(fens)
@@ -61,59 +59,68 @@ using LinearAlgebra: Symmetric, cholesky, norm
 #     #                FinEtools.MeshExportModule.H8)
 #     # @async run(`"paraview.exe" $File`)
 
-
 #     true
 
 # end # LE1NAFEMS_compare_meshes
 
-
 function LE1NAFEMS_MSH8()
-    println("LE1NAFEMS, 3D version."        )
+    println("LE1NAFEMS, 3D version.")
     t0 = time()
 
-    E = 210e3*phun("MEGA*PA");# 210e3 MPa
-    nu = 0.3;
-    p = 10*phun("MEGA*PA");# 10 MPA Outward pressure on the outside ellipse
-    sigma_yD = 92.7*phun("MEGA*PA");# tensile stress at [2.0, 0.0] meters
-    Radius = 1.0*phun("m")
-    Thickness = 0.1*phun("m")
-    n = 2; # number of elements per side
-    tolerance = 1.0/n/1000.; # Geometrical tolerance
+    E = 210e3 * phun("MEGA*PA")# 210e3 MPa
+    nu = 0.3
+    p = 10 * phun("MEGA*PA")# 10 MPA Outward pressure on the outside ellipse
+    sigma_yD = 92.7 * phun("MEGA*PA")# tensile stress at [2.0, 0.0] meters
+    Radius = 1.0 * phun("m")
+    Thickness = 0.1 * phun("m")
+    n = 2 # number of elements per side
+    tolerance = 1.0 / n / 1000.0 # Geometrical tolerance
 
-    fens,fes = Q4block(1.0, pi/2, n, n*2)
-    fens,fes  = H8extrudeQ4(fens, fes,
-    1, (xyz, layer)->[xyz[1], xyz[2], (layer)*Thickness]);
+    fens, fes = Q4block(1.0, pi / 2, n, n * 2)
+    fens, fes = H8extrudeQ4(fens, fes,
+        1, (xyz, layer) -> [xyz[1], xyz[2], (layer) * Thickness])
 
-    bdryfes = meshboundary(fes);
-    icl = selectelem(fens, bdryfes, box=[1.0, 1.0, 0.0, pi/2, 0.0, Thickness], inflate=tolerance);
-    for i=1:count(fens)
-        t=fens.xyz[i,1]; a=fens.xyz[i,2]; z=fens.xyz[i,3]
-        fens.xyz[i,:]=[(t*3.25+(1-t)*2)*cos(a), (t*2.75+(1-t)*1)*sin(a), z];
+    bdryfes = meshboundary(fes)
+    icl = selectelem(fens,
+        bdryfes,
+        box = [1.0, 1.0, 0.0, pi / 2, 0.0, Thickness],
+        inflate = tolerance)
+    for i in 1:count(fens)
+        t = fens.xyz[i, 1]
+        a = fens.xyz[i, 2]
+        z = fens.xyz[i, 3]
+        fens.xyz[i, :] = [
+            (t * 3.25 + (1 - t) * 2) * cos(a),
+            (t * 2.75 + (1 - t) * 1) * sin(a),
+            z,
+        ]
     end
 
-
     geom = NodalField(fens.xyz)
-    u = NodalField(zeros(size(fens.xyz,1),3)) # displacement field
+    u = NodalField(zeros(size(fens.xyz, 1), 3)) # displacement field
 
-    l1 =selectnode(fens; box=[0.0, Inf, 0.0, 0.0, 0.0, Thickness], inflate = tolerance)
-    setebc!(u,l1,true, 2, 0.0)
-    l1 =selectnode(fens; box=[0.0, 0.0, 0.0, Inf, 0.0, Thickness], inflate = tolerance)
-    setebc!(u,l1,true, 1, 0.0)
-    l1 =selectnode(fens; box=[0.0, Inf, 0.0, Inf, 0.0, 0.0], inflate = tolerance)
-    setebc!(u,l1,true, 3, 0.0)
+    l1 = selectnode(fens; box = [0.0, Inf, 0.0, 0.0, 0.0, Thickness], inflate = tolerance)
+    setebc!(u, l1, true, 2, 0.0)
+    l1 = selectnode(fens; box = [0.0, 0.0, 0.0, Inf, 0.0, Thickness], inflate = tolerance)
+    setebc!(u, l1, true, 1, 0.0)
+    l1 = selectnode(fens; box = [0.0, Inf, 0.0, Inf, 0.0, 0.0], inflate = tolerance)
+    setebc!(u, l1, true, 3, 0.0)
 
     applyebc!(u)
     numberdofs!(u)
 
-
-    el1femm =  FEMMBase(IntegDomain(subset(bdryfes,icl), GaussRule(2, 2)))
-    function pfun(forceout::FVec{T}, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) where {T}
-        pt= [2.75/3.25*XYZ[1], 3.25/2.75*XYZ[2], 0.0]
-        forceout .=    vec(p*pt/norm(pt));
+    el1femm = FEMMBase(IntegDomain(subset(bdryfes, icl), GaussRule(2, 2)))
+    function pfun(forceout::FVec{T},
+        XYZ::FFltMat,
+        tangents::FFltMat,
+        feid::FInt,
+        qpid::FInt) where {T}
+        pt = [2.75 / 3.25 * XYZ[1], 3.25 / 2.75 * XYZ[2], 0.0]
+        forceout .= vec(p * pt / norm(pt))
         return forceout
     end
-    fi = ForceIntensity(Float64, 3, pfun);
-    F2 = distribloads(el1femm, geom, u, fi, 2);
+    fi = ForceIntensity(Float64, 3, pfun)
+    F2 = distribloads(el1femm, geom, u, fi, 2)
 
     # Note that the material object needs to be created with the proper
     # model-dimension reduction in mind.  In this case that is the fully three-dimensional solid.
@@ -129,51 +136,67 @@ function LE1NAFEMS_MSH8()
     K = stiffness(femm, geom, u)
     u = solve_blocked!(u, K, F2)
 
-    nl = selectnode(fens, box=[2.0, 2.0, 0.0, 0.0, 0.0, 0.0],inflate=tolerance);
-    thecorneru = zeros(FFlt,1,3)
-    gathervalues_asmat!(u, thecorneru, nl);
-    thecorneru = thecorneru/phun("mm")
+    nl = selectnode(fens, box = [2.0, 2.0, 0.0, 0.0, 0.0, 0.0], inflate = tolerance)
+    thecorneru = zeros(FFlt, 1, 3)
+    gathervalues_asmat!(u, thecorneru, nl)
+    thecorneru = thecorneru / phun("mm")
     println("$(time()-t0) [s];  displacement =$(thecorneru) [MM] as compared to reference [-0.10215,0] [MM]")
 
+    fld = fieldfromintegpoints(femm, geom, u, :Cauchy, 2;
+        nodevalmethod = :averaging, reportat = :meanonly)
+    println("Sigma_y =$(fld.values[nl,1][1]/phun("MPa")) as compared to reference sigma_yD = $(sigma_yD/phun("MPa")) [MPa]")
+    fld = fieldfromintegpoints(femm, geom, u, :Cauchy, 2;
+        nodevalmethod = :averaging, reportat = :extrapmean)
+    println("Sigma_y =$(fld.values[nl,1][1]/phun("MPa")) as compared to reference sigma_yD = $(sigma_yD/phun("MPa")) [MPa]")
+    fld = fieldfromintegpoints(femm, geom, u, :Cauchy, 2;
+        nodevalmethod = :averaging, reportat = :extraptrend)
+    println("Sigma_y =$(fld.values[nl,1][1]/phun("MPa")) as compared to reference sigma_yD = $(sigma_yD/phun("MPa")) [MPa]")
 
-    fld= fieldfromintegpoints(femm, geom, u, :Cauchy, 2;
-    nodevalmethod = :averaging, reportat = :meanonly)
+    fld = fieldfromintegpoints(femm,
+        geom,
+        u,
+        :Cauchy,
+        2;
+        nodevalmethod = :invdistance,
+        reportat = :meanonly)
     println("Sigma_y =$(fld.values[nl,1][1]/phun("MPa")) as compared to reference sigma_yD = $(sigma_yD/phun("MPa")) [MPa]")
-    fld= fieldfromintegpoints(femm, geom, u, :Cauchy, 2;
-    nodevalmethod = :averaging, reportat = :extrapmean)
+    fld = fieldfromintegpoints(femm,
+        geom,
+        u,
+        :Cauchy,
+        2;
+        nodevalmethod = :averaging,
+        reportat = :extrapmean)
     println("Sigma_y =$(fld.values[nl,1][1]/phun("MPa")) as compared to reference sigma_yD = $(sigma_yD/phun("MPa")) [MPa]")
-    fld= fieldfromintegpoints(femm, geom, u, :Cauchy, 2;
-    nodevalmethod = :averaging, reportat = :extraptrend)
-    println("Sigma_y =$(fld.values[nl,1][1]/phun("MPa")) as compared to reference sigma_yD = $(sigma_yD/phun("MPa")) [MPa]")
-
-    fld= fieldfromintegpoints(femm, geom, u, :Cauchy, 2; nodevalmethod = :invdistance, reportat = :meanonly)
-    println("Sigma_y =$(fld.values[nl,1][1]/phun("MPa")) as compared to reference sigma_yD = $(sigma_yD/phun("MPa")) [MPa]")
-    fld= fieldfromintegpoints(femm, geom, u, :Cauchy, 2; nodevalmethod = :averaging, reportat = :extrapmean)
-    println("Sigma_y =$(fld.values[nl,1][1]/phun("MPa")) as compared to reference sigma_yD = $(sigma_yD/phun("MPa")) [MPa]")
-    fld= fieldfromintegpoints(femm, geom, u, :Cauchy, 2; nodevalmethod = :averaging, reportat = :extraptrend)
+    fld = fieldfromintegpoints(femm,
+        geom,
+        u,
+        :Cauchy,
+        2;
+        nodevalmethod = :averaging,
+        reportat = :extraptrend)
     println("Sigma_y =$(fld.values[nl,1][1]/phun("MPa")) as compared to reference sigma_yD = $(sigma_yD/phun("MPa")) [MPa]")
 
     println("$(n), $(fld.values[nl,1][1]/phun("MPa"))")
 
-    File =  "a.vtk"
-    vtkexportmesh(File, fes.conn, geom.values, FinEtools.MeshExportModule.VTK.H8; vectors=[("u", u.values)],
-    scalars=[("sigmay", fld.values)])
+    File = "a.vtk"
+    vtkexportmesh(File, fes.conn, geom.values, FinEtools.MeshExportModule.VTK.H8;
+        vectors = [("u", u.values)],
+        scalars = [("sigmay", fld.values)])
     @async run(`"paraview.exe" $File`)
     true
-
 end # LE1NAFEMS_MSH8
-
 
 function LE1NAFEMS_MSH8_convergence()
     # Example from the "Improved Stress Recovery for Mean-strain Finite Elements" paper by Sivapuram and Krysl, 2017
-    println("LE1NAFEMS, 3D version. MSH8"        )
+    println("LE1NAFEMS, 3D version. MSH8")
     t0 = time()
 
-    E = 210e3*phun("MEGA*PA");# 210e3 MPa
-    nu = 0.3;
-    p = 10*phun("MEGA*PA");# 10 MPA Outward pressure on the outside ellipse
-    sigma_yD = 92.7*phun("MEGA*PA");# tensile stress at [2.0, 0.0] meters
-    Thick0 = 0.1*phun("m")/2.0 # to account for the symmetry reduction
+    E = 210e3 * phun("MEGA*PA")# 210e3 MPa
+    nu = 0.3
+    p = 10 * phun("MEGA*PA")# 10 MPA Outward pressure on the outside ellipse
+    sigma_yD = 92.7 * phun("MEGA*PA")# tensile stress at [2.0, 0.0] meters
+    Thick0 = 0.1 * phun("m") / 2.0 # to account for the symmetry reduction
 
     sigyderrs = Dict{Symbol, FFltVec}()
 
@@ -183,41 +206,56 @@ function LE1NAFEMS_MSH8_convergence()
         nnodes = []
         for ref in 0:1:4
             # Thickness = Thick0
-            Thickness = Thick0/2^ref
-            tolerance = Thickness/2^ref/1000.; # Geometrical tolerance
+            Thickness = Thick0 / 2^ref
+            tolerance = Thickness / 2^ref / 1000.0 # Geometrical tolerance
 
-            fens,fes = H8block(1.0, pi/2, Thickness, 2^ref*5, 2^ref*6, 1)
+            fens, fes = H8block(1.0, pi / 2, Thickness, 2^ref * 5, 2^ref * 6, 1)
 
-            bdryfes = meshboundary(fes);
-            icl = selectelem(fens, bdryfes, box=[1.0, 1.0, 0.0, pi/2, 0.0, Thickness], inflate=tolerance);
-            for i=1:count(fens)
-                t=fens.xyz[i,1]; a=fens.xyz[i,2]; z=fens.xyz[i,3]
-                fens.xyz[i,:]=[(t*3.25+(1-t)*2)*cos(a), (t*2.75+(1-t)*1)*sin(a), z];
+            bdryfes = meshboundary(fes)
+            icl = selectelem(fens,
+                bdryfes,
+                box = [1.0, 1.0, 0.0, pi / 2, 0.0, Thickness],
+                inflate = tolerance)
+            for i in 1:count(fens)
+                t = fens.xyz[i, 1]
+                a = fens.xyz[i, 2]
+                z = fens.xyz[i, 3]
+                fens.xyz[i, :] = [
+                    (t * 3.25 + (1 - t) * 2) * cos(a),
+                    (t * 2.75 + (1 - t) * 1) * sin(a),
+                    z,
+                ]
             end
 
-
             geom = NodalField(fens.xyz)
-            u = NodalField(zeros(size(fens.xyz,1),3)) # displacement field
+            u = NodalField(zeros(size(fens.xyz, 1), 3)) # displacement field
 
-            l1 =selectnode(fens; box=[0.0, Inf, 0.0, 0.0, 0.0, Thickness], inflate = tolerance)
-            setebc!(u,l1,true, 2, 0.0)
-            l1 =selectnode(fens; box=[0.0, 0.0, 0.0, Inf, 0.0, Thickness], inflate = tolerance)
-            setebc!(u,l1,true, 1, 0.0)
-            l1 =selectnode(fens; box=[0.0, Inf, 0.0, Inf, 0.0, 0.0], inflate = tolerance)
-            setebc!(u,l1,true, 3, 0.0)
+            l1 = selectnode(fens;
+                box = [0.0, Inf, 0.0, 0.0, 0.0, Thickness],
+                inflate = tolerance)
+            setebc!(u, l1, true, 2, 0.0)
+            l1 = selectnode(fens;
+                box = [0.0, 0.0, 0.0, Inf, 0.0, Thickness],
+                inflate = tolerance)
+            setebc!(u, l1, true, 1, 0.0)
+            l1 = selectnode(fens; box = [0.0, Inf, 0.0, Inf, 0.0, 0.0], inflate = tolerance)
+            setebc!(u, l1, true, 3, 0.0)
 
             applyebc!(u)
             numberdofs!(u)
 
-
-            el1femm =  FEMMBase(IntegDomain(subset(bdryfes,icl), GaussRule(2, 2)))
-            function pfun(forceout::FVec{T}, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) where {T}
-                pt= [2.75/3.25*XYZ[1], 3.25/2.75*XYZ[2], 0.0]
-                forceout .=    vec(p*pt/norm(pt));
+            el1femm = FEMMBase(IntegDomain(subset(bdryfes, icl), GaussRule(2, 2)))
+            function pfun(forceout::FVec{T},
+                XYZ::FFltMat,
+                tangents::FFltMat,
+                feid::FInt,
+                qpid::FInt) where {T}
+                pt = [2.75 / 3.25 * XYZ[1], 3.25 / 2.75 * XYZ[2], 0.0]
+                forceout .= vec(p * pt / norm(pt))
                 return forceout
             end
-            fi = ForceIntensity(Float64, 3, pfun);
-            F2 = distribloads(el1femm, geom, u, fi, 2);
+            fi = ForceIntensity(Float64, 3, pfun)
+            F2 = distribloads(el1femm, geom, u, fi, 2)
 
             # Note that the material object needs to be created with the proper
             # model-dimension reduction in mind.  In this case that is the fully three-dimensional solid.
@@ -233,19 +271,27 @@ function LE1NAFEMS_MSH8_convergence()
             K = stiffness(femm, geom, u)
             u = solve_blocked!(u, K, F2)
 
-            nl = selectnode(fens, box=[2.0, 2.0, 0.0, 0.0, 0.0, Thickness], inflate=tolerance);
-            thecorneru = zeros(FFlt,length(nl),3)
-            gathervalues_asmat!(u, thecorneru, nl);
-            thecorneru = mean(thecorneru, dims=1)[1]/phun("mm")
+            nl = selectnode(fens,
+                box = [2.0, 2.0, 0.0, 0.0, 0.0, Thickness],
+                inflate = tolerance)
+            thecorneru = zeros(FFlt, length(nl), 3)
+            gathervalues_asmat!(u, thecorneru, nl)
+            thecorneru = mean(thecorneru, dims = 1)[1] / phun("mm")
             println("displacement =$(thecorneru) vs -0.10215 [MM]")
 
-            fld = fieldfromintegpoints(femm, geom, u, :Cauchy, 2; nodevalmethod = :averaging, reportat = extrapolation)
-            sigyd = mean(fld.values[nl,1], dims=1)[1]
+            fld = fieldfromintegpoints(femm,
+                geom,
+                u,
+                :Cauchy,
+                2;
+                nodevalmethod = :averaging,
+                reportat = extrapolation)
+            sigyd = mean(fld.values[nl, 1], dims = 1)[1]
             println("Sigma_y =$(sigyd/phun("MPa")) vs $(sigma_yD/phun("MPa")) [MPa]")
 
             println("$extrapolation, $(count(fes)), $(sigyd/phun("MPa"))")
             push!(nnodes, count(fes))
-            push!(sigyderrs[extrapolation], (sigyd/sigma_yD - 1.0))
+            push!(sigyderrs[extrapolation], (sigyd / sigma_yD - 1.0))
             # File =  "a.vtk"
             # vtkexportmesh(File, fes.conn, geom.values,
             # FinEtools.MeshExportModule.H8; vectors=[("u", u.values)],
@@ -255,58 +301,70 @@ function LE1NAFEMS_MSH8_convergence()
     end
 
     File = "LE1NAFEMS_MSH8_convergence.CSV"
-    savecsv(File, nnodes=vec(nnodes), sigyderrtrend=vec(sigyderrs[:extraptrend]), sigyderrmean=vec(sigyderrs[:extrapmean]))
-
+    savecsv(File,
+        nnodes = vec(nnodes),
+        sigyderrtrend = vec(sigyderrs[:extraptrend]),
+        sigyderrmean = vec(sigyderrs[:extrapmean]))
 end # LE1NAFEMS_MSH8_convergence
 
-
 function LE1NAFEMS_MSH8_export()
-    println("LE1NAFEMS, 3D version."        )
+    println("LE1NAFEMS, 3D version.")
     t0 = time()
 
-    E = 210e3*phun("MEGA*PA");# 210e3 MPa
-    nu = 0.3;
-    p = 10*phun("MEGA*PA");# 10 MPA Outward pressure on the outside ellipse
-    sigma_yD = 92.7*phun("MEGA*PA");# tensile stress at [2.0, 0.0] meters
-    Radius = 1.0*phun("m")
-    Thickness = 0.1*phun("m")
-    n = 64; # number of elements per side
-    tolerance = 1.0/n/1000.; # Geometrical tolerance
+    E = 210e3 * phun("MEGA*PA")# 210e3 MPa
+    nu = 0.3
+    p = 10 * phun("MEGA*PA")# 10 MPA Outward pressure on the outside ellipse
+    sigma_yD = 92.7 * phun("MEGA*PA")# tensile stress at [2.0, 0.0] meters
+    Radius = 1.0 * phun("m")
+    Thickness = 0.1 * phun("m")
+    n = 64 # number of elements per side
+    tolerance = 1.0 / n / 1000.0 # Geometrical tolerance
 
-    fens,fes = Q4block(1.0, pi/2, n, n*2)
-    fens,fes  = H8extrudeQ4(fens, fes,
-    1, (xyz, layer)->[xyz[1], xyz[2], (layer)*Thickness]);
+    fens, fes = Q4block(1.0, pi / 2, n, n * 2)
+    fens, fes = H8extrudeQ4(fens, fes,
+        1, (xyz, layer) -> [xyz[1], xyz[2], (layer) * Thickness])
 
-    bdryfes = meshboundary(fes);
-    icl = selectelem(fens, bdryfes, box=[1.0, 1.0, 0.0, pi/2, 0.0, Thickness], inflate=tolerance);
-    for i=1:count(fens)
-        t=fens.xyz[i,1]; a=fens.xyz[i,2]; z=fens.xyz[i,3]
-        fens.xyz[i,:]=[(t*3.25+(1-t)*2)*cos(a), (t*2.75+(1-t)*1)*sin(a), z];
+    bdryfes = meshboundary(fes)
+    icl = selectelem(fens,
+        bdryfes,
+        box = [1.0, 1.0, 0.0, pi / 2, 0.0, Thickness],
+        inflate = tolerance)
+    for i in 1:count(fens)
+        t = fens.xyz[i, 1]
+        a = fens.xyz[i, 2]
+        z = fens.xyz[i, 3]
+        fens.xyz[i, :] = [
+            (t * 3.25 + (1 - t) * 2) * cos(a),
+            (t * 2.75 + (1 - t) * 1) * sin(a),
+            z,
+        ]
     end
 
-
     geom = NodalField(fens.xyz)
-    u = NodalField(zeros(size(fens.xyz,1),3)) # displacement field
+    u = NodalField(zeros(size(fens.xyz, 1), 3)) # displacement field
 
-    l1 =selectnode(fens; box=[0.0, Inf, 0.0, 0.0, 0.0, Thickness], inflate = tolerance)
-    setebc!(u,l1,true, 2, 0.0)
-    l1 =selectnode(fens; box=[0.0, 0.0, 0.0, Inf, 0.0, Thickness], inflate = tolerance)
-    setebc!(u,l1,true, 1, 0.0)
-    l1 =selectnode(fens; box=[0.0, Inf, 0.0, Inf, 0.0, 0.0], inflate = tolerance)
-    setebc!(u,l1,true, 3, 0.0)
+    l1 = selectnode(fens; box = [0.0, Inf, 0.0, 0.0, 0.0, Thickness], inflate = tolerance)
+    setebc!(u, l1, true, 2, 0.0)
+    l1 = selectnode(fens; box = [0.0, 0.0, 0.0, Inf, 0.0, Thickness], inflate = tolerance)
+    setebc!(u, l1, true, 1, 0.0)
+    l1 = selectnode(fens; box = [0.0, Inf, 0.0, Inf, 0.0, 0.0], inflate = tolerance)
+    setebc!(u, l1, true, 3, 0.0)
 
     applyebc!(u)
     numberdofs!(u)
 
-
-    el1femm =  FEMMBase(IntegDomain(subset(bdryfes,icl), GaussRule(2, 2)))
-    function pfun(forceout::FVec{T}, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) where {T}
-        pt= [2.75/3.25*XYZ[1], 3.25/2.75*XYZ[2], 0.0]
-        forceout .=    vec(p*pt/norm(pt));
+    el1femm = FEMMBase(IntegDomain(subset(bdryfes, icl), GaussRule(2, 2)))
+    function pfun(forceout::FVec{T},
+        XYZ::FFltMat,
+        tangents::FFltMat,
+        feid::FInt,
+        qpid::FInt) where {T}
+        pt = [2.75 / 3.25 * XYZ[1], 3.25 / 2.75 * XYZ[2], 0.0]
+        forceout .= vec(p * pt / norm(pt))
         return forceout
     end
-    fi = ForceIntensity(Float64, 3, pfun);
-    F2 = distribloads(el1femm, geom, u, fi, 2);
+    fi = ForceIntensity(Float64, 3, pfun)
+    F2 = distribloads(el1femm, geom, u, fi, 2)
 
     # Note that the material object needs to be created with the proper
     # model-dimension reduction in mind.  In this case that is the fully three-dimensional solid.
@@ -322,37 +380,41 @@ function LE1NAFEMS_MSH8_export()
     K = stiffness(femm, geom, u)
     u = solve_blocked!(u, K, F2)
 
-    nl = selectnode(fens, box=[2.0, 2.0, 0.0, 0.0, 0.0, 0.0],inflate=tolerance);
-    thecorneru = zeros(FFlt,1,3)
-    gathervalues_asmat!(u, thecorneru, nl);
-    thecorneru = thecorneru/phun("mm")
+    nl = selectnode(fens, box = [2.0, 2.0, 0.0, 0.0, 0.0, 0.0], inflate = tolerance)
+    thecorneru = zeros(FFlt, 1, 3)
+    gathervalues_asmat!(u, thecorneru, nl)
+    thecorneru = thecorneru / phun("mm")
     println("$(time()-t0) [s];  displacement =$(thecorneru) [MM] as compared to reference [-0.10215,0] [MM]")
 
-
-    fld= fieldfromintegpoints(femm, geom, u, :Cauchy, 2; nodevalmethod = :averaging, reportat = :extraptrend)
+    fld = fieldfromintegpoints(femm,
+        geom,
+        u,
+        :Cauchy,
+        2;
+        nodevalmethod = :averaging,
+        reportat = :extraptrend)
     println("Sigma_y =$(fld.values[nl,1][1]/phun("MPa")) as compared to reference sigma_yD = $(sigma_yD/phun("MPa")) [MPa]")
 
     println("$(n), $(fld.values[nl,1][1]/phun("MPa"))")
 
-    File =  "a.vtk"
-    vtkexportmesh(File, fes.conn, geom.values, FinEtools.MeshExportModule.VTK.H8; vectors=[("u", u.values)],
-    scalars=[("sigmay", fld.values)])
+    File = "a.vtk"
+    vtkexportmesh(File, fes.conn, geom.values, FinEtools.MeshExportModule.VTK.H8;
+        vectors = [("u", u.values)],
+        scalars = [("sigmay", fld.values)])
     @async run(`"paraview.exe" $File`)
     true
-
 end # LE1NAFEMS_MSH8_export
-
 
 function LE1NAFEMS_MST10_convergence()
     # Example from the "Improved Stress Recovery for Mean-strain Finite Elements" paper by Sivapuram and Krysl, 2017
-    println("LE1NAFEMS, 3D version. MST10"        )
+    println("LE1NAFEMS, 3D version. MST10")
     t0 = time()
 
-    E = 210e3*phun("MEGA*PA");# 210e3 MPa
-    nu = 0.3;
-    p = 10*phun("MEGA*PA");# 10 MPA Outward pressure on the outside ellipse
-    sigma_yD = 92.7*phun("MEGA*PA");# tensile stress at [2.0, 0.0] meters
-    Thick0 = 0.1*phun("m")/2.0 # to account for the symmetry reduction
+    E = 210e3 * phun("MEGA*PA")# 210e3 MPa
+    nu = 0.3
+    p = 10 * phun("MEGA*PA")# 10 MPA Outward pressure on the outside ellipse
+    sigma_yD = 92.7 * phun("MEGA*PA")# tensile stress at [2.0, 0.0] meters
+    Thick0 = 0.1 * phun("m") / 2.0 # to account for the symmetry reduction
 
     sigyderrs = Dict{Symbol, FFltVec}()
 
@@ -362,41 +424,62 @@ function LE1NAFEMS_MST10_convergence()
         nnodes = []
         for ref in 0:1:4
             # Thickness = Thick0
-            Thickness = Thick0/2^ref
-            tolerance = Thickness/2^ref/1000.; # Geometrical tolerance
+            Thickness = Thick0 / 2^ref
+            tolerance = Thickness / 2^ref / 1000.0 # Geometrical tolerance
 
-            fens,fes = T10block(1.0, pi/2, Thickness, 2^ref*5, 2^ref*6, 1; orientation = :b)
+            fens, fes = T10block(1.0,
+                pi / 2,
+                Thickness,
+                2^ref * 5,
+                2^ref * 6,
+                1;
+                orientation = :b)
 
-            bdryfes = meshboundary(fes);
-            icl = selectelem(fens, bdryfes, box=[1.0, 1.0, 0.0, pi/2, 0.0, Thickness], inflate=tolerance);
-            for i=1:count(fens)
-                t=fens.xyz[i,1]; a=fens.xyz[i,2]; z=fens.xyz[i,3]
-                fens.xyz[i,:]=[(t*3.25+(1-t)*2)*cos(a), (t*2.75+(1-t)*1)*sin(a), z];
+            bdryfes = meshboundary(fes)
+            icl = selectelem(fens,
+                bdryfes,
+                box = [1.0, 1.0, 0.0, pi / 2, 0.0, Thickness],
+                inflate = tolerance)
+            for i in 1:count(fens)
+                t = fens.xyz[i, 1]
+                a = fens.xyz[i, 2]
+                z = fens.xyz[i, 3]
+                fens.xyz[i, :] = [
+                    (t * 3.25 + (1 - t) * 2) * cos(a),
+                    (t * 2.75 + (1 - t) * 1) * sin(a),
+                    z,
+                ]
             end
 
-
             geom = NodalField(fens.xyz)
-            u = NodalField(zeros(size(fens.xyz,1),3)) # displacement field
+            u = NodalField(zeros(size(fens.xyz, 1), 3)) # displacement field
 
-            l1 =selectnode(fens; box=[0.0, Inf, 0.0, 0.0, 0.0, Thickness], inflate = tolerance)
-            setebc!(u,l1,true, 2, 0.0)
-            l1 =selectnode(fens; box=[0.0, 0.0, 0.0, Inf, 0.0, Thickness], inflate = tolerance)
-            setebc!(u,l1,true, 1, 0.0)
-            l1 =selectnode(fens; box=[0.0, Inf, 0.0, Inf, 0.0, 0.0], inflate = tolerance)
-            setebc!(u,l1,true, 3, 0.0)
+            l1 = selectnode(fens;
+                box = [0.0, Inf, 0.0, 0.0, 0.0, Thickness],
+                inflate = tolerance)
+            setebc!(u, l1, true, 2, 0.0)
+            l1 = selectnode(fens;
+                box = [0.0, 0.0, 0.0, Inf, 0.0, Thickness],
+                inflate = tolerance)
+            setebc!(u, l1, true, 1, 0.0)
+            l1 = selectnode(fens; box = [0.0, Inf, 0.0, Inf, 0.0, 0.0], inflate = tolerance)
+            setebc!(u, l1, true, 3, 0.0)
 
             applyebc!(u)
             numberdofs!(u)
 
-
-            el1femm =  FEMMBase(IntegDomain(subset(bdryfes,icl), TriRule(3)))
-            function pfun(forceout::FVec{T}, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) where {T}
-                pt= [2.75/3.25*XYZ[1], 3.25/2.75*XYZ[2], 0.0]
-                forceout .=    vec(p*pt/norm(pt));
+            el1femm = FEMMBase(IntegDomain(subset(bdryfes, icl), TriRule(3)))
+            function pfun(forceout::FVec{T},
+                XYZ::FFltMat,
+                tangents::FFltMat,
+                feid::FInt,
+                qpid::FInt) where {T}
+                pt = [2.75 / 3.25 * XYZ[1], 3.25 / 2.75 * XYZ[2], 0.0]
+                forceout .= vec(p * pt / norm(pt))
                 return forceout
             end
-            fi = ForceIntensity(Float64, 3, pfun);
-            F2 = distribloads(el1femm, geom, u, fi, 2);
+            fi = ForceIntensity(Float64, 3, pfun)
+            F2 = distribloads(el1femm, geom, u, fi, 2)
 
             # Note that the material object needs to be created with the proper
             # model-dimension reduction in mind.  In this case that is the fully three-dimensional solid.
@@ -412,19 +495,27 @@ function LE1NAFEMS_MST10_convergence()
             K = stiffness(femm, geom, u)
             u = solve_blocked!(u, K, F2)
 
-            nl = selectnode(fens, box=[2.0, 2.0, 0.0, 0.0, 0.0, Thickness], inflate=tolerance);
-            thecorneru = zeros(FFlt,length(nl),3)
-            gathervalues_asmat!(u, thecorneru, nl);
-            thecorneru = mean(thecorneru, dims=1)[1]/phun("mm")
+            nl = selectnode(fens,
+                box = [2.0, 2.0, 0.0, 0.0, 0.0, Thickness],
+                inflate = tolerance)
+            thecorneru = zeros(FFlt, length(nl), 3)
+            gathervalues_asmat!(u, thecorneru, nl)
+            thecorneru = mean(thecorneru, dims = 1)[1] / phun("mm")
             println("displacement =$(thecorneru) vs -0.10215 [MM]")
 
-            fld = fieldfromintegpoints(femm, geom, u, :Cauchy, 2; nodevalmethod = :averaging, reportat = extrapolation)
-            sigyd = mean(fld.values[nl,1], dims=1)[1]
+            fld = fieldfromintegpoints(femm,
+                geom,
+                u,
+                :Cauchy,
+                2;
+                nodevalmethod = :averaging,
+                reportat = extrapolation)
+            sigyd = mean(fld.values[nl, 1], dims = 1)[1]
             println("Sigma_y =$(sigyd/phun("MPa")) vs $(sigma_yD/phun("MPa")) [MPa]")
 
             println("$extrapolation, $(count(fes)), $(sigyd/phun("MPa"))")
             push!(nnodes, count(fens))
-            push!(sigyderrs[extrapolation], abs(sigyd/sigma_yD - 1.0))
+            push!(sigyderrs[extrapolation], abs(sigyd / sigma_yD - 1.0))
             # File =  "a.vtk"
             # vtkexportmesh(File, fes.conn, geom.values,
             # FinEtools.MeshExportModule.H8; vectors=[("u", u.values)],
@@ -434,20 +525,21 @@ function LE1NAFEMS_MST10_convergence()
     end
 
     File = "LE1NAFEMS_MST10_convergence.CSV"
-    savecsv(File, nnodes=vec(nnodes), sigyderrtrend=vec(sigyderrs[:extraptrend]), sigyderrdefault=vec(sigyderrs[:extrapmean]))
-
+    savecsv(File,
+        nnodes = vec(nnodes),
+        sigyderrtrend = vec(sigyderrs[:extraptrend]),
+        sigyderrdefault = vec(sigyderrs[:extrapmean]))
 end # LE1NAFEMS_MST10_convergence
 
-
 function LE1NAFEMS_MST10_one()
-    println("LE1NAFEMS, 3D version."        )
+    println("LE1NAFEMS, 3D version.")
     t0 = time()
 
-    E = 210e3*phun("MEGA*PA");# 210e3 MPa
-    nu = 0.3;
-    p = 10*phun("MEGA*PA");# 10 MPA Outward pressure on the outside ellipse
-    sigma_yD = 92.7*phun("MEGA*PA");# tensile stress at [2.0, 0.0] meters
-    Thick0 = 0.1*phun("m")/2.0 # to account for the symmetry reduction
+    E = 210e3 * phun("MEGA*PA")# 210e3 MPa
+    nu = 0.3
+    p = 10 * phun("MEGA*PA")# 10 MPA Outward pressure on the outside ellipse
+    sigma_yD = 92.7 * phun("MEGA*PA")# tensile stress at [2.0, 0.0] meters
+    Thick0 = 0.1 * phun("m") / 2.0 # to account for the symmetry reduction
 
     sigyderrs = Dict{Symbol, FFltVec}()
 
@@ -457,40 +549,61 @@ function LE1NAFEMS_MST10_one()
         for ref in 1:1
             Thickness = Thick0
             # Thickness = Thick0/2^ref
-            tolerance = Thickness/2^ref/1000.; # Geometrical tolerance
+            tolerance = Thickness / 2^ref / 1000.0 # Geometrical tolerance
 
-            fens,fes = T10block(1.0, pi/2, Thickness, 2^ref*5, 2^ref*6, 1; orientation = :b)
+            fens, fes = T10block(1.0,
+                pi / 2,
+                Thickness,
+                2^ref * 5,
+                2^ref * 6,
+                1;
+                orientation = :b)
 
-            bdryfes = meshboundary(fes);
-            icl = selectelem(fens, bdryfes, box=[1.0, 1.0, 0.0, pi/2, 0.0, Thickness], inflate=tolerance);
-            for i=1:count(fens)
-                t=fens.xyz[i,1]; a=fens.xyz[i,2]; z=fens.xyz[i,3]
-                fens.xyz[i,:]=[(t*3.25+(1-t)*2)*cos(a), (t*2.75+(1-t)*1)*sin(a), z];
+            bdryfes = meshboundary(fes)
+            icl = selectelem(fens,
+                bdryfes,
+                box = [1.0, 1.0, 0.0, pi / 2, 0.0, Thickness],
+                inflate = tolerance)
+            for i in 1:count(fens)
+                t = fens.xyz[i, 1]
+                a = fens.xyz[i, 2]
+                z = fens.xyz[i, 3]
+                fens.xyz[i, :] = [
+                    (t * 3.25 + (1 - t) * 2) * cos(a),
+                    (t * 2.75 + (1 - t) * 1) * sin(a),
+                    z,
+                ]
             end
 
-
             geom = NodalField(fens.xyz)
-            u = NodalField(zeros(size(fens.xyz,1),3)) # displacement field
+            u = NodalField(zeros(size(fens.xyz, 1), 3)) # displacement field
 
-            l1 =selectnode(fens; box=[0.0, Inf, 0.0, 0.0, 0.0, Thickness], inflate = tolerance)
-            setebc!(u,l1,true, 2, 0.0)
-            l1 =selectnode(fens; box=[0.0, 0.0, 0.0, Inf, 0.0, Thickness], inflate = tolerance)
-            setebc!(u,l1,true, 1, 0.0)
-            l1 =selectnode(fens; box=[0.0, Inf, 0.0, Inf, 0.0, 0.0], inflate = tolerance)
-            setebc!(u,l1,true, 3, 0.0)
+            l1 = selectnode(fens;
+                box = [0.0, Inf, 0.0, 0.0, 0.0, Thickness],
+                inflate = tolerance)
+            setebc!(u, l1, true, 2, 0.0)
+            l1 = selectnode(fens;
+                box = [0.0, 0.0, 0.0, Inf, 0.0, Thickness],
+                inflate = tolerance)
+            setebc!(u, l1, true, 1, 0.0)
+            l1 = selectnode(fens; box = [0.0, Inf, 0.0, Inf, 0.0, 0.0], inflate = tolerance)
+            setebc!(u, l1, true, 3, 0.0)
 
             applyebc!(u)
             numberdofs!(u)
 
-
-            el1femm =  FEMMBase(IntegDomain(subset(bdryfes,icl), TriRule(3)))
-            function pfun(forceout::FVec{T}, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) where {T}
-                pt= [2.75/3.25*XYZ[1], 3.25/2.75*XYZ[2], 0.0]
-                forceout .=    vec(p*pt/norm(pt));
+            el1femm = FEMMBase(IntegDomain(subset(bdryfes, icl), TriRule(3)))
+            function pfun(forceout::FVec{T},
+                XYZ::FFltMat,
+                tangents::FFltMat,
+                feid::FInt,
+                qpid::FInt) where {T}
+                pt = [2.75 / 3.25 * XYZ[1], 3.25 / 2.75 * XYZ[2], 0.0]
+                forceout .= vec(p * pt / norm(pt))
                 return forceout
             end
-            fi = ForceIntensity(Float64, 3, pfun);
-            F2 = distribloads(el1femm, geom, u, fi, 2);
+            fi = ForceIntensity(Float64, 3, pfun)
+            F2 = distribloads(el1femm, geom, u, fi, 2)
 
             # Note that the material object needs to be created with the proper
             # model-dimension reduction in mind.  In this case that is the fully three-dimensional solid.
@@ -506,22 +619,31 @@ function LE1NAFEMS_MST10_one()
             K = stiffness(femm, geom, u)
             u = solve_blocked!(u, K, F2)
 
-            nl = selectnode(fens, box=[2.0, 2.0, 0.0, 0.0, 0.0, Thickness], inflate=tolerance);
-            thecorneru = zeros(FFlt,length(nl),3)
-            gathervalues_asmat!(u, thecorneru, nl);
-            thecorneru = mean(thecorneru, dims=1)[1]/phun("mm")
+            nl = selectnode(fens,
+                box = [2.0, 2.0, 0.0, 0.0, 0.0, Thickness],
+                inflate = tolerance)
+            thecorneru = zeros(FFlt, length(nl), 3)
+            gathervalues_asmat!(u, thecorneru, nl)
+            thecorneru = mean(thecorneru, dims = 1)[1] / phun("mm")
             println("displacement =$(thecorneru) vs -0.10215 [MM]")
 
-            fld = fieldfromintegpoints(femm, geom, u, :Cauchy, 2; nodevalmethod = :averaging, reportat = extrapolation)
-            sigyd = mean(fld.values[nl,1], dims=1)[1]
+            fld = fieldfromintegpoints(femm,
+                geom,
+                u,
+                :Cauchy,
+                2;
+                nodevalmethod = :averaging,
+                reportat = extrapolation)
+            sigyd = mean(fld.values[nl, 1], dims = 1)[1]
             println("Sigma_y =$(sigyd/phun("MPa")) vs $(sigma_yD/phun("MPa")) [MPa]")
 
             println("$extrapolation, $(count(fes)), $(sigyd/phun("MPa"))")
             push!(nnodes, count(fens))
-            push!(sigyderrs[extrapolation], abs(sigyd/sigma_yD - 1.0))
-            File =  "LE1NAFEMS_MST10_a.vtk"
-            vtkexportmesh(File, fes.conn, geom.values, FinEtools.MeshExportModule.VTK.T10; vectors=[("u", u.values)],
-            scalars=[("sigmay", fld.values)])
+            push!(sigyderrs[extrapolation], abs(sigyd / sigma_yD - 1.0))
+            File = "LE1NAFEMS_MST10_a.vtk"
+            vtkexportmesh(File, fes.conn, geom.values, FinEtools.MeshExportModule.VTK.T10;
+                vectors = [("u", u.values)],
+                scalars = [("sigmay", fld.values)])
             @async run(`"paraview.exe" $File`)
         end
     end
@@ -542,7 +664,6 @@ end # LE1NAFEMS_MST10_one
 
 # using SymPy
 # function LE1NAFEMS_MST10_single()
-
 
 #     @vars ua ub uc ud
 #     @vars va vb vc vd
@@ -568,53 +689,75 @@ end # LE1NAFEMS_MST10_one
 
 # end # LE1NAFEMS_MST10_single
 
-
 function LE1NAFEMS_MST10_stresses_nodal()
     elementtag = "MST10"
     println("LE1NAFEMS, 3D version. Element: $(elementtag)")
 
-    E = 210e3*phun("MEGA*PA");# 210e3 MPa
-    nu = 0.3;
-    p = 10*phun("MEGA*PA");# 10 MPA Outward pressure on the outside ellipse
-    sigma_yD = 92.7*phun("MEGA*PA");# tensile stress at [2.0, 0.0] meters
-    Thick0 = 0.1*phun("m")/2.0 # to account for the symmetry reduction
+    E = 210e3 * phun("MEGA*PA")# 210e3 MPa
+    nu = 0.3
+    p = 10 * phun("MEGA*PA")# 10 MPA Outward pressure on the outside ellipse
+    sigma_yD = 92.7 * phun("MEGA*PA")# tensile stress at [2.0, 0.0] meters
+    Thick0 = 0.1 * phun("m") / 2.0 # to account for the symmetry reduction
 
     for extrapolation in [:extraptrend :extrapmean]
         convergencestudy = FDataDict[]
-        for ref in  [0, 1, 2, 3, 4]
+        for ref in [0, 1, 2, 3, 4]
             Thickness = Thick0
-            tolerance = Thickness/2^ref/1000.; # Geometrical tolerance
+            tolerance = Thickness / 2^ref / 1000.0 # Geometrical tolerance
 
-            fens,fes = T10block(1.0, pi/2, Thickness, 2^ref*2, 2^ref*3, 1; orientation = :b)
+            fens, fes = T10block(1.0,
+                pi / 2,
+                Thickness,
+                2^ref * 2,
+                2^ref * 3,
+                1;
+                orientation = :b)
 
-            bdryfes = meshboundary(fes);
-            icl = selectelem(fens, bdryfes, box=[1.0, 1.0, 0.0, pi/2, 0.0, Thickness], inflate=tolerance);
-            for i=1:count(fens)
-                t=fens.xyz[i,1]; a=fens.xyz[i,2]; z=fens.xyz[i,3]
-                fens.xyz[i,:]=[(t*3.25+(1-t)*2)*cos(a), (t*2.75+(1-t)*1)*sin(a), z];
+            bdryfes = meshboundary(fes)
+            icl = selectelem(fens,
+                bdryfes,
+                box = [1.0, 1.0, 0.0, pi / 2, 0.0, Thickness],
+                inflate = tolerance)
+            for i in 1:count(fens)
+                t = fens.xyz[i, 1]
+                a = fens.xyz[i, 2]
+                z = fens.xyz[i, 3]
+                fens.xyz[i, :] = [
+                    (t * 3.25 + (1 - t) * 2) * cos(a),
+                    (t * 2.75 + (1 - t) * 1) * sin(a),
+                    z,
+                ]
             end
 
             geom = NodalField(fens.xyz)
-            u = NodalField(zeros(size(fens.xyz,1),3)) # displacement field
+            u = NodalField(zeros(size(fens.xyz, 1), 3)) # displacement field
 
-            l1 =selectnode(fens; box=[0.0, Inf, 0.0, 0.0, 0.0, Thickness], inflate = tolerance)
-            setebc!(u,l1,true, 2, 0.0)
-            l1 =selectnode(fens; box=[0.0, 0.0, 0.0, Inf, 0.0, Thickness], inflate = tolerance)
-            setebc!(u,l1,true, 1, 0.0)
-            l1 =selectnode(fens; box=[0.0, Inf, 0.0, Inf, 0.0, 0.0], inflate = tolerance)
-            setebc!(u,l1,true, 3, 0.0)
+            l1 = selectnode(fens;
+                box = [0.0, Inf, 0.0, 0.0, 0.0, Thickness],
+                inflate = tolerance)
+            setebc!(u, l1, true, 2, 0.0)
+            l1 = selectnode(fens;
+                box = [0.0, 0.0, 0.0, Inf, 0.0, Thickness],
+                inflate = tolerance)
+            setebc!(u, l1, true, 1, 0.0)
+            l1 = selectnode(fens; box = [0.0, Inf, 0.0, Inf, 0.0, 0.0], inflate = tolerance)
+            setebc!(u, l1, true, 3, 0.0)
 
             applyebc!(u)
             numberdofs!(u)
 
-            el1femm =  FEMMBase(IntegDomain(subset(bdryfes,icl), TriRule(3)))
-            function pfun(forceout::FVec{T}, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) where {T}
-                pt= [2.75/3.25*XYZ[1], 3.25/2.75*XYZ[2], 0.0]
-                forceout .=    vec(p*pt/norm(pt));
+            el1femm = FEMMBase(IntegDomain(subset(bdryfes, icl), TriRule(3)))
+            function pfun(forceout::FVec{T},
+                XYZ::FFltMat,
+                tangents::FFltMat,
+                feid::FInt,
+                qpid::FInt) where {T}
+                pt = [2.75 / 3.25 * XYZ[1], 3.25 / 2.75 * XYZ[2], 0.0]
+                forceout .= vec(p * pt / norm(pt))
                 return forceout
             end
-            fi = ForceIntensity(Float64, 3, pfun);
-            F2 = distribloads(el1femm, geom, u, fi, 2);
+            fi = ForceIntensity(Float64, 3, pfun)
+            F2 = distribloads(el1femm, geom, u, fi, 2)
 
             # Note that the material object needs to be created with the proper
             # model-dimension reduction in mind.  In this case that is the fully three-dimensional solid.
@@ -630,19 +773,21 @@ function LE1NAFEMS_MST10_stresses_nodal()
             K = stiffness(femm, geom, u)
             u = solve_blocked!(u, K, F2)
 
-            nl = selectnode(fens, box=[2.0, 2.0, 0.0, 0.0, 0.0, Thickness], inflate=tolerance);
-            thecorneru = zeros(FFlt,length(nl),3)
-            gathervalues_asmat!(u, thecorneru, nl);
-            thecorneru = mean(thecorneru, dims=1)[1]/phun("mm")
+            nl = selectnode(fens,
+                box = [2.0, 2.0, 0.0, 0.0, 0.0, Thickness],
+                inflate = tolerance)
+            thecorneru = zeros(FFlt, length(nl), 3)
+            gathervalues_asmat!(u, thecorneru, nl)
+            thecorneru = mean(thecorneru, dims = 1)[1] / phun("mm")
             println("displacement =$(thecorneru) vs -0.10215 [MM]")
 
             fld = fieldfromintegpoints(femm, geom, u, :Cauchy, 2;
-            nodevalmethod = :averaging, reportat = extrapolation)
-            sigyd = mean(fld.values[nl,1], dims=1)[1]
+                nodevalmethod = :averaging, reportat = extrapolation)
+            sigyd = mean(fld.values[nl, 1], dims = 1)[1]
             println("Sigma_y =$(sigyd/phun("MPa")) vs $(sigma_yD/phun("MPa")) [MPa]")
 
             stressfield = fieldfromintegpoints(femm, geom, u, :Cauchy, collect(1:6);
-            nodevalmethod = :averaging, reportat = extrapolation)
+                nodevalmethod = :averaging, reportat = extrapolation)
 
             # File =  "LE1NAFEMS_MST10_sigma.vtk"
             # vtkexportmesh(File, fes.conn, geom.values,
@@ -650,17 +795,16 @@ function LE1NAFEMS_MST10_stresses_nodal()
             #     scalars=[("sig", stressfield.values)])
             # @async run(`"paraview.exe" $File`)
 
-            push!(convergencestudy, FDataDict(
-            "elementsize"=> 1.0 / (2^ref),
-            "fens"=>fens,
-            "fes"=>fes,
-            "geom"=>geom,
-            "u"=>u,
-            "femm"=>femm,
-            "integrationrule"=>femm.integdomain.integration_rule,
-            "stressfields"=>[stressfield],
-            "tolerance"=>tolerance)
-            )
+            push!(convergencestudy,
+                FDataDict("elementsize" => 1.0 / (2^ref),
+                    "fens" => fens,
+                    "fes" => fes,
+                    "geom" => geom,
+                    "u" => u,
+                    "femm" => femm,
+                    "integrationrule" => femm.integdomain.integration_rule,
+                    "stressfields" => [stressfield],
+                    "tolerance" => tolerance))
         end # for ref
 
         # File = "LE1NAFEMS_MST10_stresses_nodal_convergence_$(elementtag)_$(extrapolation)"
@@ -669,19 +813,17 @@ function LE1NAFEMS_MST10_stresses_nodal()
         # end
 
     end # for extrapolation
-
 end # LE1NAFEMS_MST10_stresses_nodal
 
-
 function LE1NAFEMS_MST10_S_convergence()
-    println("LE1NAFEMS, 3D version."        )
+    println("LE1NAFEMS, 3D version.")
     t0 = time()
 
-    E = 210e3*phun("MEGA*PA");# 210e3 MPa
-    nu = 0.3;
-    p = 10*phun("MEGA*PA");# 10 MPA Outward pressure on the outside ellipse
-    sigma_yD = 92.7*phun("MEGA*PA");# tensile stress at [2.0, 0.0] meters
-    Thick0 = 0.1*phun("m")/2.0 # to account for the symmetry reduction
+    E = 210e3 * phun("MEGA*PA")# 210e3 MPa
+    nu = 0.3
+    p = 10 * phun("MEGA*PA")# 10 MPA Outward pressure on the outside ellipse
+    sigma_yD = 92.7 * phun("MEGA*PA")# tensile stress at [2.0, 0.0] meters
+    Thick0 = 0.1 * phun("m") / 2.0 # to account for the symmetry reduction
 
     sigyderrs = Dict{Symbol, FFltVec}()
 
@@ -692,40 +834,56 @@ function LE1NAFEMS_MST10_S_convergence()
         for ref in 0:1:4
             Thickness = Thick0
             # Thickness = Thick0/2^ref
-            tolerance = Thickness/2^ref/1000.; # Geometrical tolerance
+            tolerance = Thickness / 2^ref / 1000.0 # Geometrical tolerance
 
-            fens,fes = T4block(1.0, pi/2, Thickness, 2^ref*5, 2^ref*6, 1)
+            fens, fes = T4block(1.0, pi / 2, Thickness, 2^ref * 5, 2^ref * 6, 1)
 
-            bdryfes = meshboundary(fes);
-            icl = selectelem(fens, bdryfes, box=[1.0, 1.0, 0.0, pi/2, 0.0, Thickness], inflate=tolerance);
-            for i=1:count(fens)
-                t=fens.xyz[i,1]; a=fens.xyz[i,2]; z=fens.xyz[i,3]
-                fens.xyz[i,:]=[(t*3.25+(1-t)*2)*cos(a), (t*2.75+(1-t)*1)*sin(a), z];
+            bdryfes = meshboundary(fes)
+            icl = selectelem(fens,
+                bdryfes,
+                box = [1.0, 1.0, 0.0, pi / 2, 0.0, Thickness],
+                inflate = tolerance)
+            for i in 1:count(fens)
+                t = fens.xyz[i, 1]
+                a = fens.xyz[i, 2]
+                z = fens.xyz[i, 3]
+                fens.xyz[i, :] = [
+                    (t * 3.25 + (1 - t) * 2) * cos(a),
+                    (t * 2.75 + (1 - t) * 1) * sin(a),
+                    z,
+                ]
             end
-            fens,fes = T4toT10(fens,fes)
+            fens, fes = T4toT10(fens, fes)
 
             geom = NodalField(fens.xyz)
-            u = NodalField(zeros(size(fens.xyz,1),3)) # displacement field
+            u = NodalField(zeros(size(fens.xyz, 1), 3)) # displacement field
 
-            l1 =selectnode(fens; box=[0.0, Inf, 0.0, 0.0, 0.0, Thickness], inflate = tolerance)
-            setebc!(u,l1,true, 2, 0.0)
-            l1 =selectnode(fens; box=[0.0, 0.0, 0.0, Inf, 0.0, Thickness], inflate = tolerance)
-            setebc!(u,l1,true, 1, 0.0)
-            l1 =selectnode(fens; box=[0.0, Inf, 0.0, Inf, 0.0, 0.0], inflate = tolerance)
-            setebc!(u,l1,true, 3, 0.0)
+            l1 = selectnode(fens;
+                box = [0.0, Inf, 0.0, 0.0, 0.0, Thickness],
+                inflate = tolerance)
+            setebc!(u, l1, true, 2, 0.0)
+            l1 = selectnode(fens;
+                box = [0.0, 0.0, 0.0, Inf, 0.0, Thickness],
+                inflate = tolerance)
+            setebc!(u, l1, true, 1, 0.0)
+            l1 = selectnode(fens; box = [0.0, Inf, 0.0, Inf, 0.0, 0.0], inflate = tolerance)
+            setebc!(u, l1, true, 3, 0.0)
 
             applyebc!(u)
             numberdofs!(u)
 
-
-            el1femm =  FEMMBase(IntegDomain(subset(bdryfes,icl), TriRule(3)))
-            function pfun(forceout::FVec{T}, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) where {T}
-                pt= [2.75/3.25*XYZ[1], 3.25/2.75*XYZ[2], 0.0]
-                forceout .=    vec(p*pt/norm(pt));
+            el1femm = FEMMBase(IntegDomain(subset(bdryfes, icl), TriRule(3)))
+            function pfun(forceout::FVec{T},
+                XYZ::FFltMat,
+                tangents::FFltMat,
+                feid::FInt,
+                qpid::FInt) where {T}
+                pt = [2.75 / 3.25 * XYZ[1], 3.25 / 2.75 * XYZ[2], 0.0]
+                forceout .= vec(p * pt / norm(pt))
                 return forceout
             end
-            fi = ForceIntensity(Float64, 3, pfun);
-            F2 = distribloads(el1femm, geom, u, fi, 2);
+            fi = ForceIntensity(Float64, 3, pfun)
+            F2 = distribloads(el1femm, geom, u, fi, 2)
 
             # Note that the material object needs to be created with the proper
             # model-dimension reduction in mind.  In this case that is the fully three-dimensional solid.
@@ -741,19 +899,27 @@ function LE1NAFEMS_MST10_S_convergence()
             K = stiffness(femm, geom, u)
             u = solve_blocked!(u, K, F2)
 
-            nl = selectnode(fens, box=[2.0, 2.0, 0.0, 0.0, 0.0, Thickness], inflate=tolerance);
-            thecorneru = zeros(FFlt,length(nl),3)
-            gathervalues_asmat!(u, thecorneru, nl);
-            thecorneru = mean(thecorneru, dims=1)[1]/phun("mm")
+            nl = selectnode(fens,
+                box = [2.0, 2.0, 0.0, 0.0, 0.0, Thickness],
+                inflate = tolerance)
+            thecorneru = zeros(FFlt, length(nl), 3)
+            gathervalues_asmat!(u, thecorneru, nl)
+            thecorneru = mean(thecorneru, dims = 1)[1] / phun("mm")
             println("displacement =$(thecorneru) vs -0.10215 [MM]")
 
-            fld = fieldfromintegpoints(femm, geom, u, :Cauchy, 2; nodevalmethod = :averaging, reportat = extrapolation)
-            sigyd = mean(fld.values[nl,1], dims=1)[1]
+            fld = fieldfromintegpoints(femm,
+                geom,
+                u,
+                :Cauchy,
+                2;
+                nodevalmethod = :averaging,
+                reportat = extrapolation)
+            sigyd = mean(fld.values[nl, 1], dims = 1)[1]
             println("Sigma_y =$(sigyd/phun("MPa")) vs $(sigma_yD/phun("MPa")) [MPa]")
 
             println("$extrapolation, $(count(fes)), $(sigyd/phun("MPa"))")
             push!(nnodes, count(fens))
-            push!(sigyderrs[extrapolation], abs(sigyd/sigma_yD - 1.0))
+            push!(sigyderrs[extrapolation], abs(sigyd / sigma_yD - 1.0))
             # File =  "a.vtk"
             # vtkexportmesh(File, fes.conn, geom.values,
             # FinEtools.MeshExportModule.H8; vectors=[("u", u.values)],
@@ -763,58 +929,80 @@ function LE1NAFEMS_MST10_S_convergence()
     end
 
     File = "LE1NAFEMS_MST10_S_convergence.CSV"
-    savecsv(File, nnodes=vec(nnodes), sigyderrtrend=vec(sigyderrs[:extraptrend]), sigyderrdefault=vec(sigyderrs[:extrapmean]))
-
+    savecsv(File,
+        nnodes = vec(nnodes),
+        sigyderrtrend = vec(sigyderrs[:extraptrend]),
+        sigyderrdefault = vec(sigyderrs[:extrapmean]))
 end # LE1NAFEMS_MST10_S_convergence
-
 
 function LE1NAFEMS_T10_stresses_nodal()
     elementtag = "T10"
     println("LE1NAFEMS, 3D version. Element: $(elementtag)")
 
-    E = 210e3*phun("MEGA*PA");# 210e3 MPa
-    nu = 0.3;
-    p = 10*phun("MEGA*PA");# 10 MPA Outward pressure on the outside ellipse
-    sigma_yD = 92.7*phun("MEGA*PA");# tensile stress at [2.0, 0.0] meters
-    Thick0 = 0.1*phun("m")/2.0 # to account for the symmetry reduction
+    E = 210e3 * phun("MEGA*PA")# 210e3 MPa
+    nu = 0.3
+    p = 10 * phun("MEGA*PA")# 10 MPA Outward pressure on the outside ellipse
+    sigma_yD = 92.7 * phun("MEGA*PA")# tensile stress at [2.0, 0.0] meters
+    Thick0 = 0.1 * phun("m") / 2.0 # to account for the symmetry reduction
 
     convergencestudy = FDataDict[]
-    for ref in  [0, 1, 2, 3, 4]
+    for ref in [0, 1, 2, 3, 4]
         Thickness = Thick0
-        tolerance = Thickness/2^ref/1000.; # Geometrical tolerance
+        tolerance = Thickness / 2^ref / 1000.0 # Geometrical tolerance
 
-        fens,fes = T10block(1.0, pi/2, Thickness, 2^ref*2, 2^ref*3, 1; orientation = :b)
+        fens, fes = T10block(1.0,
+            pi / 2,
+            Thickness,
+            2^ref * 2,
+            2^ref * 3,
+            1;
+            orientation = :b)
 
-        bdryfes = meshboundary(fes);
-        icl = selectelem(fens, bdryfes, box=[1.0, 1.0, 0.0, pi/2, 0.0, Thickness], inflate=tolerance);
-        for i=1:count(fens)
-            t=fens.xyz[i,1]; a=fens.xyz[i,2]; z=fens.xyz[i,3]
-            fens.xyz[i,:]=[(t*3.25+(1-t)*2)*cos(a), (t*2.75+(1-t)*1)*sin(a), z];
+        bdryfes = meshboundary(fes)
+        icl = selectelem(fens,
+            bdryfes,
+            box = [1.0, 1.0, 0.0, pi / 2, 0.0, Thickness],
+            inflate = tolerance)
+        for i in 1:count(fens)
+            t = fens.xyz[i, 1]
+            a = fens.xyz[i, 2]
+            z = fens.xyz[i, 3]
+            fens.xyz[i, :] = [
+                (t * 3.25 + (1 - t) * 2) * cos(a),
+                (t * 2.75 + (1 - t) * 1) * sin(a),
+                z,
+            ]
         end
 
-
         geom = NodalField(fens.xyz)
-        u = NodalField(zeros(size(fens.xyz,1),3)) # displacement field
+        u = NodalField(zeros(size(fens.xyz, 1), 3)) # displacement field
 
-        l1 =selectnode(fens; box=[0.0, Inf, 0.0, 0.0, 0.0, Thickness], inflate = tolerance)
-        setebc!(u,l1,true, 2, 0.0)
-        l1 =selectnode(fens; box=[0.0, 0.0, 0.0, Inf, 0.0, Thickness], inflate = tolerance)
-        setebc!(u,l1,true, 1, 0.0)
-        l1 =selectnode(fens; box=[0.0, Inf, 0.0, Inf, 0.0, 0.0], inflate = tolerance)
-        setebc!(u,l1,true, 3, 0.0)
+        l1 = selectnode(fens;
+            box = [0.0, Inf, 0.0, 0.0, 0.0, Thickness],
+            inflate = tolerance)
+        setebc!(u, l1, true, 2, 0.0)
+        l1 = selectnode(fens;
+            box = [0.0, 0.0, 0.0, Inf, 0.0, Thickness],
+            inflate = tolerance)
+        setebc!(u, l1, true, 1, 0.0)
+        l1 = selectnode(fens; box = [0.0, Inf, 0.0, Inf, 0.0, 0.0], inflate = tolerance)
+        setebc!(u, l1, true, 3, 0.0)
 
         applyebc!(u)
         numberdofs!(u)
 
-
-        el1femm =  FEMMBase(IntegDomain(subset(bdryfes,icl), TriRule(3)))
-        function pfun(forceout::FVec{T}, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) where {T}
-            pt= [2.75/3.25*XYZ[1], 3.25/2.75*XYZ[2], 0.0]
-            forceout .=    vec(p*pt/norm(pt));
+        el1femm = FEMMBase(IntegDomain(subset(bdryfes, icl), TriRule(3)))
+        function pfun(forceout::FVec{T},
+            XYZ::FFltMat,
+            tangents::FFltMat,
+            feid::FInt,
+            qpid::FInt) where {T}
+            pt = [2.75 / 3.25 * XYZ[1], 3.25 / 2.75 * XYZ[2], 0.0]
+            forceout .= vec(p * pt / norm(pt))
             return forceout
         end
-        fi = ForceIntensity(Float64, 3, pfun);
-        F2 = distribloads(el1femm, geom, u, fi, 2);
+        fi = ForceIntensity(Float64, 3, pfun)
+        F2 = distribloads(el1femm, geom, u, fi, 2)
 
         # Note that the material object needs to be created with the proper
         # model-dimension reduction in mind.  In this case that is the fully three-dimensional solid.
@@ -830,14 +1018,16 @@ function LE1NAFEMS_T10_stresses_nodal()
         K = stiffness(femm, geom, u)
         u = solve_blocked!(u, K, F2)
 
-        nl = selectnode(fens, box=[2.0, 2.0, 0.0, 0.0, 0.0, Thickness], inflate=tolerance);
-        thecorneru = zeros(FFlt,length(nl),3)
-        gathervalues_asmat!(u, thecorneru, nl);
-        thecorneru = mean(thecorneru, dims=1)[1]/phun("mm")
+        nl = selectnode(fens,
+            box = [2.0, 2.0, 0.0, 0.0, 0.0, Thickness],
+            inflate = tolerance)
+        thecorneru = zeros(FFlt, length(nl), 3)
+        gathervalues_asmat!(u, thecorneru, nl)
+        thecorneru = mean(thecorneru, dims = 1)[1] / phun("mm")
         println("displacement =$(thecorneru) vs -0.10215 [MM]")
 
         fld = fieldfromintegpoints(femm, geom, u, :Cauchy, 2)
-        sigyd = mean(fld.values[nl,1], dims=1)[1]
+        sigyd = mean(fld.values[nl, 1], dims = 1)[1]
         println("Sigma_y =$(sigyd/phun("MPa")) vs $(sigma_yD/phun("MPa")) [MPa]")
 
         stressfield = fieldfromintegpoints(femm, geom, u, :Cauchy, collect(1:6))
@@ -848,17 +1038,16 @@ function LE1NAFEMS_T10_stresses_nodal()
         #     scalars=[("sig", stressfield.values)])
         # @async run(`"paraview.exe" $File`)
 
-        push!(convergencestudy, FDataDict(
-        "elementsize"=> 1.0 / (2^ref),
-        "fens"=>fens,
-        "fes"=>fes,
-        "geom"=>geom,
-        "u"=>u,
-        "femm"=>femm,
-        "integrationrule"=>femm.integdomain.integration_rule,
-        "stressfields"=>[stressfield],
-        "tolerance"=>tolerance)
-        )
+        push!(convergencestudy,
+            FDataDict("elementsize" => 1.0 / (2^ref),
+                "fens" => fens,
+                "fes" => fes,
+                "geom" => geom,
+                "u" => u,
+                "femm" => femm,
+                "integrationrule" => femm.integdomain.integration_rule,
+                "stressfields" => [stressfield],
+                "tolerance" => tolerance))
     end # for ref
 
     # File = "LE1NAFEMS_T10_stresses_nodal_convergence_$(elementtag)"
@@ -902,7 +1091,5 @@ end # function allrun
 @info "All examples may be executed with "
 println("using .$(@__MODULE__); $(@__MODULE__).allrun()")
 
-
 end # module 
 nothing
-    

@@ -8,7 +8,6 @@ module FEMMDeforLinearModule
 
 __precompile__(true)
 
-using FinEtools.FTypesModule: FInt, FFlt, FCplxFlt, FFltVec, FIntVec, FFltMat, FIntMat, FMat, FVec, FDataDict
 import FinEtools.FENodeSetModule: FENodeSet
 import FinEtools.FESetModule: AbstractFESet, manifdim
 import FinEtools.IntegDomainModule: IntegDomain
@@ -22,7 +21,11 @@ import FinEtools.CSysModule: CSys
 
 Class for linear deformation finite element modeling machine.
 """
-mutable struct FEMMDeforLinear{MR<:AbstractDeforModelRed,  ID<:IntegDomain, M<:AbstractMatDeforLinearElastic} <: AbstractFEMMDeforLinear
+mutable struct FEMMDeforLinear{
+    MR <: AbstractDeforModelRed,
+    ID <: IntegDomain,
+    M <: AbstractMatDeforLinearElastic,
+} <: AbstractFEMMDeforLinear
     mr::Type{MR} # model reduction type
     integdomain::ID # integration domain data
     mcsys::CSys # updater of the material orientation matrix
@@ -33,9 +36,16 @@ end
 
 Constructor of linear deformation finite element modeling machine.
 """
-function FEMMDeforLinear(mr::Type{MR}, integdomain::IntegDomain{S, F}, material::M) where {MR<:AbstractDeforModelRed, S<:AbstractFESet, F<:Function, M<:AbstractMatDeforLinearElastic}
-    @assert mr == material.mr "Model reduction is mismatched"
-    @assert (integdomain.axisymmetric) || (mr != DeforModelRed2DAxisymm) "Axially symmetric requires axisymmetric to be true"
+function FEMMDeforLinear(mr::Type{MR},
+    integdomain::IntegDomain{S, F},
+    material::M) where {
+    MR <: AbstractDeforModelRed,
+    S <: AbstractFESet,
+    F <: Function,
+    M <: AbstractMatDeforLinearElastic,
+}
+    @assert mr==material.mr "Model reduction is mismatched"
+    @assert (integdomain.axisymmetric)||(mr != DeforModelRed2DAxisymm) "Axially symmetric requires axisymmetric to be true"
     return FEMMDeforLinear(mr, integdomain, CSys(manifdim(integdomain.fes)), material)
 end
 

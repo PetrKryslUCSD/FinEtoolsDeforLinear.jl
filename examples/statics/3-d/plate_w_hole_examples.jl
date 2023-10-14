@@ -8,89 +8,116 @@ using SparseArrays: cholesky
 using Statistics: mean
 
 function plate_w_hole_H20_stress()
-    E = 2.4*phun("MEGA*PA");# 210e3 MPa
-    nu = 0.3;
-    Re = 0.3*phun("M"); # outer radius
-    Ri= 0.1*phun("M"); # hole radius
-    H = 0.1*phun("M") # thickness of the plate
-    nRadial, nCircumferential, nThickness = 6, 8, 1;
-    sigma0=1*phun("MEGA*PA");
+    E = 2.4 * phun("MEGA*PA")# 210e3 MPa
+    nu = 0.3
+    Re = 0.3 * phun("M") # outer radius
+    Ri = 0.1 * phun("M") # hole radius
+    H = 0.1 * phun("M") # thickness of the plate
+    nRadial, nCircumferential, nThickness = 6, 8, 1
+    sigma0 = 1 * phun("MEGA*PA")
 
     function sigmaxx(x)
-        local r = norm(x[1:2]);
-        local th = atan(x[2],x[1]);
-        return sigma0*(1-Ri^2/r^2*(3/2*cos(2*th)+cos(4*th))+3/2*Ri^4/r^4*cos(4*th));
+        local r = norm(x[1:2])
+        local th = atan(x[2], x[1])
+        return sigma0 * (1 - Ri^2 / r^2 * (3 / 2 * cos(2 * th) + cos(4 * th)) +
+                3 / 2 * Ri^4 / r^4 * cos(4 * th))
     end
     function sigmayy(x)
-        local r=norm(x[1:2]);
-        local th = atan(x[2],x[1]);
-        return -sigma0*(Ri^2/r^2*(1/2*cos(2*th)-cos(4*th))+3/2*Ri^4/r^4*cos(4*th));
+        local r = norm(x[1:2])
+        local th = atan(x[2], x[1])
+        return -sigma0 * (Ri^2 / r^2 * (1 / 2 * cos(2 * th) - cos(4 * th)) +
+                3 / 2 * Ri^4 / r^4 * cos(4 * th))
     end
     function sigmaxy(x)
-        local r=norm(x[1:2]);
-        local th = atan(x[2],x[1]);
-        return -sigma0*(Ri^2/r^2*(1/2*sin(2*th)+sin(4*th))-3/2*Ri^4/r^4*sin(4*th));
+        local r = norm(x[1:2])
+        local th = atan(x[2], x[1])
+        return -sigma0 * (Ri^2 / r^2 * (1 / 2 * sin(2 * th) + sin(4 * th)) -
+                3 / 2 * Ri^4 / r^4 * sin(4 * th))
     end
     function sigmarr(x)
-        local r = norm(x[1:2]);
-        local th = atan(x[2],x[1]);
-        return sigma0/2*(1-Ri^2/r^2) + sigma0/2*(1-4*Ri^2/r^2+3*Ri^4/r^4)*cos(2*th)
+        local r = norm(x[1:2])
+        local th = atan(x[2], x[1])
+        return sigma0 / 2 * (1 - Ri^2 / r^2) +
+               sigma0 / 2 * (1 - 4 * Ri^2 / r^2 + 3 * Ri^4 / r^4) * cos(2 * th)
     end
     function sigmatt(x)
-        local r = norm(x[1:2]);
-        local th = atan(x[2],x[1]);
-        return sigma0/2*(1+Ri^2/r^2) - sigma0/2*(1+3*Ri^4/r^4)*cos(2*th)
+        local r = norm(x[1:2])
+        local th = atan(x[2], x[1])
+        return sigma0 / 2 * (1 + Ri^2 / r^2) -
+               sigma0 / 2 * (1 + 3 * Ri^4 / r^4) * cos(2 * th)
     end
     function sigmart(x)
-        local r = norm(x[1:2]);
-        local th = atan(x[2],x[1]);
-        return -sigma0/2*(1+2*Ri^2/r^2-3*Ri^4/r^4)*sin(2*th)
+        local r = norm(x[1:2])
+        local th = atan(x[2], x[1])
+        return -sigma0 / 2 * (1 + 2 * Ri^2 / r^2 - 3 * Ri^4 / r^4) * sin(2 * th)
     end
 
     convergencestudy = FDataDict[]
     for ref in 0:1:2
         println("ref = $(ref)")
         # Thickness = H
-        Thickness = H/2^ref
-        tolerance = Thickness/2^ref/1000.; # Geometrical tolerance
+        Thickness = H / 2^ref
+        tolerance = Thickness / 2^ref / 1000.0 # Geometrical tolerance
 
-        fens,fes = H20block(1.0, pi/2, Thickness, 2^ref*nRadial, 2^ref*nCircumferential, 2^ref*nThickness)
+        fens, fes = H20block(1.0,
+            pi / 2,
+            Thickness,
+            2^ref * nRadial,
+            2^ref * nCircumferential,
+            2^ref * nThickness)
 
-        bdryfes = meshboundary(fes);
-        icl = selectelem(fens, bdryfes, box=[1.0, 1.0, 0.0, pi/2, 0.0, Thickness], inflate=tolerance);
+        bdryfes = meshboundary(fes)
+        icl = selectelem(fens,
+            bdryfes,
+            box = [1.0, 1.0, 0.0, pi / 2, 0.0, Thickness],
+            inflate = tolerance)
 
-        for i=1:count(fens)
-            t=fens.xyz[i,1]; a=fens.xyz[i,2]; z=fens.xyz[i,3]
-            fens.xyz[i,:] = [(t*Re+(1-t)*Ri)*cos(a), (t*Re+(1-t)*Ri)*sin(a), z];
+        for i in 1:count(fens)
+            t = fens.xyz[i, 1]
+            a = fens.xyz[i, 2]
+            z = fens.xyz[i, 3]
+            fens.xyz[i, :] = [
+                (t * Re + (1 - t) * Ri) * cos(a),
+                (t * Re + (1 - t) * Ri) * sin(a),
+                z,
+            ]
         end
 
         geom = NodalField(fens.xyz)
-        u = NodalField(zeros(size(fens.xyz,1),3)) # displacement field
+        u = NodalField(zeros(size(fens.xyz, 1), 3)) # displacement field
 
-        l1 =selectnode(fens; box=[0.0, Inf, 0.0, 0.0, 0.0, Thickness], inflate = tolerance)
-        setebc!(u,l1,true, 2, 0.0)
-        l1 =selectnode(fens; box=[0.0, 0.0, 0.0, Inf, 0.0, Thickness], inflate = tolerance)
-        setebc!(u,l1,true, 1, 0.0)
+        l1 = selectnode(fens;
+            box = [0.0, Inf, 0.0, 0.0, 0.0, Thickness],
+            inflate = tolerance)
+        setebc!(u, l1, true, 2, 0.0)
+        l1 = selectnode(fens;
+            box = [0.0, 0.0, 0.0, Inf, 0.0, Thickness],
+            inflate = tolerance)
+        setebc!(u, l1, true, 1, 0.0)
         # Plane-stress constraint: assume the plane z=0 is the plane of symmetry of the plate
-        l1 =selectnode(fens; box=[0.0, Inf, 0.0, Inf, 0.0, 0.0], inflate = tolerance)
-        setebc!(u,l1,true, 3, 0.0)
+        l1 = selectnode(fens; box = [0.0, Inf, 0.0, Inf, 0.0, 0.0], inflate = tolerance)
+        setebc!(u, l1, true, 3, 0.0)
         # If this was enabled, the plane-strain  constraint would be enforced.
         # l1 =selectnode(fens; box=[0.0, Inf, 0.0, Inf, Thickness, Thickness], inflate = tolerance)
         # setebc!(u,l1,true, 3, 0.0)
 
         applyebc!(u)
         numberdofs!(u)
-        el1femm =  FEMMBase(IntegDomain(subset(bdryfes,icl), GaussRule(2, 3)))
-        function pfun(forceout::FVec{T}, XYZ::FFltMat, tangents::FFltMat, fe_label::FInt) where {T}
+        el1femm = FEMMBase(IntegDomain(subset(bdryfes, icl), GaussRule(2, 3)))
+        function pfun(forceout::FVec{T},
+            XYZ::FFltMat,
+            tangents::FFltMat,
+            fe_label::FInt) where {T}
             local r = sqrt(XYZ[1]^2 + XYZ[2]^2)
-            nx = XYZ[1]/r; ny = XYZ[2]/r
+            nx = XYZ[1] / r
+            ny = XYZ[2] / r
             forceout[1] = sigmarr(XYZ) * nx - sigmart(XYZ) * ny
             forceout[2] = sigmarr(XYZ) * ny + sigmart(XYZ) * nx
             forceout[3] = 0.0
             return forceout
         end
-        fi = ForceIntensity(Float64, 3, pfun);
-        F2 = distribloads(el1femm, geom, u, fi, 2);
+        fi = ForceIntensity(Float64, 3, pfun)
+        F2 = distribloads(el1femm, geom, u, fi, 2)
 
         MR = DeforModelRed3D
 
@@ -103,21 +130,20 @@ function plate_w_hole_H20_stress()
 
         K = stiffness(femm, geom, u)
         K = cholesky(K)
-        U = K\(F2)
+        U = K \ (F2)
         scattersysvec!(u, U[:])
 
         stressfields = elemfieldfromintegpoints(femm, geom, u, :Cauchy, collect(1:6))
 
-        push!(convergencestudy, FDataDict(
-        "elementsize"=> 1.0 / 2^ref,
-        "fens"=>fens,
-        "fes"=>fes,
-        "geom"=>geom,
-        "u"=>u,
-        "femm"=>femm,
-        "stressfields"=>[stressfields],
-        "tolerance"=>tolerance)
-        )
+        push!(convergencestudy,
+            FDataDict("elementsize" => 1.0 / 2^ref,
+                "fens" => fens,
+                "fes" => fes,
+                "geom" => geom,
+                "u" => u,
+                "femm" => femm,
+                "stressfields" => [stressfields],
+                "tolerance" => tolerance))
     end # for ref in
 
     # File = "mplate_w_hole_H20m_stress"
@@ -127,45 +153,49 @@ function plate_w_hole_H20_stress()
 
 end # plate_w_hole_H20_stress
 
-
 function plate_w_hole_MSH8_convergence()
-    E = 2.4*phun("MEGA*PA");# 210e3 MPa
-    nu = 0.49995;
-    Re = 0.3*phun("M"); # outer radius
-    Ri= 0.1*phun("M"); # hole radius
-    H = 0.1*phun("M") # thickness of the plate
-    nRadial, nCircumferential=3, 5;
-    sigma0=1*phun("MEGA*PA");
+    E = 2.4 * phun("MEGA*PA")# 210e3 MPa
+    nu = 0.49995
+    Re = 0.3 * phun("M") # outer radius
+    Ri = 0.1 * phun("M") # hole radius
+    H = 0.1 * phun("M") # thickness of the plate
+    nRadial, nCircumferential = 3, 5
+    sigma0 = 1 * phun("MEGA*PA")
 
     function sigmaxx(x)
-        local r = norm(x[1:2]);
-        local th = atan(x[2],x[1]);
-        return sigma0*(1-Ri^2/r^2*(3/2*cos(2*th)+cos(4*th))+3/2*Ri^4/r^4*cos(4*th));
+        local r = norm(x[1:2])
+        local th = atan(x[2], x[1])
+        return sigma0 * (1 - Ri^2 / r^2 * (3 / 2 * cos(2 * th) + cos(4 * th)) +
+                3 / 2 * Ri^4 / r^4 * cos(4 * th))
     end
     function sigmayy(x)
-        local r=norm(x[1:2]);
-        local th = atan(x[2],x[1]);
-        return -sigma0*(Ri^2/r^2*(1/2*cos(2*th)-cos(4*th))+3/2*Ri^4/r^4*cos(4*th));
+        local r = norm(x[1:2])
+        local th = atan(x[2], x[1])
+        return -sigma0 * (Ri^2 / r^2 * (1 / 2 * cos(2 * th) - cos(4 * th)) +
+                3 / 2 * Ri^4 / r^4 * cos(4 * th))
     end
     function sigmaxy(x)
-        local r=norm(x[1:2]);
-        local th = atan(x[2],x[1]);
-        return -sigma0*(Ri^2/r^2*(1/2*sin(2*th)+sin(4*th))-3/2*Ri^4/r^4*sin(4*th));
+        local r = norm(x[1:2])
+        local th = atan(x[2], x[1])
+        return -sigma0 * (Ri^2 / r^2 * (1 / 2 * sin(2 * th) + sin(4 * th)) -
+                3 / 2 * Ri^4 / r^4 * sin(4 * th))
     end
     function sigmarr(x)
-        local r = norm(x[1:2]);
-        local th = atan(x[2],x[1]);
-        return sigma0/2*(1-Ri^2/r^2) + sigma0/2*(1-4*Ri^2/r^2+3*Ri^4/r^4)*cos(2*th)
+        local r = norm(x[1:2])
+        local th = atan(x[2], x[1])
+        return sigma0 / 2 * (1 - Ri^2 / r^2) +
+               sigma0 / 2 * (1 - 4 * Ri^2 / r^2 + 3 * Ri^4 / r^4) * cos(2 * th)
     end
     function sigmatt(x)
-        local r = norm(x[1:2]);
-        local th = atan(x[2],x[1]);
-        return sigma0/2*(1+Ri^2/r^2) - sigma0/2*(1+3*Ri^4/r^4)*cos(2*th)
+        local r = norm(x[1:2])
+        local th = atan(x[2], x[1])
+        return sigma0 / 2 * (1 + Ri^2 / r^2) -
+               sigma0 / 2 * (1 + 3 * Ri^4 / r^4) * cos(2 * th)
     end
     function sigmart(x)
-        local r = norm(x[1:2]);
-        local th = atan(x[2],x[1]);
-        return -sigma0/2*(1+2*Ri^2/r^2-3*Ri^4/r^4)*sin(2*th)
+        local r = norm(x[1:2])
+        local th = atan(x[2], x[1])
+        return -sigma0 / 2 * (1 + 2 * Ri^2 / r^2 - 3 * Ri^4 / r^4) * sin(2 * th)
     end
 
     sigxderrs = Dict{Symbol, FFltVec}()
@@ -179,17 +209,31 @@ function plate_w_hole_MSH8_convergence()
         numnodes = []
         for ref in 0:1:2
             # Thickness = H
-            Thickness = H/2^ref
-            tolerance = Thickness/2^ref/1000.; # Geometrical tolerance
+            Thickness = H / 2^ref
+            tolerance = Thickness / 2^ref / 1000.0 # Geometrical tolerance
 
-            fens,fes = H8block(1.0, pi/2, Thickness, 2^ref*nRadial, 2^ref*nCircumferential, 1)
+            fens, fes = H8block(1.0,
+                pi / 2,
+                Thickness,
+                2^ref * nRadial,
+                2^ref * nCircumferential,
+                1)
 
-            bdryfes = meshboundary(fes);
-            icl = selectelem(fens, bdryfes, box=[1.0, 1.0, 0.0, pi/2, 0.0, Thickness], inflate=tolerance);
+            bdryfes = meshboundary(fes)
+            icl = selectelem(fens,
+                bdryfes,
+                box = [1.0, 1.0, 0.0, pi / 2, 0.0, Thickness],
+                inflate = tolerance)
 
-            for i=1:count(fens)
-                t=fens.xyz[i,1]; a=fens.xyz[i,2]; z=fens.xyz[i,3]
-                fens.xyz[i,:] = [(t*Re+(1-t)*Ri)*cos(a), (t*Re+(1-t)*Ri)*sin(a), z];
+            for i in 1:count(fens)
+                t = fens.xyz[i, 1]
+                a = fens.xyz[i, 2]
+                z = fens.xyz[i, 3]
+                fens.xyz[i, :] = [
+                    (t * Re + (1 - t) * Ri) * cos(a),
+                    (t * Re + (1 - t) * Ri) * sin(a),
+                    z,
+                ]
             end
 
             # File =  "a.vtk"
@@ -198,25 +242,33 @@ function plate_w_hole_MSH8_convergence()
             # @async run(`"paraview.exe" $File`)
 
             geom = NodalField(fens.xyz)
-            u = NodalField(zeros(size(fens.xyz,1),3)) # displacement field
+            u = NodalField(zeros(size(fens.xyz, 1), 3)) # displacement field
 
-            l1 =selectnode(fens; box=[0.0, Inf, 0.0, 0.0, 0.0, Thickness], inflate = tolerance)
-            setebc!(u,l1,true, 2, 0.0)
-            l1 =selectnode(fens; box=[0.0, 0.0, 0.0, Inf, 0.0, Thickness], inflate = tolerance)
-            setebc!(u,l1,true, 1, 0.0)
+            l1 = selectnode(fens;
+                box = [0.0, Inf, 0.0, 0.0, 0.0, Thickness],
+                inflate = tolerance)
+            setebc!(u, l1, true, 2, 0.0)
+            l1 = selectnode(fens;
+                box = [0.0, 0.0, 0.0, Inf, 0.0, Thickness],
+                inflate = tolerance)
+            setebc!(u, l1, true, 1, 0.0)
             # Plane-stress constraint: assume the plane z=0 is the plane of symmetry of the plate
-            l1 =selectnode(fens; box=[0.0, Inf, 0.0, Inf, 0.0, 0.0], inflate = tolerance)
-            setebc!(u,l1,true, 3, 0.0)
+            l1 = selectnode(fens; box = [0.0, Inf, 0.0, Inf, 0.0, 0.0], inflate = tolerance)
+            setebc!(u, l1, true, 3, 0.0)
             # If this was enabled, the plane-strain  constraint would be enforced.
             # l1 =selectnode(fens; box=[0.0, Inf, 0.0, Inf, Thickness, Thickness], inflate = tolerance)
             # setebc!(u,l1,true, 3, 0.0)
 
             applyebc!(u)
             numberdofs!(u)
-            el1femm =  FEMMBase(IntegDomain(subset(bdryfes,icl), GaussRule(2, 2)))
-            function pfun(forceout::FVec{T}, XYZ::FFltMat, tangents::FFltMat, fe_label::FInt) where {T}
+            el1femm = FEMMBase(IntegDomain(subset(bdryfes, icl), GaussRule(2, 2)))
+            function pfun(forceout::FVec{T},
+                XYZ::FFltMat,
+                tangents::FFltMat,
+                fe_label::FInt) where {T}
                 local r = sqrt(XYZ[1]^2 + XYZ[2]^2)
-                nx = XYZ[1]/r; ny = XYZ[2]/r
+                nx = XYZ[1] / r
+                ny = XYZ[2] / r
                 # local sx, sy, txy
                 # sx, sy, txy = sigmaxx(XYZ), sigmayy(XYZ), sigmaxy(XYZ)
                 # sn = sx * nx^2 + sy * ny^2 + 2 * nx * ny * txy
@@ -229,8 +281,8 @@ function plate_w_hole_MSH8_convergence()
                 forceout[3] = 0.0
                 return forceout
             end
-            fi = ForceIntensity(Float64, 3, pfun);
-            F2 = distribloads(el1femm, geom, u, fi, 2);
+            fi = ForceIntensity(Float64, 3, pfun)
+            F2 = distribloads(el1femm, geom, u, fi, 2)
 
             MR = DeforModelRed3D
 
@@ -243,11 +295,15 @@ function plate_w_hole_MSH8_convergence()
 
             K = stiffness(femm, geom, u)
             K = cholesky(K)
-            U = K\(F2)
+            U = K \ (F2)
             scattersysvec!(u, U[:])
 
-            nlA = selectnode(fens, box=[Ri, Ri, 0.0, 0.0, 0.0, Thickness], inflate=tolerance);
-            nlB = selectnode(fens, box=[0.0, 0.0, Ri, Ri, 0.0, Thickness], inflate=tolerance);
+            nlA = selectnode(fens,
+                box = [Ri, Ri, 0.0, 0.0, 0.0, Thickness],
+                inflate = tolerance)
+            nlB = selectnode(fens,
+                box = [0.0, 0.0, Ri, Ri, 0.0, Thickness],
+                inflate = tolerance)
             # thecorneru = zeros(FFlt,length(nlA),3)
             # gathervalues_asmat!(u, thecorneru, nl);
             # thecorneru = mean(thecorneru, 1)[1]/phun("mm")
@@ -255,19 +311,19 @@ function plate_w_hole_MSH8_convergence()
 
             println("Extrapolation: $( extrap )--------------- ")
             sigx = fieldfromintegpoints(femm, geom, u, :Cauchy, 1;
-            nodevalmethod = :averaging, reportat = extrap)
+                nodevalmethod = :averaging, reportat = extrap)
             sigy = fieldfromintegpoints(femm, geom, u, :Cauchy, 2;
-            nodevalmethod = :averaging, reportat = extrap)
-            sigyA = mean(sigy.values[nlA,1], dims = 1)[1]
+                nodevalmethod = :averaging, reportat = extrap)
+            sigyA = mean(sigy.values[nlA, 1], dims = 1)[1]
             sigyAtrue = sigmatt([Ri, 0.0, 0.0])
             println("sig_y@A =$(sigyA/phun("MPa")) vs $(sigyAtrue/phun("MPa")) [MPa]")
-            sigxB = mean(sigx.values[nlB,1], dims = 1)[1]
+            sigxB = mean(sigx.values[nlB, 1], dims = 1)[1]
             sigxBtrue = sigmatt([0.0, Ri, 0.0])
             println("sig_x@B =$(sigxB/phun("MPa")) vs $(sigxBtrue/phun("MPa")) [MPa]")
             push!(numnodes, count(fens))
             push!(numelements, count(fes))
-            push!(sigxderrs[extrap], abs(sigxB/sigxBtrue - 1.0))
-            push!(sigyderrs[extrap], abs(sigyA/sigyAtrue - 1.0))
+            push!(sigxderrs[extrap], abs(sigxB / sigxBtrue - 1.0))
+            push!(sigyderrs[extrap], abs(sigyA / sigyAtrue - 1.0))
             # File =  "a.vtk"
             # vtkexportmesh(File, fes.conn, geom.values,
             # FinEtools.MeshExportModule.H8; vectors=[("u", u.values)],
@@ -277,49 +333,58 @@ function plate_w_hole_MSH8_convergence()
     end
 
     File = "plate_w_hole_MSH8_convergence.CSV"
-    savecsv(File, numelements=vec(numelements), numnodes=vec(numnodes), sigxderrtrend=vec(sigxderrs[:extraptrend]), sigxderrdefault=vec(sigxderrs[:extrapmean]), sigyderrtrend=vec(sigyderrs[:extraptrend]), sigyderrdefault=vec(sigyderrs[:extrapmean]))
-
+    savecsv(File,
+        numelements = vec(numelements),
+        numnodes = vec(numnodes),
+        sigxderrtrend = vec(sigxderrs[:extraptrend]),
+        sigxderrdefault = vec(sigxderrs[:extrapmean]),
+        sigyderrtrend = vec(sigyderrs[:extraptrend]),
+        sigyderrdefault = vec(sigyderrs[:extrapmean]))
 end # plate_w_hole_MSH8_convergence
 
-
 function plate_w_hole_MSH8_PE_convergence()
-    E = 2.4*phun("MEGA*PA");# 210e3 MPa
-    nu = 0.49995;
-    Re = 0.3*phun("M"); # outer radius
-    Ri= 0.1*phun("M"); # hole radius
-    H = 0.1*phun("M") # thickness of the plate
-    nRadial, nCircumferential=3, 5;
-    sigma0=1*phun("MEGA*PA");
+    E = 2.4 * phun("MEGA*PA")# 210e3 MPa
+    nu = 0.49995
+    Re = 0.3 * phun("M") # outer radius
+    Ri = 0.1 * phun("M") # hole radius
+    H = 0.1 * phun("M") # thickness of the plate
+    nRadial, nCircumferential = 3, 5
+    sigma0 = 1 * phun("MEGA*PA")
 
     function sigmaxx(x)
-        local r = norm(x[1:2]);
-        local th = atan(x[2],x[1]);
-        return sigma0*(1-Ri^2/r^2*(3/2*cos(2*th)+cos(4*th))+3/2*Ri^4/r^4*cos(4*th));
+        local r = norm(x[1:2])
+        local th = atan(x[2], x[1])
+        return sigma0 * (1 - Ri^2 / r^2 * (3 / 2 * cos(2 * th) + cos(4 * th)) +
+                3 / 2 * Ri^4 / r^4 * cos(4 * th))
     end
     function sigmayy(x)
-        local r=norm(x[1:2]);
-        local th = atan(x[2],x[1]);
-        return -sigma0*(Ri^2/r^2*(1/2*cos(2*th)-cos(4*th))+3/2*Ri^4/r^4*cos(4*th));
+        local r = norm(x[1:2])
+        local th = atan(x[2], x[1])
+        return -sigma0 * (Ri^2 / r^2 * (1 / 2 * cos(2 * th) - cos(4 * th)) +
+                3 / 2 * Ri^4 / r^4 * cos(4 * th))
     end
     function sigmaxy(x)
-        local r=norm(x[1:2]);
-        local th = atan(x[2],x[1]);
-        return -sigma0*(Ri^2/r^2*(1/2*sin(2*th)+sin(4*th))-3/2*Ri^4/r^4*sin(4*th));
+        local r = norm(x[1:2])
+        local th = atan(x[2], x[1])
+        return -sigma0 * (Ri^2 / r^2 * (1 / 2 * sin(2 * th) + sin(4 * th)) -
+                3 / 2 * Ri^4 / r^4 * sin(4 * th))
     end
     function sigmarr(x)
-        local r = norm(x[1:2]);
-        local th = atan(x[2],x[1]);
-        return sigma0/2*(1-Ri^2/r^2) + sigma0/2*(1-4*Ri^2/r^2+3*Ri^4/r^4)*cos(2*th)
+        local r = norm(x[1:2])
+        local th = atan(x[2], x[1])
+        return sigma0 / 2 * (1 - Ri^2 / r^2) +
+               sigma0 / 2 * (1 - 4 * Ri^2 / r^2 + 3 * Ri^4 / r^4) * cos(2 * th)
     end
     function sigmatt(x)
-        local r = norm(x[1:2]);
-        local th = atan(x[2],x[1]);
-        return sigma0/2*(1+Ri^2/r^2) - sigma0/2*(1+3*Ri^4/r^4)*cos(2*th)
+        local r = norm(x[1:2])
+        local th = atan(x[2], x[1])
+        return sigma0 / 2 * (1 + Ri^2 / r^2) -
+               sigma0 / 2 * (1 + 3 * Ri^4 / r^4) * cos(2 * th)
     end
     function sigmart(x)
-        local r = norm(x[1:2]);
-        local th = atan(x[2],x[1]);
-        return -sigma0/2*(1+2*Ri^2/r^2-3*Ri^4/r^4)*sin(2*th)
+        local r = norm(x[1:2])
+        local th = atan(x[2], x[1])
+        return -sigma0 / 2 * (1 + 2 * Ri^2 / r^2 - 3 * Ri^4 / r^4) * sin(2 * th)
     end
 
     sigxderrs = Dict{Symbol, FFltVec}()
@@ -333,17 +398,31 @@ function plate_w_hole_MSH8_PE_convergence()
         numnodes = []
         for ref in 0:1:2
             # Thickness = H
-            Thickness = H/2^ref
-            tolerance = Thickness/2^ref/1000.; # Geometrical tolerance
+            Thickness = H / 2^ref
+            tolerance = Thickness / 2^ref / 1000.0 # Geometrical tolerance
 
-            fens,fes = H8block(1.0, pi/2, Thickness, 2^ref*nRadial, 2^ref*nCircumferential, 1)
+            fens, fes = H8block(1.0,
+                pi / 2,
+                Thickness,
+                2^ref * nRadial,
+                2^ref * nCircumferential,
+                1)
 
-            bdryfes = meshboundary(fes);
-            icl = selectelem(fens, bdryfes, box=[1.0, 1.0, 0.0, pi/2, 0.0, Thickness], inflate=tolerance);
+            bdryfes = meshboundary(fes)
+            icl = selectelem(fens,
+                bdryfes,
+                box = [1.0, 1.0, 0.0, pi / 2, 0.0, Thickness],
+                inflate = tolerance)
 
-            for i=1:count(fens)
-                t=fens.xyz[i,1]; a=fens.xyz[i,2]; z=fens.xyz[i,3]
-                fens.xyz[i,:] = [(t*Re+(1-t)*Ri)*cos(a), (t*Re+(1-t)*Ri)*sin(a), z];
+            for i in 1:count(fens)
+                t = fens.xyz[i, 1]
+                a = fens.xyz[i, 2]
+                z = fens.xyz[i, 3]
+                fens.xyz[i, :] = [
+                    (t * Re + (1 - t) * Ri) * cos(a),
+                    (t * Re + (1 - t) * Ri) * sin(a),
+                    z,
+                ]
             end
 
             # File =  "a.vtk"
@@ -352,25 +431,35 @@ function plate_w_hole_MSH8_PE_convergence()
             # @async run(`"paraview.exe" $File`)
 
             geom = NodalField(fens.xyz)
-            u = NodalField(zeros(size(fens.xyz,1),3)) # displacement field
+            u = NodalField(zeros(size(fens.xyz, 1), 3)) # displacement field
 
-            l1 =selectnode(fens; box=[0.0, Inf, 0.0, 0.0, 0.0, Thickness], inflate = tolerance)
-            setebc!(u,l1,true, 2, 0.0)
-            l1 =selectnode(fens; box=[0.0, 0.0, 0.0, Inf, 0.0, Thickness], inflate = tolerance)
-            setebc!(u,l1,true, 1, 0.0)
+            l1 = selectnode(fens;
+                box = [0.0, Inf, 0.0, 0.0, 0.0, Thickness],
+                inflate = tolerance)
+            setebc!(u, l1, true, 2, 0.0)
+            l1 = selectnode(fens;
+                box = [0.0, 0.0, 0.0, Inf, 0.0, Thickness],
+                inflate = tolerance)
+            setebc!(u, l1, true, 1, 0.0)
             # Plane-stress constraint: assume the plane z=0 is the plane of symmetry of the plate
-            l1 =selectnode(fens; box=[0.0, Inf, 0.0, Inf, 0.0, 0.0], inflate = tolerance)
-            setebc!(u,l1,true, 3, 0.0)
+            l1 = selectnode(fens; box = [0.0, Inf, 0.0, Inf, 0.0, 0.0], inflate = tolerance)
+            setebc!(u, l1, true, 3, 0.0)
             # If this was enabled, the plane-strain  constraint would be enforced.
-            l1 =selectnode(fens; box=[0.0, Inf, 0.0, Inf, Thickness, Thickness], inflate = tolerance)
-            setebc!(u,l1,true, 3, 0.0)
+            l1 = selectnode(fens;
+                box = [0.0, Inf, 0.0, Inf, Thickness, Thickness],
+                inflate = tolerance)
+            setebc!(u, l1, true, 3, 0.0)
 
             applyebc!(u)
             numberdofs!(u)
-            el1femm =  FEMMBase(IntegDomain(subset(bdryfes,icl), GaussRule(2, 2)))
-            function pfun(forceout::FVec{T}, XYZ::FFltMat, tangents::FFltMat, fe_label::FInt) where {T}
+            el1femm = FEMMBase(IntegDomain(subset(bdryfes, icl), GaussRule(2, 2)))
+            function pfun(forceout::FVec{T},
+                XYZ::FFltMat,
+                tangents::FFltMat,
+                fe_label::FInt) where {T}
                 local r = sqrt(XYZ[1]^2 + XYZ[2]^2)
-                nx = XYZ[1]/r; ny = XYZ[2]/r
+                nx = XYZ[1] / r
+                ny = XYZ[2] / r
                 # local sx, sy, txy
                 # sx, sy, txy = sigmaxx(XYZ), sigmayy(XYZ), sigmaxy(XYZ)
                 # sn = sx * nx^2 + sy * ny^2 + 2 * nx * ny * txy
@@ -383,8 +472,8 @@ function plate_w_hole_MSH8_PE_convergence()
                 forceout[3] = 0.0
                 return forceout
             end
-            fi = ForceIntensity(Float64, 3, pfun);
-            F2 = distribloads(el1femm, geom, u, fi, 2);
+            fi = ForceIntensity(Float64, 3, pfun)
+            F2 = distribloads(el1femm, geom, u, fi, 2)
 
             MR = DeforModelRed3D
 
@@ -397,11 +486,15 @@ function plate_w_hole_MSH8_PE_convergence()
 
             K = stiffness(femm, geom, u)
             K = cholesky(K)
-            U = K\(F2)
+            U = K \ (F2)
             scattersysvec!(u, U[:])
 
-            nlA = selectnode(fens, box=[Ri, Ri, 0.0, 0.0, 0.0, Thickness], inflate=tolerance);
-            nlB = selectnode(fens, box=[0.0, 0.0, Ri, Ri, 0.0, Thickness], inflate=tolerance);
+            nlA = selectnode(fens,
+                box = [Ri, Ri, 0.0, 0.0, 0.0, Thickness],
+                inflate = tolerance)
+            nlB = selectnode(fens,
+                box = [0.0, 0.0, Ri, Ri, 0.0, Thickness],
+                inflate = tolerance)
             # thecorneru = zeros(FFlt,length(nlA),3)
             # gathervalues_asmat!(u, thecorneru, nl);
             # thecorneru = mean(thecorneru, 1)[1]/phun("mm")
@@ -409,19 +502,19 @@ function plate_w_hole_MSH8_PE_convergence()
 
             println("Extrapolation: $( extrapolation )")
             sigx = fieldfromintegpoints(femm, geom, u, :Cauchy, 1;
-            nodevalmethod = :averaging, reportat = extrapolation)
+                nodevalmethod = :averaging, reportat = extrapolation)
             sigy = fieldfromintegpoints(femm, geom, u, :Cauchy, 2;
-            nodevalmethod = :averaging, reportat = extrapolation)
-            sigyA = mean(sigy.values[nlA,1], dims = 1)[1]
+                nodevalmethod = :averaging, reportat = extrapolation)
+            sigyA = mean(sigy.values[nlA, 1], dims = 1)[1]
             sigyAtrue = sigmatt([Ri, 0.0, 0.0])
             println("sig_y@A =$(sigyA/phun("MPa")) vs $(sigyAtrue/phun("MPa")) [MPa]")
-            sigxB = mean(sigx.values[nlB,1], dims = 1)[1]
+            sigxB = mean(sigx.values[nlB, 1], dims = 1)[1]
             sigxBtrue = sigmatt([0.0, Ri, 0.0])
             println("sig_x@B =$(sigxB/phun("MPa")) vs $(sigxBtrue/phun("MPa")) [MPa]")
             push!(numnodes, count(fens))
             push!(numelements, count(fes))
-            push!(sigxderrs[extrapolation], abs(sigxB/sigxBtrue - 1.0))
-            push!(sigyderrs[extrapolation], abs(sigyA/sigyAtrue - 1.0))
+            push!(sigxderrs[extrapolation], abs(sigxB / sigxBtrue - 1.0))
+            push!(sigyderrs[extrapolation], abs(sigyA / sigyAtrue - 1.0))
             # File =  "a.vtk"
             # vtkexportmesh(File, fes.conn, geom.values,
             # FinEtools.MeshExportModule.H8; vectors=[("u", u.values)],
@@ -431,49 +524,58 @@ function plate_w_hole_MSH8_PE_convergence()
     end
 
     File = "plate_w_hole_PE_MSH8_convergence.CSV"
-    savecsv(File, numelements=vec(numelements), numnodes=vec(numnodes), sigxderrtrend=vec(sigxderrs[:extraptrend]), sigxderrdefault=vec(sigxderrs[:extrapmean]), sigyderrtrend=vec(sigyderrs[:extraptrend]), sigyderrdefault=vec(sigyderrs[:extrapmean]))
-
+    savecsv(File,
+        numelements = vec(numelements),
+        numnodes = vec(numnodes),
+        sigxderrtrend = vec(sigxderrs[:extraptrend]),
+        sigxderrdefault = vec(sigxderrs[:extrapmean]),
+        sigyderrtrend = vec(sigyderrs[:extraptrend]),
+        sigyderrdefault = vec(sigyderrs[:extrapmean]))
 end # plate_w_hole_MSH8_PE_convergence
 
-
 function plate_w_hole_MST10_convergence()
-    E = 2.4*phun("MEGA*PA");# 210e3 MPa
-    nu = 0.49995;
-    Re = 0.3*phun("M"); # outer radius
-    Ri= 0.1*phun("M"); # hole radius
-    H = 0.1*phun("M") # thickness of the plate
-    nRadial, nCircumferential=3, 5;
-    sigma0=1*phun("MEGA*PA");
+    E = 2.4 * phun("MEGA*PA")# 210e3 MPa
+    nu = 0.49995
+    Re = 0.3 * phun("M") # outer radius
+    Ri = 0.1 * phun("M") # hole radius
+    H = 0.1 * phun("M") # thickness of the plate
+    nRadial, nCircumferential = 3, 5
+    sigma0 = 1 * phun("MEGA*PA")
 
     function sigmaxx(x)
-        local r = norm(x[1:2]);
-        local th = atan(x[2],x[1]);
-        return sigma0*(1-Ri^2/r^2*(3/2*cos(2*th)+cos(4*th))+3/2*Ri^4/r^4*cos(4*th));
+        local r = norm(x[1:2])
+        local th = atan(x[2], x[1])
+        return sigma0 * (1 - Ri^2 / r^2 * (3 / 2 * cos(2 * th) + cos(4 * th)) +
+                3 / 2 * Ri^4 / r^4 * cos(4 * th))
     end
     function sigmayy(x)
-        local r=norm(x[1:2]);
-        local th = atan(x[2],x[1]);
-        return -sigma0*(Ri^2/r^2*(1/2*cos(2*th)-cos(4*th))+3/2*Ri^4/r^4*cos(4*th));
+        local r = norm(x[1:2])
+        local th = atan(x[2], x[1])
+        return -sigma0 * (Ri^2 / r^2 * (1 / 2 * cos(2 * th) - cos(4 * th)) +
+                3 / 2 * Ri^4 / r^4 * cos(4 * th))
     end
     function sigmaxy(x)
-        local r=norm(x[1:2]);
-        local th = atan(x[2],x[1]);
-        return -sigma0*(Ri^2/r^2*(1/2*sin(2*th)+sin(4*th))-3/2*Ri^4/r^4*sin(4*th));
+        local r = norm(x[1:2])
+        local th = atan(x[2], x[1])
+        return -sigma0 * (Ri^2 / r^2 * (1 / 2 * sin(2 * th) + sin(4 * th)) -
+                3 / 2 * Ri^4 / r^4 * sin(4 * th))
     end
     function sigmarr(x)
-        local r = norm(x[1:2]);
-        local th = atan(x[2],x[1]);
-        return sigma0/2*(1-Ri^2/r^2) + sigma0/2*(1-4*Ri^2/r^2+3*Ri^4/r^4)*cos(2*th)
+        local r = norm(x[1:2])
+        local th = atan(x[2], x[1])
+        return sigma0 / 2 * (1 - Ri^2 / r^2) +
+               sigma0 / 2 * (1 - 4 * Ri^2 / r^2 + 3 * Ri^4 / r^4) * cos(2 * th)
     end
     function sigmatt(x)
-        local r = norm(x[1:2]);
-        local th = atan(x[2],x[1]);
-        return sigma0/2*(1+Ri^2/r^2) - sigma0/2*(1+3*Ri^4/r^4)*cos(2*th)
+        local r = norm(x[1:2])
+        local th = atan(x[2], x[1])
+        return sigma0 / 2 * (1 + Ri^2 / r^2) -
+               sigma0 / 2 * (1 + 3 * Ri^4 / r^4) * cos(2 * th)
     end
     function sigmart(x)
-        local r = norm(x[1:2]);
-        local th = atan(x[2],x[1]);
-        return -sigma0/2*(1+2*Ri^2/r^2-3*Ri^4/r^4)*sin(2*th)
+        local r = norm(x[1:2])
+        local th = atan(x[2], x[1])
+        return -sigma0 / 2 * (1 + 2 * Ri^2 / r^2 - 3 * Ri^4 / r^4) * sin(2 * th)
     end
 
     sigxderrs = Dict{Symbol, FFltVec}()
@@ -487,17 +589,31 @@ function plate_w_hole_MST10_convergence()
         numnodes = []
         for ref in 0:1:3
             # Thickness = H
-            Thickness = H/2^ref
-            tolerance = Thickness/2^ref/1000.; # Geometrical tolerance
+            Thickness = H / 2^ref
+            tolerance = Thickness / 2^ref / 1000.0 # Geometrical tolerance
 
-            fens,fes = T10block(1.0, pi/2, Thickness, 2^ref*nRadial, 2^ref*nCircumferential, 1)
+            fens, fes = T10block(1.0,
+                pi / 2,
+                Thickness,
+                2^ref * nRadial,
+                2^ref * nCircumferential,
+                1)
 
-            bdryfes = meshboundary(fes);
-            icl = selectelem(fens, bdryfes, box=[1.0, 1.0, 0.0, pi/2, 0.0, Thickness], inflate=tolerance);
+            bdryfes = meshboundary(fes)
+            icl = selectelem(fens,
+                bdryfes,
+                box = [1.0, 1.0, 0.0, pi / 2, 0.0, Thickness],
+                inflate = tolerance)
 
-            for i=1:count(fens)
-                t=fens.xyz[i,1]; a=fens.xyz[i,2]; z=fens.xyz[i,3]
-                fens.xyz[i,:] = [(t*Re+(1-t)*Ri)*cos(a), (t*Re+(1-t)*Ri)*sin(a), z];
+            for i in 1:count(fens)
+                t = fens.xyz[i, 1]
+                a = fens.xyz[i, 2]
+                z = fens.xyz[i, 3]
+                fens.xyz[i, :] = [
+                    (t * Re + (1 - t) * Ri) * cos(a),
+                    (t * Re + (1 - t) * Ri) * sin(a),
+                    z,
+                ]
             end
 
             # File =  "a.vtk"
@@ -506,25 +622,33 @@ function plate_w_hole_MST10_convergence()
             # @async run(`"paraview.exe" $File`)
 
             geom = NodalField(fens.xyz)
-            u = NodalField(zeros(size(fens.xyz,1),3)) # displacement field
+            u = NodalField(zeros(size(fens.xyz, 1), 3)) # displacement field
 
-            l1 =selectnode(fens; box=[0.0, Inf, 0.0, 0.0, 0.0, Thickness], inflate = tolerance)
-            setebc!(u,l1,true, 2, 0.0)
-            l1 =selectnode(fens; box=[0.0, 0.0, 0.0, Inf, 0.0, Thickness], inflate = tolerance)
-            setebc!(u,l1,true, 1, 0.0)
+            l1 = selectnode(fens;
+                box = [0.0, Inf, 0.0, 0.0, 0.0, Thickness],
+                inflate = tolerance)
+            setebc!(u, l1, true, 2, 0.0)
+            l1 = selectnode(fens;
+                box = [0.0, 0.0, 0.0, Inf, 0.0, Thickness],
+                inflate = tolerance)
+            setebc!(u, l1, true, 1, 0.0)
             # Plane-stress constraint: assume the plane z=0 is the plane of symmetry of the plate
-            l1 =selectnode(fens; box=[0.0, Inf, 0.0, Inf, 0.0, 0.0], inflate = tolerance)
-            setebc!(u,l1,true, 3, 0.0)
+            l1 = selectnode(fens; box = [0.0, Inf, 0.0, Inf, 0.0, 0.0], inflate = tolerance)
+            setebc!(u, l1, true, 3, 0.0)
             # If this was enabled, the plane-strain  constraint would be enforced.
             # l1 =selectnode(fens; box=[0.0, Inf, 0.0, Inf, Thickness, Thickness], inflate = tolerance)
             # setebc!(u,l1,true, 3, 0.0)
 
             applyebc!(u)
             numberdofs!(u)
-            el1femm =  FEMMBase(IntegDomain(subset(bdryfes,icl), TriRule(3)))
-            function pfun(forceout::FVec{T}, XYZ::FFltMat, tangents::FFltMat, fe_label::FInt) where {T}
+            el1femm = FEMMBase(IntegDomain(subset(bdryfes, icl), TriRule(3)))
+            function pfun(forceout::FVec{T},
+                XYZ::FFltMat,
+                tangents::FFltMat,
+                fe_label::FInt) where {T}
                 local r = sqrt(XYZ[1]^2 + XYZ[2]^2)
-                nx = XYZ[1]/r; ny = XYZ[2]/r
+                nx = XYZ[1] / r
+                ny = XYZ[2] / r
                 # local sx, sy, txy
                 # sx, sy, txy = sigmaxx(XYZ), sigmayy(XYZ), sigmaxy(XYZ)
                 # sn = sx * nx^2 + sy * ny^2 + 2 * nx * ny * txy
@@ -537,8 +661,8 @@ function plate_w_hole_MST10_convergence()
                 forceout[3] = 0.0
                 return forceout
             end
-            fi = ForceIntensity(Float64, 3, pfun);
-            F2 = distribloads(el1femm, geom, u, fi, 2);
+            fi = ForceIntensity(Float64, 3, pfun)
+            F2 = distribloads(el1femm, geom, u, fi, 2)
 
             MR = DeforModelRed3D
 
@@ -551,29 +675,45 @@ function plate_w_hole_MST10_convergence()
 
             K = stiffness(femm, geom, u)
             K = cholesky(K)
-            U = K\(F2)
+            U = K \ (F2)
             scattersysvec!(u, U[:])
 
-            nlA = selectnode(fens, box=[Ri, Ri, 0.0, 0.0, 0.0, Thickness], inflate=tolerance);
-            nlB = selectnode(fens, box=[0.0, 0.0, Ri, Ri, 0.0, Thickness], inflate=tolerance);
+            nlA = selectnode(fens,
+                box = [Ri, Ri, 0.0, 0.0, 0.0, Thickness],
+                inflate = tolerance)
+            nlB = selectnode(fens,
+                box = [0.0, 0.0, Ri, Ri, 0.0, Thickness],
+                inflate = tolerance)
             # thecorneru = zeros(FFlt,length(nlA),3)
             # gathervalues_asmat!(u, thecorneru, nl);
             # thecorneru = mean(thecorneru, 1)[1]/phun("mm")
             # println("displacement = $(thecorneru) vs -0.10215 [MM]")
 
             println("Extrapolation: $( extrapolation )")
-            sigx = fieldfromintegpoints(femm, geom, u, :Cauchy, 1;            nodevalmethod = :averaging, reportat = extrapolation)
-            sigy = fieldfromintegpoints(femm, geom, u, :Cauchy, 2;            nodevalmethod = :averaging, reportat = extrapolation)
-            sigyA = mean(sigy.values[nlA,1], dims = 1)[1]
+            sigx = fieldfromintegpoints(femm,
+                geom,
+                u,
+                :Cauchy,
+                1;
+                nodevalmethod = :averaging,
+                reportat = extrapolation)
+            sigy = fieldfromintegpoints(femm,
+                geom,
+                u,
+                :Cauchy,
+                2;
+                nodevalmethod = :averaging,
+                reportat = extrapolation)
+            sigyA = mean(sigy.values[nlA, 1], dims = 1)[1]
             sigyAtrue = sigmatt([Ri, 0.0, 0.0])
             println("sig_y@A =$(sigyA/phun("MPa")) vs $(sigyAtrue/phun("MPa")) [MPa]")
-            sigxB = mean(sigx.values[nlB,1], dims = 1)[1]
+            sigxB = mean(sigx.values[nlB, 1], dims = 1)[1]
             sigxBtrue = sigmatt([0.0, Ri, 0.0])
             println("sig_x@B =$(sigxB/phun("MPa")) vs $(sigxBtrue/phun("MPa")) [MPa]")
             push!(numnodes, count(fens))
             push!(numelements, count(fes))
-            push!(sigxderrs[extrapolation], abs(sigxB/sigxBtrue - 1.0))
-            push!(sigyderrs[extrapolation], abs(sigyA/sigyAtrue - 1.0))
+            push!(sigxderrs[extrapolation], abs(sigxB / sigxBtrue - 1.0))
+            push!(sigyderrs[extrapolation], abs(sigyA / sigyAtrue - 1.0))
             # File =  "a.vtk"
             # vtkexportmesh(File, fes.conn, geom.values,
             # FinEtools.MeshExportModule.H8; vectors=[("u", u.values)],
@@ -583,49 +723,58 @@ function plate_w_hole_MST10_convergence()
     end
 
     File = "plate_w_hole_MST10_convergence.CSV"
-    savecsv(File, numelements=vec(numelements), numnodes=vec(numnodes), sigxderrtrend=vec(sigxderrs[:extraptrend]), sigxderrdefault=vec(sigxderrs[:extrapmean]), sigyderrtrend=vec(sigyderrs[:extraptrend]), sigyderrdefault=vec(sigyderrs[:extrapmean]))
-
+    savecsv(File,
+        numelements = vec(numelements),
+        numnodes = vec(numnodes),
+        sigxderrtrend = vec(sigxderrs[:extraptrend]),
+        sigxderrdefault = vec(sigxderrs[:extrapmean]),
+        sigyderrtrend = vec(sigyderrs[:extraptrend]),
+        sigyderrdefault = vec(sigyderrs[:extrapmean]))
 end # plate_w_hole_MST10_convergence
 
-
 function plate_w_hole_MST10_PE_convergence()
-    E = 2.4*phun("MEGA*PA");# 210e3 MPa
-    nu = 0.49995;
-    Re = 0.3*phun("M"); # outer radius
-    Ri= 0.1*phun("M"); # hole radius
-    H = 0.1*phun("M") # thickness of the plate
-    nRadial, nCircumferential=3, 5;
-    sigma0=1*phun("MEGA*PA");
+    E = 2.4 * phun("MEGA*PA")# 210e3 MPa
+    nu = 0.49995
+    Re = 0.3 * phun("M") # outer radius
+    Ri = 0.1 * phun("M") # hole radius
+    H = 0.1 * phun("M") # thickness of the plate
+    nRadial, nCircumferential = 3, 5
+    sigma0 = 1 * phun("MEGA*PA")
 
     function sigmaxx(x)
-        local r = norm(x[1:2]);
-        local th = atan(x[2],x[1]);
-        return sigma0*(1-Ri^2/r^2*(3/2*cos(2*th)+cos(4*th))+3/2*Ri^4/r^4*cos(4*th));
+        local r = norm(x[1:2])
+        local th = atan(x[2], x[1])
+        return sigma0 * (1 - Ri^2 / r^2 * (3 / 2 * cos(2 * th) + cos(4 * th)) +
+                3 / 2 * Ri^4 / r^4 * cos(4 * th))
     end
     function sigmayy(x)
-        local r=norm(x[1:2]);
-        local th = atan(x[2],x[1]);
-        return -sigma0*(Ri^2/r^2*(1/2*cos(2*th)-cos(4*th))+3/2*Ri^4/r^4*cos(4*th));
+        local r = norm(x[1:2])
+        local th = atan(x[2], x[1])
+        return -sigma0 * (Ri^2 / r^2 * (1 / 2 * cos(2 * th) - cos(4 * th)) +
+                3 / 2 * Ri^4 / r^4 * cos(4 * th))
     end
     function sigmaxy(x)
-        local r=norm(x[1:2]);
-        local th = atan(x[2],x[1]);
-        return -sigma0*(Ri^2/r^2*(1/2*sin(2*th)+sin(4*th))-3/2*Ri^4/r^4*sin(4*th));
+        local r = norm(x[1:2])
+        local th = atan(x[2], x[1])
+        return -sigma0 * (Ri^2 / r^2 * (1 / 2 * sin(2 * th) + sin(4 * th)) -
+                3 / 2 * Ri^4 / r^4 * sin(4 * th))
     end
     function sigmarr(x)
-        local r = norm(x[1:2]);
-        local th = atan(x[2],x[1]);
-        return sigma0/2*(1-Ri^2/r^2) + sigma0/2*(1-4*Ri^2/r^2+3*Ri^4/r^4)*cos(2*th)
+        local r = norm(x[1:2])
+        local th = atan(x[2], x[1])
+        return sigma0 / 2 * (1 - Ri^2 / r^2) +
+               sigma0 / 2 * (1 - 4 * Ri^2 / r^2 + 3 * Ri^4 / r^4) * cos(2 * th)
     end
     function sigmatt(x)
-        local r = norm(x[1:2]);
-        local th = atan(x[2],x[1]);
-        return sigma0/2*(1+Ri^2/r^2) - sigma0/2*(1+3*Ri^4/r^4)*cos(2*th)
+        local r = norm(x[1:2])
+        local th = atan(x[2], x[1])
+        return sigma0 / 2 * (1 + Ri^2 / r^2) -
+               sigma0 / 2 * (1 + 3 * Ri^4 / r^4) * cos(2 * th)
     end
     function sigmart(x)
-        local r = norm(x[1:2]);
-        local th = atan(x[2],x[1]);
-        return -sigma0/2*(1+2*Ri^2/r^2-3*Ri^4/r^4)*sin(2*th)
+        local r = norm(x[1:2])
+        local th = atan(x[2], x[1])
+        return -sigma0 / 2 * (1 + 2 * Ri^2 / r^2 - 3 * Ri^4 / r^4) * sin(2 * th)
     end
 
     sigxderrs = Dict{Symbol, FFltVec}()
@@ -639,17 +788,31 @@ function plate_w_hole_MST10_PE_convergence()
         numnodes = []
         for ref in 0:1:3
             # Thickness = H
-            Thickness = H/2^ref
-            tolerance = Thickness/2^ref/1000.; # Geometrical tolerance
+            Thickness = H / 2^ref
+            tolerance = Thickness / 2^ref / 1000.0 # Geometrical tolerance
 
-            fens,fes = T10block(1.0, pi/2, Thickness, 2^ref*nRadial, 2^ref*nCircumferential, 1)
+            fens, fes = T10block(1.0,
+                pi / 2,
+                Thickness,
+                2^ref * nRadial,
+                2^ref * nCircumferential,
+                1)
 
-            bdryfes = meshboundary(fes);
-            icl = selectelem(fens, bdryfes, box=[1.0, 1.0, 0.0, pi/2, 0.0, Thickness], inflate=tolerance);
+            bdryfes = meshboundary(fes)
+            icl = selectelem(fens,
+                bdryfes,
+                box = [1.0, 1.0, 0.0, pi / 2, 0.0, Thickness],
+                inflate = tolerance)
 
-            for i=1:count(fens)
-                t=fens.xyz[i,1]; a=fens.xyz[i,2]; z=fens.xyz[i,3]
-                fens.xyz[i,:] = [(t*Re+(1-t)*Ri)*cos(a), (t*Re+(1-t)*Ri)*sin(a), z];
+            for i in 1:count(fens)
+                t = fens.xyz[i, 1]
+                a = fens.xyz[i, 2]
+                z = fens.xyz[i, 3]
+                fens.xyz[i, :] = [
+                    (t * Re + (1 - t) * Ri) * cos(a),
+                    (t * Re + (1 - t) * Ri) * sin(a),
+                    z,
+                ]
             end
 
             # File =  "a.vtk"
@@ -658,25 +821,35 @@ function plate_w_hole_MST10_PE_convergence()
             # @async run(`"paraview.exe" $File`)
 
             geom = NodalField(fens.xyz)
-            u = NodalField(zeros(size(fens.xyz,1),3)) # displacement field
+            u = NodalField(zeros(size(fens.xyz, 1), 3)) # displacement field
 
-            l1 =selectnode(fens; box=[0.0, Inf, 0.0, 0.0, 0.0, Thickness], inflate = tolerance)
-            setebc!(u,l1,true, 2, 0.0)
-            l1 =selectnode(fens; box=[0.0, 0.0, 0.0, Inf, 0.0, Thickness], inflate = tolerance)
-            setebc!(u,l1,true, 1, 0.0)
+            l1 = selectnode(fens;
+                box = [0.0, Inf, 0.0, 0.0, 0.0, Thickness],
+                inflate = tolerance)
+            setebc!(u, l1, true, 2, 0.0)
+            l1 = selectnode(fens;
+                box = [0.0, 0.0, 0.0, Inf, 0.0, Thickness],
+                inflate = tolerance)
+            setebc!(u, l1, true, 1, 0.0)
             # Plane-stress constraint: assume the plane z=0 is the plane of symmetry of the plate
-            l1 =selectnode(fens; box=[0.0, Inf, 0.0, Inf, 0.0, 0.0], inflate = tolerance)
-            setebc!(u,l1,true, 3, 0.0)
+            l1 = selectnode(fens; box = [0.0, Inf, 0.0, Inf, 0.0, 0.0], inflate = tolerance)
+            setebc!(u, l1, true, 3, 0.0)
             # If this was enabled, the plane-strain  constraint would be enforced.
-            l1 =selectnode(fens; box=[0.0, Inf, 0.0, Inf, Thickness, Thickness], inflate = tolerance)
-            setebc!(u,l1,true, 3, 0.0)
+            l1 = selectnode(fens;
+                box = [0.0, Inf, 0.0, Inf, Thickness, Thickness],
+                inflate = tolerance)
+            setebc!(u, l1, true, 3, 0.0)
 
             applyebc!(u)
             numberdofs!(u)
-            el1femm =  FEMMBase(IntegDomain(subset(bdryfes,icl), TriRule(3)))
-            function pfun(forceout::FVec{T}, XYZ::FFltMat, tangents::FFltMat, fe_label::FInt) where {T}
+            el1femm = FEMMBase(IntegDomain(subset(bdryfes, icl), TriRule(3)))
+            function pfun(forceout::FVec{T},
+                XYZ::FFltMat,
+                tangents::FFltMat,
+                fe_label::FInt) where {T}
                 local r = sqrt(XYZ[1]^2 + XYZ[2]^2)
-                nx = XYZ[1]/r; ny = XYZ[2]/r
+                nx = XYZ[1] / r
+                ny = XYZ[2] / r
                 # local sx, sy, txy
                 # sx, sy, txy = sigmaxx(XYZ), sigmayy(XYZ), sigmaxy(XYZ)
                 # sn = sx * nx^2 + sy * ny^2 + 2 * nx * ny * txy
@@ -689,8 +862,8 @@ function plate_w_hole_MST10_PE_convergence()
                 forceout[3] = 0.0
                 return forceout
             end
-            fi = ForceIntensity(Float64, 3, pfun);
-            F2 = distribloads(el1femm, geom, u, fi, 2);
+            fi = ForceIntensity(Float64, 3, pfun)
+            F2 = distribloads(el1femm, geom, u, fi, 2)
 
             MR = DeforModelRed3D
 
@@ -703,11 +876,15 @@ function plate_w_hole_MST10_PE_convergence()
 
             K = stiffness(femm, geom, u)
             K = cholesky(K)
-            U = K\(F2)
+            U = K \ (F2)
             scattersysvec!(u, U[:])
 
-            nlA = selectnode(fens, box=[Ri, Ri, 0.0, 0.0, 0.0, Thickness], inflate=tolerance);
-            nlB = selectnode(fens, box=[0.0, 0.0, Ri, Ri, 0.0, Thickness], inflate=tolerance);
+            nlA = selectnode(fens,
+                box = [Ri, Ri, 0.0, 0.0, 0.0, Thickness],
+                inflate = tolerance)
+            nlB = selectnode(fens,
+                box = [0.0, 0.0, Ri, Ri, 0.0, Thickness],
+                inflate = tolerance)
             # thecorneru = zeros(FFlt,length(nlA),3)
             # gathervalues_asmat!(u, thecorneru, nl);
             # thecorneru = mean(thecorneru, 1)[1]/phun("mm")
@@ -715,19 +892,19 @@ function plate_w_hole_MST10_PE_convergence()
 
             println("Extrapolation: $( extrapolation )")
             sigx = fieldfromintegpoints(femm, geom, u, :Cauchy, 1;
-            nodevalmethod = :averaging, reportat = extrapolation)
+                nodevalmethod = :averaging, reportat = extrapolation)
             sigy = fieldfromintegpoints(femm, geom, u, :Cauchy, 2;
-            nodevalmethod = :averaging, reportat = extrapolation)
-            sigyA = mean(sigy.values[nlA,1], dims = 1)[1]
+                nodevalmethod = :averaging, reportat = extrapolation)
+            sigyA = mean(sigy.values[nlA, 1], dims = 1)[1]
             sigyAtrue = sigmatt([Ri, 0.0, 0.0])
             println("sig_y@A =$(sigyA/phun("MPa")) vs $(sigyAtrue/phun("MPa")) [MPa]")
-            sigxB = mean(sigx.values[nlB,1], dims = 1)[1]
+            sigxB = mean(sigx.values[nlB, 1], dims = 1)[1]
             sigxBtrue = sigmatt([0.0, Ri, 0.0])
             println("sig_x@B =$(sigxB/phun("MPa")) vs $(sigxBtrue/phun("MPa")) [MPa]")
             push!(numnodes, count(fens))
             push!(numelements, count(fes))
-            push!(sigxderrs[extrapolation], abs(sigxB/sigxBtrue - 1.0))
-            push!(sigyderrs[extrapolation], abs(sigyA/sigyAtrue - 1.0))
+            push!(sigxderrs[extrapolation], abs(sigxB / sigxBtrue - 1.0))
+            push!(sigyderrs[extrapolation], abs(sigyA / sigyAtrue - 1.0))
             # File =  "a.vtk"
             # vtkexportmesh(File, fes.conn, geom.values,
             # FinEtools.MeshExportModule.H8; vectors=[("u", u.values)],
@@ -737,95 +914,126 @@ function plate_w_hole_MST10_PE_convergence()
     end
 
     File = "plate_w_hole_PE_MST10_convergence.CSV"
-    savecsv(File, numelements=vec(numelements), numnodes=vec(numnodes), sigxderrtrend=vec(sigxderrs[:extraptrend]), sigxderrdefault=vec(sigxderrs[:extrapmean]), sigyderrtrend=vec(sigyderrs[:extraptrend]), sigyderrdefault=vec(sigyderrs[:extrapmean]))
-
+    savecsv(File,
+        numelements = vec(numelements),
+        numnodes = vec(numnodes),
+        sigxderrtrend = vec(sigxderrs[:extraptrend]),
+        sigxderrdefault = vec(sigxderrs[:extrapmean]),
+        sigyderrtrend = vec(sigyderrs[:extraptrend]),
+        sigyderrdefault = vec(sigyderrs[:extrapmean]))
 end # plate_w_hole_MST10_PE_convergence
 
-
 function plate_w_hole_MST10_stress()
-    E = 2.4*phun("MEGA*PA");# 210e3 MPa
-    nu = 0.3;
-    Re = 0.3*phun("M"); # outer radius
-    Ri= 0.1*phun("M"); # hole radius
-    H = 0.1*phun("M") # thickness of the plate
-    nRadial, nCircumferential, nThickness = 6, 8, 1;
-    sigma0=1*phun("MEGA*PA");
+    E = 2.4 * phun("MEGA*PA")# 210e3 MPa
+    nu = 0.3
+    Re = 0.3 * phun("M") # outer radius
+    Ri = 0.1 * phun("M") # hole radius
+    H = 0.1 * phun("M") # thickness of the plate
+    nRadial, nCircumferential, nThickness = 6, 8, 1
+    sigma0 = 1 * phun("MEGA*PA")
 
     function sigmaxx(x)
-        local r = norm(x[1:2]);
-        local th = atan(x[2],x[1]);
-        return sigma0*(1-Ri^2/r^2*(3/2*cos(2*th)+cos(4*th))+3/2*Ri^4/r^4*cos(4*th));
+        local r = norm(x[1:2])
+        local th = atan(x[2], x[1])
+        return sigma0 * (1 - Ri^2 / r^2 * (3 / 2 * cos(2 * th) + cos(4 * th)) +
+                3 / 2 * Ri^4 / r^4 * cos(4 * th))
     end
     function sigmayy(x)
-        local r=norm(x[1:2]);
-        local th = atan(x[2],x[1]);
-        return -sigma0*(Ri^2/r^2*(1/2*cos(2*th)-cos(4*th))+3/2*Ri^4/r^4*cos(4*th));
+        local r = norm(x[1:2])
+        local th = atan(x[2], x[1])
+        return -sigma0 * (Ri^2 / r^2 * (1 / 2 * cos(2 * th) - cos(4 * th)) +
+                3 / 2 * Ri^4 / r^4 * cos(4 * th))
     end
     function sigmaxy(x)
-        local r=norm(x[1:2]);
-        local th = atan(x[2],x[1]);
-        return -sigma0*(Ri^2/r^2*(1/2*sin(2*th)+sin(4*th))-3/2*Ri^4/r^4*sin(4*th));
+        local r = norm(x[1:2])
+        local th = atan(x[2], x[1])
+        return -sigma0 * (Ri^2 / r^2 * (1 / 2 * sin(2 * th) + sin(4 * th)) -
+                3 / 2 * Ri^4 / r^4 * sin(4 * th))
     end
     function sigmarr(x)
-        local r = norm(x[1:2]);
-        local th = atan(x[2],x[1]);
-        return sigma0/2*(1-Ri^2/r^2) + sigma0/2*(1-4*Ri^2/r^2+3*Ri^4/r^4)*cos(2*th)
+        local r = norm(x[1:2])
+        local th = atan(x[2], x[1])
+        return sigma0 / 2 * (1 - Ri^2 / r^2) +
+               sigma0 / 2 * (1 - 4 * Ri^2 / r^2 + 3 * Ri^4 / r^4) * cos(2 * th)
     end
     function sigmatt(x)
-        local r = norm(x[1:2]);
-        local th = atan(x[2],x[1]);
-        return sigma0/2*(1+Ri^2/r^2) - sigma0/2*(1+3*Ri^4/r^4)*cos(2*th)
+        local r = norm(x[1:2])
+        local th = atan(x[2], x[1])
+        return sigma0 / 2 * (1 + Ri^2 / r^2) -
+               sigma0 / 2 * (1 + 3 * Ri^4 / r^4) * cos(2 * th)
     end
     function sigmart(x)
-        local r = norm(x[1:2]);
-        local th = atan(x[2],x[1]);
-        return -sigma0/2*(1+2*Ri^2/r^2-3*Ri^4/r^4)*sin(2*th)
+        local r = norm(x[1:2])
+        local th = atan(x[2], x[1])
+        return -sigma0 / 2 * (1 + 2 * Ri^2 / r^2 - 3 * Ri^4 / r^4) * sin(2 * th)
     end
 
     convergencestudy = FDataDict[]
     for ref in 0:1:2
         println("ref = $(ref)")
         # Thickness = H
-        Thickness = H/2^ref
-        tolerance = Thickness/2^ref/1000.; # Geometrical tolerance
+        Thickness = H / 2^ref
+        tolerance = Thickness / 2^ref / 1000.0 # Geometrical tolerance
 
-        fens,fes = T10block(1.0, pi/2, Thickness, 2^ref*nRadial, 2^ref*nCircumferential, 2^ref*nThickness)
+        fens, fes = T10block(1.0,
+            pi / 2,
+            Thickness,
+            2^ref * nRadial,
+            2^ref * nCircumferential,
+            2^ref * nThickness)
 
-        bdryfes = meshboundary(fes);
-        icl = selectelem(fens, bdryfes, box=[1.0, 1.0, 0.0, pi/2, 0.0, Thickness], inflate=tolerance);
+        bdryfes = meshboundary(fes)
+        icl = selectelem(fens,
+            bdryfes,
+            box = [1.0, 1.0, 0.0, pi / 2, 0.0, Thickness],
+            inflate = tolerance)
 
-        for i=1:count(fens)
-            t=fens.xyz[i,1]; a=fens.xyz[i,2]; z=fens.xyz[i,3]
-            fens.xyz[i,:] = [(t*Re+(1-t)*Ri)*cos(a), (t*Re+(1-t)*Ri)*sin(a), z];
+        for i in 1:count(fens)
+            t = fens.xyz[i, 1]
+            a = fens.xyz[i, 2]
+            z = fens.xyz[i, 3]
+            fens.xyz[i, :] = [
+                (t * Re + (1 - t) * Ri) * cos(a),
+                (t * Re + (1 - t) * Ri) * sin(a),
+                z,
+            ]
         end
 
         geom = NodalField(fens.xyz)
-        u = NodalField(zeros(size(fens.xyz,1),3)) # displacement field
+        u = NodalField(zeros(size(fens.xyz, 1), 3)) # displacement field
 
-        l1 =selectnode(fens; box=[0.0, Inf, 0.0, 0.0, 0.0, Thickness], inflate = tolerance)
-        setebc!(u,l1,true, 2, 0.0)
-        l1 =selectnode(fens; box=[0.0, 0.0, 0.0, Inf, 0.0, Thickness], inflate = tolerance)
-        setebc!(u,l1,true, 1, 0.0)
+        l1 = selectnode(fens;
+            box = [0.0, Inf, 0.0, 0.0, 0.0, Thickness],
+            inflate = tolerance)
+        setebc!(u, l1, true, 2, 0.0)
+        l1 = selectnode(fens;
+            box = [0.0, 0.0, 0.0, Inf, 0.0, Thickness],
+            inflate = tolerance)
+        setebc!(u, l1, true, 1, 0.0)
         # Plane-stress constraint: assume the plane z=0 is the plane of symmetry of the plate
-        l1 =selectnode(fens; box=[0.0, Inf, 0.0, Inf, 0.0, 0.0], inflate = tolerance)
-        setebc!(u,l1,true, 3, 0.0)
+        l1 = selectnode(fens; box = [0.0, Inf, 0.0, Inf, 0.0, 0.0], inflate = tolerance)
+        setebc!(u, l1, true, 3, 0.0)
         # If this was enabled, the plane-strain  constraint would be enforced.
         # l1 =selectnode(fens; box=[0.0, Inf, 0.0, Inf, Thickness, Thickness], inflate = tolerance)
         # setebc!(u,l1,true, 3, 0.0)
 
         applyebc!(u)
         numberdofs!(u)
-        el1femm =  FEMMBase(IntegDomain(subset(bdryfes,icl), TriRule(3)))
-        function pfun(forceout::FVec{T}, XYZ::FFltMat, tangents::FFltMat, fe_label::FInt) where {T}
+        el1femm = FEMMBase(IntegDomain(subset(bdryfes, icl), TriRule(3)))
+        function pfun(forceout::FVec{T},
+            XYZ::FFltMat,
+            tangents::FFltMat,
+            fe_label::FInt) where {T}
             local r = sqrt(XYZ[1]^2 + XYZ[2]^2)
-            nx = XYZ[1]/r; ny = XYZ[2]/r
+            nx = XYZ[1] / r
+            ny = XYZ[2] / r
             forceout[1] = sigmarr(XYZ) * nx - sigmart(XYZ) * ny
             forceout[2] = sigmarr(XYZ) * ny + sigmart(XYZ) * nx
             forceout[3] = 0.0
             return forceout
         end
-        fi = ForceIntensity(Float64, 3, pfun);
-        F2 = distribloads(el1femm, geom, u, fi, 2);
+        fi = ForceIntensity(Float64, 3, pfun)
+        F2 = distribloads(el1femm, geom, u, fi, 2)
 
         MR = DeforModelRed3D
 
@@ -838,21 +1046,20 @@ function plate_w_hole_MST10_stress()
 
         K = stiffness(femm, geom, u)
         K = cholesky(K)
-        U = K\(F2)
+        U = K \ (F2)
         scattersysvec!(u, U[:])
 
         stressfields = elemfieldfromintegpoints(femm, geom, u, :Cauchy, collect(1:6))
 
-        push!(convergencestudy, FDataDict(
-        "elementsize"=> 1.0 / 2^ref,
-        "fens"=>fens,
-        "fes"=>fes,
-        "geom"=>geom,
-        "u"=>u,
-        "femm"=>femm,
-        "stressfields"=>[stressfields],
-        "tolerance"=>tolerance)
-        )
+        push!(convergencestudy,
+            FDataDict("elementsize" => 1.0 / 2^ref,
+                "fens" => fens,
+                "fes" => fes,
+                "geom" => geom,
+                "u" => u,
+                "femm" => femm,
+                "stressfields" => [stressfields],
+                "tolerance" => tolerance))
     end # for ref in
 
     # File = "mplate_w_hole_MST10m_stress"
@@ -862,45 +1069,49 @@ function plate_w_hole_MST10_stress()
 
 end # plate_w_hole_MST10_stress
 
-
 function plate_w_hole_RECT_H20_convergence()
-    E = 210000*phun("MEGA*PA");# 210e3 MPa
-    nu = 0.3;
-    Ri= 0.15*phun("M"); # hole radius
-    Re = 2*Ri; # outer radius
-    H = 0.01*phun("M") # thickness of the plate
-    nRadial, nCircumferential=6, 3;
-    sigma0=1*phun("MEGA*PA");
+    E = 210000 * phun("MEGA*PA")# 210e3 MPa
+    nu = 0.3
+    Ri = 0.15 * phun("M") # hole radius
+    Re = 2 * Ri # outer radius
+    H = 0.01 * phun("M") # thickness of the plate
+    nRadial, nCircumferential = 6, 3
+    sigma0 = 1 * phun("MEGA*PA")
 
     function sigmaxx(x)
-        local r = norm(vec(x[1:2]));
-        local th = atan(x[2],x[1]);
-        return sigma0*(1-Ri^2/r^2*(3/2*cos(2*th)+cos(4*th))+3/2*Ri^4/r^4*cos(4*th));
+        local r = norm(vec(x[1:2]))
+        local th = atan(x[2], x[1])
+        return sigma0 * (1 - Ri^2 / r^2 * (3 / 2 * cos(2 * th) + cos(4 * th)) +
+                3 / 2 * Ri^4 / r^4 * cos(4 * th))
     end
     function sigmayy(x)
-        local r = norm(vec(x[1:2]));
-        local th = atan(x[2],x[1]);
-        return -sigma0*(Ri^2/r^2*(1/2*cos(2*th)-cos(4*th))+3/2*Ri^4/r^4*cos(4*th));
+        local r = norm(vec(x[1:2]))
+        local th = atan(x[2], x[1])
+        return -sigma0 * (Ri^2 / r^2 * (1 / 2 * cos(2 * th) - cos(4 * th)) +
+                3 / 2 * Ri^4 / r^4 * cos(4 * th))
     end
     function sigmaxy(x)
-        local r = norm(vec(x[1:2]));
-        local th = atan(x[2],x[1]);
-        return -sigma0*(Ri^2/r^2*(1/2*sin(2*th)+sin(4*th))-3/2*Ri^4/r^4*sin(4*th));
+        local r = norm(vec(x[1:2]))
+        local th = atan(x[2], x[1])
+        return -sigma0 * (Ri^2 / r^2 * (1 / 2 * sin(2 * th) + sin(4 * th)) -
+                3 / 2 * Ri^4 / r^4 * sin(4 * th))
     end
     function sigmarr(x)
-        local r = norm(vec(x[1:2]));
-        local th = atan(x[2],x[1]);
-        return sigma0/2*(1-Ri^2/r^2) + sigma0/2*(1-4*Ri^2/r^2+3*Ri^4/r^4)*cos(2*th)
+        local r = norm(vec(x[1:2]))
+        local th = atan(x[2], x[1])
+        return sigma0 / 2 * (1 - Ri^2 / r^2) +
+               sigma0 / 2 * (1 - 4 * Ri^2 / r^2 + 3 * Ri^4 / r^4) * cos(2 * th)
     end
     function sigmatt(x)
-        local r = norm(vec(x[1:2]));
-        local th = atan(x[2],x[1]);
-        return sigma0/2*(1+Ri^2/r^2) - sigma0/2*(1+3*Ri^4/r^4)*cos(2*th)
+        local r = norm(vec(x[1:2]))
+        local th = atan(x[2], x[1])
+        return sigma0 / 2 * (1 + Ri^2 / r^2) -
+               sigma0 / 2 * (1 + 3 * Ri^4 / r^4) * cos(2 * th)
     end
     function sigmart(x)
-        local r = norm(vec(x[1:2]));
-        local th = atan(x[2],x[1]);
-        return -sigma0/2*(1+2*Ri^2/r^2-3*Ri^4/r^4)*sin(2*th)
+        local r = norm(vec(x[1:2]))
+        local th = atan(x[2], x[1])
+        return -sigma0 / 2 * (1 + 2 * Ri^2 / r^2 - 3 * Ri^4 / r^4) * sin(2 * th)
     end
 
     sigyderrs = Dict{Symbol, FFltVec}()
@@ -912,11 +1123,11 @@ function plate_w_hole_RECT_H20_convergence()
         for ref in [1]
             Thickness = H
             # Thickness = H/2^ref
-            tolerance = Thickness/2^ref/1000.; # Geometrical tolerance
+            tolerance = Thickness / 2^ref / 1000.0 # Geometrical tolerance
 
-            fens,fes = H8elliphole(Ri, Ri, Re, Re, Thickness,
-            2^ref*nCircumferential, 2^ref*nCircumferential, 2^ref*nRadial, 1)
-            fens,fes = H8toH20(fens,fes)
+            fens, fes = H8elliphole(Ri, Ri, Re, Re, Thickness,
+                2^ref * nCircumferential, 2^ref * nCircumferential, 2^ref * nRadial, 1)
+            fens, fes = H8toH20(fens, fes)
             # File =  "a.vtk"
             # vtkexportmesh(File, fes.conn, fens.xyz,
             #     FinEtools.MeshExportModule.H20)
@@ -933,44 +1144,59 @@ function plate_w_hole_RECT_H20_convergence()
             #  println("Merged mesh=>$((count(fens3), count(fes3)))")
 
             geom = NodalField(fens.xyz)
-            u = NodalField(zeros(size(fens.xyz,1),3)) # displacement field
+            u = NodalField(zeros(size(fens.xyz, 1), 3)) # displacement field
 
-            l1 =selectnode(fens; box=[0.0, Inf, 0.0, 0.0, 0.0, Thickness], inflate = tolerance)
-            setebc!(u,l1,true, 2, 0.0)
-            l1 =selectnode(fens; box=[0.0, 0.0, 0.0, Inf, 0.0, Thickness], inflate = tolerance)
-            setebc!(u,l1,true, 1, 0.0)
-            l1 =selectnode(fens; box=[0.0, Inf, 0.0, Inf, 0.0, 0.0], inflate = tolerance)
-            setebc!(u,l1,true, 3, 0.0)
+            l1 = selectnode(fens;
+                box = [0.0, Inf, 0.0, 0.0, 0.0, Thickness],
+                inflate = tolerance)
+            setebc!(u, l1, true, 2, 0.0)
+            l1 = selectnode(fens;
+                box = [0.0, 0.0, 0.0, Inf, 0.0, Thickness],
+                inflate = tolerance)
+            setebc!(u, l1, true, 1, 0.0)
+            l1 = selectnode(fens; box = [0.0, Inf, 0.0, Inf, 0.0, 0.0], inflate = tolerance)
+            setebc!(u, l1, true, 3, 0.0)
             # l1 =selectnode(fens; box=[0.0, Inf, 0.0, Inf, Thickness, Thickness], inflate = tolerance)
             # setebc!(u,l1,true, 3, 0.0)
 
             applyebc!(u)
             numberdofs!(u)
 
-
-            bdryfes = meshboundary(fes);
+            bdryfes = meshboundary(fes)
             # ixl = selectelem(fens, bdryfes, plane=[1.0, 0.0, 0.0, Re], thickness=tolerance);
-            ixl = selectelem(fens, bdryfes, box=[Re, Re, -Inf, +Inf, -Inf, +Inf], inflate = tolerance);
-            elxfemm =  FEMMBase(IntegDomain(subset(bdryfes,ixl), GaussRule(2, 2)))
-            function pfunx(forceout::FVec{T}, XYZ::FFltMat, tangents::FFltMat, fe_label::FInt) where {T}
+            ixl = selectelem(fens,
+                bdryfes,
+                box = [Re, Re, -Inf, +Inf, -Inf, +Inf],
+                inflate = tolerance)
+            elxfemm = FEMMBase(IntegDomain(subset(bdryfes, ixl), GaussRule(2, 2)))
+            function pfunx(forceout::FVec{T},
+                XYZ::FFltMat,
+                tangents::FFltMat,
+                fe_label::FInt) where {T}
                 forceout[1] = sigmaxx(XYZ)
                 forceout[2] = sigmaxy(XYZ)
                 forceout[3] = 0.0
                 return forceout
             end
-            fi = ForceIntensity(Float64, 3, pfunx);
-            Fx = distribloads(elxfemm, geom, u, fi, 2);
+            fi = ForceIntensity(Float64, 3, pfunx)
+            Fx = distribloads(elxfemm, geom, u, fi, 2)
             # iyl = selectelem(fens, bdryfes, plane=[0.0, 1.0, 0.0, Re], thickness=tolerance);
-            iyl = selectelem(fens, bdryfes, box=[-Inf, +Inf, Re, Re, -Inf, +Inf], inflate = tolerance);
-            elyfemm =  FEMMBase(IntegDomain(subset(bdryfes,iyl), GaussRule(2, 2)))
-            function pfuny(forceout::FVec{T}, XYZ::FFltMat, tangents::FFltMat, fe_label::FInt) where {T}
+            iyl = selectelem(fens,
+                bdryfes,
+                box = [-Inf, +Inf, Re, Re, -Inf, +Inf],
+                inflate = tolerance)
+            elyfemm = FEMMBase(IntegDomain(subset(bdryfes, iyl), GaussRule(2, 2)))
+            function pfuny(forceout::FVec{T},
+                XYZ::FFltMat,
+                tangents::FFltMat,
+                fe_label::FInt) where {T}
                 forceout[1] = sigmaxy(XYZ)
                 forceout[2] = sigmayy(XYZ)
                 forceout[3] = 0.0
                 return forceout
             end
-            fi = ForceIntensity(Float64, 3, pfuny);
-            Fy = distribloads(elyfemm, geom, u, fi, 2);
+            fi = ForceIntensity(Float64, 3, pfuny)
+            Fy = distribloads(elyfemm, geom, u, fi, 2)
 
             MR = DeforModelRed3D
 
@@ -983,41 +1209,59 @@ function plate_w_hole_RECT_H20_convergence()
 
             K = stiffness(femm, geom, u)
             K = cholesky(K)
-            U = K\(Fx + Fy)
+            U = K \ (Fx + Fy)
             scattersysvec!(u, U[:])
             println("oof load = $(norm(Fx + Fy, 2))")
 
-            nlA = selectnode(fens, box=[Ri, Ri, 0.0, 0.0, 0.0, 00.0], inflate=tolerance);
-            pointu = zeros(FFlt,length(nlA),3)
-            gathervalues_asmat!(u, pointu, nlA);
+            nlA = selectnode(fens, box = [Ri, Ri, 0.0, 0.0, 0.0, 00.0], inflate = tolerance)
+            pointu = zeros(FFlt, length(nlA), 3)
+            gathervalues_asmat!(u, pointu, nlA)
             println("disp@A = $(pointu/phun("mm")) [MM]")
-            nlB = selectnode(fens, box=[0.0, 0.0, Ri, Ri, 0.0, 0.0], inflate=tolerance);
-            pointu = zeros(FFlt,length(nlB),3)
-            gathervalues_asmat!(u, pointu, nlB);
+            nlB = selectnode(fens, box = [0.0, 0.0, Ri, Ri, 0.0, 0.0], inflate = tolerance)
+            pointu = zeros(FFlt, length(nlB), 3)
+            gathervalues_asmat!(u, pointu, nlB)
             println("disp@B = $(pointu/phun("mm")) [MM]")
-            nlC = selectnode(fens, box=[Re, Re, Re, Re, Thickness, Thickness], inflate=tolerance);
-            pointu = zeros(FFlt,length(nlC),3)
-            gathervalues_asmat!(u, pointu, nlC);
+            nlC = selectnode(fens,
+                box = [Re, Re, Re, Re, Thickness, Thickness],
+                inflate = tolerance)
+            pointu = zeros(FFlt, length(nlC), 3)
+            gathervalues_asmat!(u, pointu, nlC)
             println("disp@C = $(pointu/phun("mm")) [MM]")
 
-            nlAallz = selectnode(fens, box=[Ri, Ri, 0.0, 0.0, 0.0, Thickness], inflate=tolerance);
-            nlBallz = selectnode(fens, box=[0.0, 0.0, Ri, Ri, 0.0, Thickness], inflate=tolerance);
-            sigx = fieldfromintegpoints(femm, geom, u, :Cauchy, 1; nodevalmethod = :invdistance, reportat = extrapolation)
-            sigy = fieldfromintegpoints(femm, geom, u, :Cauchy, 2; nodevalmethod = :invdistance, reportat = extrapolation)
-            sigyA = mean(sigy.values[nlAallz,1], dims = 1)[1]
+            nlAallz = selectnode(fens,
+                box = [Ri, Ri, 0.0, 0.0, 0.0, Thickness],
+                inflate = tolerance)
+            nlBallz = selectnode(fens,
+                box = [0.0, 0.0, Ri, Ri, 0.0, Thickness],
+                inflate = tolerance)
+            sigx = fieldfromintegpoints(femm,
+                geom,
+                u,
+                :Cauchy,
+                1;
+                nodevalmethod = :invdistance,
+                reportat = extrapolation)
+            sigy = fieldfromintegpoints(femm,
+                geom,
+                u,
+                :Cauchy,
+                2;
+                nodevalmethod = :invdistance,
+                reportat = extrapolation)
+            sigyA = mean(sigy.values[nlAallz, 1], dims = 1)[1]
             sigyAtrue = sigmayy([Ri, 0.0, 0.0])
             println("sig_y@A =$(sigyA/phun("MPa")) vs $(sigyAtrue/phun("MPa")) [MPa]")
-            sigxB = mean(sigx.values[nlBallz,1], dims = 1)[1]
+            sigxB = mean(sigx.values[nlBallz, 1], dims = 1)[1]
             sigxBtrue = sigmaxx([0.0, Ri, 0.0])
             println("sig_x@B =$(sigxB/phun("MPa")) vs $(sigxBtrue/phun("MPa")) [MPa]")
             # println("$extrapolation, $(count(fes)), $(sigyd/phun("MPa"))")
             # push!(nelems, count(fes))
             # push!(sigyderrs[extrapolation], abs(sigyd/sigma_yD - 1.0))
-            File =  "a.vtk"
+            File = "a.vtk"
             vtkexportmesh(File, fes.conn, geom.values,
-            FinEtools.MeshExportModule.H20; vectors=[("u", u.values)],
-            scalars=[("sigmax", sigx.values/phun("MEGA*PA")),
-            ("sigmay", sigy.values/phun("MEGA*PA"))])
+                FinEtools.MeshExportModule.H20; vectors = [("u", u.values)],
+                scalars = [("sigmax", sigx.values / phun("MEGA*PA")),
+                    ("sigmay", sigy.values / phun("MEGA*PA"))])
             @async run(`"paraview.exe" $File`)
         end
     end
@@ -1031,45 +1275,49 @@ function plate_w_hole_RECT_H20_convergence()
 
 end # plate_w_hole_RECT_H20_convergence
 
-
 function plate_w_hole_RECT_MSH8_convergence()
-    E = 210000*phun("MEGA*PA");# 210e3 MPa
-    nu = 0.3;
-    Ri= 0.1*phun("M"); # hole radius
-    Re = 2*Ri; # outer radius
-    H = 0.01*phun("M") # thickness of the plate
-    nRadial, nCircumferential=6, 3;
-    sigma0=1*phun("MEGA*PA");
+    E = 210000 * phun("MEGA*PA")# 210e3 MPa
+    nu = 0.3
+    Ri = 0.1 * phun("M") # hole radius
+    Re = 2 * Ri # outer radius
+    H = 0.01 * phun("M") # thickness of the plate
+    nRadial, nCircumferential = 6, 3
+    sigma0 = 1 * phun("MEGA*PA")
 
     function sigmaxx(x)
-        local r = norm(x[1:2]);
-        local th = atan(x[2],x[1]);
-        return sigma0*(1-Ri^2/r^2*(3/2*cos(2*th)+cos(4*th))+3/2*Ri^4/r^4*cos(4*th));
+        local r = norm(x[1:2])
+        local th = atan(x[2], x[1])
+        return sigma0 * (1 - Ri^2 / r^2 * (3 / 2 * cos(2 * th) + cos(4 * th)) +
+                3 / 2 * Ri^4 / r^4 * cos(4 * th))
     end
     function sigmayy(x)
-        local r=norm(x[1:2]);
-        local th = atan(x[2],x[1]);
-        return -sigma0*(Ri^2/r^2*(1/2*cos(2*th)-cos(4*th))+3/2*Ri^4/r^4*cos(4*th));
+        local r = norm(x[1:2])
+        local th = atan(x[2], x[1])
+        return -sigma0 * (Ri^2 / r^2 * (1 / 2 * cos(2 * th) - cos(4 * th)) +
+                3 / 2 * Ri^4 / r^4 * cos(4 * th))
     end
     function sigmaxy(x)
-        local r=norm(x[1:2]);
-        local th = atan(x[2],x[1]);
-        return -sigma0*(Ri^2/r^2*(1/2*sin(2*th)+sin(4*th))-3/2*Ri^4/r^4*sin(4*th));
+        local r = norm(x[1:2])
+        local th = atan(x[2], x[1])
+        return -sigma0 * (Ri^2 / r^2 * (1 / 2 * sin(2 * th) + sin(4 * th)) -
+                3 / 2 * Ri^4 / r^4 * sin(4 * th))
     end
     function sigmarr(x)
-        local r = norm(x[1:2]);
-        local th = atan(x[2],x[1]);
-        return sigma0/2*(1-Ri^2/r^2) + sigma0/2*(1-4*Ri^2/r^2+3*Ri^4/r^4)*cos(2*th)
+        local r = norm(x[1:2])
+        local th = atan(x[2], x[1])
+        return sigma0 / 2 * (1 - Ri^2 / r^2) +
+               sigma0 / 2 * (1 - 4 * Ri^2 / r^2 + 3 * Ri^4 / r^4) * cos(2 * th)
     end
     function sigmatt(x)
-        local r = norm(x[1:2]);
-        local th = atan(x[2],x[1]);
-        return sigma0/2*(1+Ri^2/r^2) - sigma0/2*(1+3*Ri^4/r^4)*cos(2*th)
+        local r = norm(x[1:2])
+        local th = atan(x[2], x[1])
+        return sigma0 / 2 * (1 + Ri^2 / r^2) -
+               sigma0 / 2 * (1 + 3 * Ri^4 / r^4) * cos(2 * th)
     end
     function sigmart(x)
-        local r = norm(x[1:2]);
-        local th = atan(x[2],x[1]);
-        return -sigma0/2*(1+2*Ri^2/r^2-3*Ri^4/r^4)*sin(2*th)
+        local r = norm(x[1:2])
+        local th = atan(x[2], x[1])
+        return -sigma0 / 2 * (1 + 2 * Ri^2 / r^2 - 3 * Ri^4 / r^4) * sin(2 * th)
     end
 
     sigyderrs = Dict{Symbol, FFltVec}()
@@ -1080,11 +1328,11 @@ function plate_w_hole_RECT_MSH8_convergence()
         nelems = []
         for ref in [2]
             # Thickness = H
-            Thickness = H/2^ref
-            tolerance = Thickness/2^ref/1000.; # Geometrical tolerance
+            Thickness = H / 2^ref
+            tolerance = Thickness / 2^ref / 1000.0 # Geometrical tolerance
 
-            fens,fes = H8elliphole(Ri, Ri, Re, Re, Thickness,
-            2^ref*nCircumferential, 2^ref*nCircumferential, 2^ref*nRadial, 1)
+            fens, fes = H8elliphole(Ri, Ri, Re, Re, Thickness,
+                2^ref * nCircumferential, 2^ref * nCircumferential, 2^ref * nRadial, 1)
 
             # File =  "a.vtk"
             # vtkexportmesh(File, fes.conn, fens.xyz,
@@ -1092,42 +1340,57 @@ function plate_w_hole_RECT_MSH8_convergence()
             # @async run(`"paraview.exe" $File`)
 
             geom = NodalField(fens.xyz)
-            u = NodalField(zeros(size(fens.xyz,1),3)) # displacement field
+            u = NodalField(zeros(size(fens.xyz, 1), 3)) # displacement field
 
-            l1 =selectnode(fens; box=[0.0, Inf, 0.0, 0.0, 0.0, Thickness], inflate = tolerance)
-            setebc!(u,l1,true, 2, 0.0)
-            l1 =selectnode(fens; box=[0.0, 0.0, 0.0, Inf, 0.0, Thickness], inflate = tolerance)
-            setebc!(u,l1,true, 1, 0.0)
-            l1 =selectnode(fens; box=[0.0, Inf, 0.0, Inf, 0.0, 0.0], inflate = tolerance)
-            setebc!(u,l1,true, 3, 0.0)
+            l1 = selectnode(fens;
+                box = [0.0, Inf, 0.0, 0.0, 0.0, Thickness],
+                inflate = tolerance)
+            setebc!(u, l1, true, 2, 0.0)
+            l1 = selectnode(fens;
+                box = [0.0, 0.0, 0.0, Inf, 0.0, Thickness],
+                inflate = tolerance)
+            setebc!(u, l1, true, 1, 0.0)
+            l1 = selectnode(fens; box = [0.0, Inf, 0.0, Inf, 0.0, 0.0], inflate = tolerance)
+            setebc!(u, l1, true, 3, 0.0)
             # l1 =selectnode(fens; box=[0.0, Inf, 0.0, Inf, Thickness, Thickness], inflate = tolerance)
             # setebc!(u,l1,true, 3, 0.0)
 
             applyebc!(u)
             numberdofs!(u)
 
-
-            bdryfes = meshboundary(fes);
-            ixl = selectelem(fens, bdryfes, plane=[1.0, 0.0, 0.0, Re], thickness=tolerance);
-            elxfemm =  FEMMBase(IntegDomain(subset(bdryfes,ixl), GaussRule(2, 2)))
-            function pfunx(forceout::FVec{T}, XYZ::FFltMat, tangents::FFltMat, fe_label::FInt) where {T}
+            bdryfes = meshboundary(fes)
+            ixl = selectelem(fens,
+                bdryfes,
+                plane = [1.0, 0.0, 0.0, Re],
+                thickness = tolerance)
+            elxfemm = FEMMBase(IntegDomain(subset(bdryfes, ixl), GaussRule(2, 2)))
+            function pfunx(forceout::FVec{T},
+                XYZ::FFltMat,
+                tangents::FFltMat,
+                fe_label::FInt) where {T}
                 forceout[1] = sigmaxx(XYZ)
                 forceout[2] = sigmaxy(XYZ)
                 forceout[3] = 0.0
                 return forceout
             end
-            fi = ForceIntensity(Float64, 3, pfunx);
-            Fx = distribloads(elxfemm, geom, u, fi, 2);
-            iyl = selectelem(fens, bdryfes, plane=[0.0, 1.0, 0.0, Re], thickness=tolerance);
-            elyfemm =  FEMMBase(IntegDomain(subset(bdryfes,iyl), GaussRule(2, 2)))
-            function pfuny(forceout::FVec{T}, XYZ::FFltMat, tangents::FFltMat, fe_label::FInt) where {T}
+            fi = ForceIntensity(Float64, 3, pfunx)
+            Fx = distribloads(elxfemm, geom, u, fi, 2)
+            iyl = selectelem(fens,
+                bdryfes,
+                plane = [0.0, 1.0, 0.0, Re],
+                thickness = tolerance)
+            elyfemm = FEMMBase(IntegDomain(subset(bdryfes, iyl), GaussRule(2, 2)))
+            function pfuny(forceout::FVec{T},
+                XYZ::FFltMat,
+                tangents::FFltMat,
+                fe_label::FInt) where {T}
                 forceout[1] = -sigmaxy(XYZ)
                 forceout[2] = sigmayy(XYZ)
                 forceout[3] = 0.0
                 return forceout
             end
-            fi = ForceIntensity(Float64, 3, pfuny);
-            Fy = distribloads(elyfemm, geom, u, fi, 2);
+            fi = ForceIntensity(Float64, 3, pfuny)
+            Fy = distribloads(elyfemm, geom, u, fi, 2)
 
             MR = DeforModelRed3D
 
@@ -1140,33 +1403,49 @@ function plate_w_hole_RECT_MSH8_convergence()
 
             K = stiffness(femm, geom, u)
             K = cholesky(K)
-            U = K\(Fx + Fy)
+            U = K \ (Fx + Fy)
             scattersysvec!(u, U[:])
 
-            nlA = selectnode(fens, box=[Ri, Ri, 0.0, 0.0, 0.0, Thickness], inflate=tolerance);
-            nlB = selectnode(fens, box=[0.0, 0.0, Ri, Ri, 0.0, Thickness], inflate=tolerance);
+            nlA = selectnode(fens,
+                box = [Ri, Ri, 0.0, 0.0, 0.0, Thickness],
+                inflate = tolerance)
+            nlB = selectnode(fens,
+                box = [0.0, 0.0, Ri, Ri, 0.0, Thickness],
+                inflate = tolerance)
             # thecorneru = zeros(FFlt,length(nlA),3)
             # gathervalues_asmat!(u, thecorneru, nl);
             # thecorneru = mean(thecorneru, 1)[1]/phun("mm")
             # println("displacement = $(thecorneru) vs -0.10215 [MM]")
 
             println("Extrapolation: $( extrapolation )")
-            sigx = fieldfromintegpoints(femm, geom, u, :Cauchy, 1; nodevalmethod = :averaging, reportat = extrapolation)
-            sigy = fieldfromintegpoints(femm, geom, u, :Cauchy, 2; nodevalmethod = :averaging, reportat = extrapolation)
-            sigyA = mean(sigy.values[nlA,1], dims = 1)[1]
+            sigx = fieldfromintegpoints(femm,
+                geom,
+                u,
+                :Cauchy,
+                1;
+                nodevalmethod = :averaging,
+                reportat = extrapolation)
+            sigy = fieldfromintegpoints(femm,
+                geom,
+                u,
+                :Cauchy,
+                2;
+                nodevalmethod = :averaging,
+                reportat = extrapolation)
+            sigyA = mean(sigy.values[nlA, 1], dims = 1)[1]
             sigyAtrue = sigmatt([Ri, 0.0, 0.0])
             println("sig_y@A =$(sigyA/phun("MPa")) vs $(sigyAtrue/phun("MPa")) [MPa]")
-            sigxB = mean(sigx.values[nlB,1], dims = 1)[1]
+            sigxB = mean(sigx.values[nlB, 1], dims = 1)[1]
             sigxBtrue = sigmatt([0.0, Ri, 0.0])
             println("sig_x@B =$(sigxB/phun("MPa")) vs $(sigxBtrue/phun("MPa")) [MPa]")
             # println("$extrapolation, $(count(fes)), $(sigyd/phun("MPa"))")
             # push!(nelems, count(fes))
             # push!(sigyderrs[extrapolation], abs(sigyd/sigma_yD - 1.0))
-            File =  "a.vtk"
+            File = "a.vtk"
             vtkexportmesh(File, fes.conn, geom.values,
-            FinEtools.MeshExportModule.H8; vectors=[("u", u.values)],
-            scalars=[("sigmax", sigx.values/phun("MEGA*PA")),
-            ("sigmay", sigy.values/phun("MEGA*PA"))])
+                FinEtools.MeshExportModule.H8; vectors = [("u", u.values)],
+                scalars = [("sigmax", sigx.values / phun("MEGA*PA")),
+                    ("sigmay", sigy.values / phun("MEGA*PA"))])
             @async run(`"paraview.exe" $File`)
         end
     end
@@ -1180,45 +1459,49 @@ function plate_w_hole_RECT_MSH8_convergence()
 
 end # plate_w_hole_RECT_MSH8_convergence
 
-
 function plate_w_hole_T10_PE_convergence()
-    E = 2.4*phun("MEGA*PA");# 210e3 MPa
-    nu = 0.49995;
-    Re = 0.3*phun("M"); # outer radius
-    Ri= 0.1*phun("M"); # hole radius
-    H = 0.1*phun("M") # thickness of the plate
-    nRadial, nCircumferential=3, 5;
-    sigma0=1*phun("MEGA*PA");
+    E = 2.4 * phun("MEGA*PA")# 210e3 MPa
+    nu = 0.49995
+    Re = 0.3 * phun("M") # outer radius
+    Ri = 0.1 * phun("M") # hole radius
+    H = 0.1 * phun("M") # thickness of the plate
+    nRadial, nCircumferential = 3, 5
+    sigma0 = 1 * phun("MEGA*PA")
 
     function sigmaxx(x)
-        local r = norm(x[1:2]);
-        local th = atan(x[2],x[1]);
-        return sigma0*(1-Ri^2/r^2*(3/2*cos(2*th)+cos(4*th))+3/2*Ri^4/r^4*cos(4*th));
+        local r = norm(x[1:2])
+        local th = atan(x[2], x[1])
+        return sigma0 * (1 - Ri^2 / r^2 * (3 / 2 * cos(2 * th) + cos(4 * th)) +
+                3 / 2 * Ri^4 / r^4 * cos(4 * th))
     end
     function sigmayy(x)
-        local r=norm(x[1:2]);
-        local th = atan(x[2],x[1]);
-        return -sigma0*(Ri^2/r^2*(1/2*cos(2*th)-cos(4*th))+3/2*Ri^4/r^4*cos(4*th));
+        local r = norm(x[1:2])
+        local th = atan(x[2], x[1])
+        return -sigma0 * (Ri^2 / r^2 * (1 / 2 * cos(2 * th) - cos(4 * th)) +
+                3 / 2 * Ri^4 / r^4 * cos(4 * th))
     end
     function sigmaxy(x)
-        local r=norm(x[1:2]);
-        local th = atan(x[2],x[1]);
-        return -sigma0*(Ri^2/r^2*(1/2*sin(2*th)+sin(4*th))-3/2*Ri^4/r^4*sin(4*th));
+        local r = norm(x[1:2])
+        local th = atan(x[2], x[1])
+        return -sigma0 * (Ri^2 / r^2 * (1 / 2 * sin(2 * th) + sin(4 * th)) -
+                3 / 2 * Ri^4 / r^4 * sin(4 * th))
     end
     function sigmarr(x)
-        local r = norm(x[1:2]);
-        local th = atan(x[2],x[1]);
-        return sigma0/2*(1-Ri^2/r^2) + sigma0/2*(1-4*Ri^2/r^2+3*Ri^4/r^4)*cos(2*th)
+        local r = norm(x[1:2])
+        local th = atan(x[2], x[1])
+        return sigma0 / 2 * (1 - Ri^2 / r^2) +
+               sigma0 / 2 * (1 - 4 * Ri^2 / r^2 + 3 * Ri^4 / r^4) * cos(2 * th)
     end
     function sigmatt(x)
-        local r = norm(x[1:2]);
-        local th = atan(x[2],x[1]);
-        return sigma0/2*(1+Ri^2/r^2) - sigma0/2*(1+3*Ri^4/r^4)*cos(2*th)
+        local r = norm(x[1:2])
+        local th = atan(x[2], x[1])
+        return sigma0 / 2 * (1 + Ri^2 / r^2) -
+               sigma0 / 2 * (1 + 3 * Ri^4 / r^4) * cos(2 * th)
     end
     function sigmart(x)
-        local r = norm(x[1:2]);
-        local th = atan(x[2],x[1]);
-        return -sigma0/2*(1+2*Ri^2/r^2-3*Ri^4/r^4)*sin(2*th)
+        local r = norm(x[1:2])
+        local th = atan(x[2], x[1])
+        return -sigma0 / 2 * (1 + 2 * Ri^2 / r^2 - 3 * Ri^4 / r^4) * sin(2 * th)
     end
 
     sigxderrs = Dict{Symbol, FFltVec}()
@@ -1232,17 +1515,31 @@ function plate_w_hole_T10_PE_convergence()
         numnodes = []
         for ref in 0:1:2
             # Thickness = H
-            Thickness = H/2^ref
-            tolerance = Thickness/2^ref/1000.; # Geometrical tolerance
+            Thickness = H / 2^ref
+            tolerance = Thickness / 2^ref / 1000.0 # Geometrical tolerance
 
-            fens,fes = T10block(1.0, pi/2, Thickness, 2^ref*nRadial, 2^ref*nCircumferential, 1)
+            fens, fes = T10block(1.0,
+                pi / 2,
+                Thickness,
+                2^ref * nRadial,
+                2^ref * nCircumferential,
+                1)
 
-            bdryfes = meshboundary(fes);
-            icl = selectelem(fens, bdryfes, box=[1.0, 1.0, 0.0, pi/2, 0.0, Thickness], inflate=tolerance);
+            bdryfes = meshboundary(fes)
+            icl = selectelem(fens,
+                bdryfes,
+                box = [1.0, 1.0, 0.0, pi / 2, 0.0, Thickness],
+                inflate = tolerance)
 
-            for i=1:count(fens)
-                t=fens.xyz[i,1]; a=fens.xyz[i,2]; z=fens.xyz[i,3]
-                fens.xyz[i,:] = [(t*Re+(1-t)*Ri)*cos(a), (t*Re+(1-t)*Ri)*sin(a), z];
+            for i in 1:count(fens)
+                t = fens.xyz[i, 1]
+                a = fens.xyz[i, 2]
+                z = fens.xyz[i, 3]
+                fens.xyz[i, :] = [
+                    (t * Re + (1 - t) * Ri) * cos(a),
+                    (t * Re + (1 - t) * Ri) * sin(a),
+                    z,
+                ]
             end
 
             # File =  "a.vtk"
@@ -1251,25 +1548,35 @@ function plate_w_hole_T10_PE_convergence()
             # @async run(`"paraview.exe" $File`)
 
             geom = NodalField(fens.xyz)
-            u = NodalField(zeros(size(fens.xyz,1),3)) # displacement field
+            u = NodalField(zeros(size(fens.xyz, 1), 3)) # displacement field
 
-            l1 =selectnode(fens; box=[0.0, Inf, 0.0, 0.0, 0.0, Thickness], inflate = tolerance)
-            setebc!(u,l1,true, 2, 0.0)
-            l1 =selectnode(fens; box=[0.0, 0.0, 0.0, Inf, 0.0, Thickness], inflate = tolerance)
-            setebc!(u,l1,true, 1, 0.0)
+            l1 = selectnode(fens;
+                box = [0.0, Inf, 0.0, 0.0, 0.0, Thickness],
+                inflate = tolerance)
+            setebc!(u, l1, true, 2, 0.0)
+            l1 = selectnode(fens;
+                box = [0.0, 0.0, 0.0, Inf, 0.0, Thickness],
+                inflate = tolerance)
+            setebc!(u, l1, true, 1, 0.0)
             # Plane-stress constraint: assume the plane z=0 is the plane of symmetry of the plate
-            l1 =selectnode(fens; box=[0.0, Inf, 0.0, Inf, 0.0, 0.0], inflate = tolerance)
-            setebc!(u,l1,true, 3, 0.0)
+            l1 = selectnode(fens; box = [0.0, Inf, 0.0, Inf, 0.0, 0.0], inflate = tolerance)
+            setebc!(u, l1, true, 3, 0.0)
             # If this was enabled, the plane-strain  constraint would be enforced.
-            l1 =selectnode(fens; box=[0.0, Inf, 0.0, Inf, Thickness, Thickness], inflate = tolerance)
-            setebc!(u,l1,true, 3, 0.0)
+            l1 = selectnode(fens;
+                box = [0.0, Inf, 0.0, Inf, Thickness, Thickness],
+                inflate = tolerance)
+            setebc!(u, l1, true, 3, 0.0)
 
             applyebc!(u)
             numberdofs!(u)
-            el1femm =  FEMMBase(IntegDomain(subset(bdryfes,icl), TriRule(3)))
-            function pfun(forceout::FVec{T}, XYZ::FFltMat, tangents::FFltMat, fe_label::FInt) where {T}
+            el1femm = FEMMBase(IntegDomain(subset(bdryfes, icl), TriRule(3)))
+            function pfun(forceout::FVec{T},
+                XYZ::FFltMat,
+                tangents::FFltMat,
+                fe_label::FInt) where {T}
                 local r = sqrt(XYZ[1]^2 + XYZ[2]^2)
-                nx = XYZ[1]/r; ny = XYZ[2]/r
+                nx = XYZ[1] / r
+                ny = XYZ[2] / r
                 # local sx, sy, txy
                 # sx, sy, txy = sigmaxx(XYZ), sigmayy(XYZ), sigmaxy(XYZ)
                 # sn = sx * nx^2 + sy * ny^2 + 2 * nx * ny * txy
@@ -1282,8 +1589,8 @@ function plate_w_hole_T10_PE_convergence()
                 forceout[3] = 0.0
                 return forceout
             end
-            fi = ForceIntensity(Float64, 3, pfun);
-            F2 = distribloads(el1femm, geom, u, fi, 2);
+            fi = ForceIntensity(Float64, 3, pfun)
+            F2 = distribloads(el1femm, geom, u, fi, 2)
 
             MR = DeforModelRed3D
 
@@ -1296,11 +1603,15 @@ function plate_w_hole_T10_PE_convergence()
 
             K = stiffness(femm, geom, u)
             K = cholesky(K)
-            U = K\(F2)
+            U = K \ (F2)
             scattersysvec!(u, U[:])
 
-            nlA = selectnode(fens, box=[Ri, Ri, 0.0, 0.0, 0.0, Thickness], inflate=tolerance);
-            nlB = selectnode(fens, box=[0.0, 0.0, Ri, Ri, 0.0, Thickness], inflate=tolerance);
+            nlA = selectnode(fens,
+                box = [Ri, Ri, 0.0, 0.0, 0.0, Thickness],
+                inflate = tolerance)
+            nlB = selectnode(fens,
+                box = [0.0, 0.0, Ri, Ri, 0.0, Thickness],
+                inflate = tolerance)
             # thecorneru = zeros(FFlt,length(nlA),3)
             # gathervalues_asmat!(u, thecorneru, nl);
             # thecorneru = mean(thecorneru, 1)[1]/phun("mm")
@@ -1309,16 +1620,16 @@ function plate_w_hole_T10_PE_convergence()
             println("Extrapolation: $( extrapolation )")
             sigx = fieldfromintegpoints(femm, geom, u, :Cauchy, 1)
             sigy = fieldfromintegpoints(femm, geom, u, :Cauchy, 2)
-            sigyA = mean(sigy.values[nlA,1], dims = 1)[1]
+            sigyA = mean(sigy.values[nlA, 1], dims = 1)[1]
             sigyAtrue = sigmatt([Ri, 0.0, 0.0])
             println("sig_y@A =$(sigyA/phun("MPa")) vs $(sigyAtrue/phun("MPa")) [MPa]")
-            sigxB = mean(sigx.values[nlB,1], dims = 1)[1]
+            sigxB = mean(sigx.values[nlB, 1], dims = 1)[1]
             sigxBtrue = sigmatt([0.0, Ri, 0.0])
             println("sig_x@B =$(sigxB/phun("MPa")) vs $(sigxBtrue/phun("MPa")) [MPa]")
             push!(numnodes, count(fens))
             push!(numelements, count(fes))
-            push!(sigxderrs[extrapolation], abs(sigxB/sigxBtrue - 1.0))
-            push!(sigyderrs[extrapolation], abs(sigyA/sigyAtrue - 1.0))
+            push!(sigxderrs[extrapolation], abs(sigxB / sigxBtrue - 1.0))
+            push!(sigyderrs[extrapolation], abs(sigyA / sigyAtrue - 1.0))
             # File =  "a.vtk"
             # vtkexportmesh(File, fes.conn, geom.values,
             # FinEtools.MeshExportModule.H8; vectors=[("u", u.values)],
@@ -1328,95 +1639,126 @@ function plate_w_hole_T10_PE_convergence()
     end
 
     File = "plate_w_hole_PE_T10_convergence.CSV"
-    savecsv(File, numelements=vec(numelements), numnodes=vec(numnodes), sigxderrtrend=vec(sigxderrs[:extraptrend]), sigxderrdefault=vec(sigxderrs[:extrapmean]), sigyderrtrend=vec(sigyderrs[:extraptrend]), sigyderrdefault=vec(sigyderrs[:extrapmean]))
-
+    savecsv(File,
+        numelements = vec(numelements),
+        numnodes = vec(numnodes),
+        sigxderrtrend = vec(sigxderrs[:extraptrend]),
+        sigxderrdefault = vec(sigxderrs[:extrapmean]),
+        sigyderrtrend = vec(sigyderrs[:extraptrend]),
+        sigyderrdefault = vec(sigyderrs[:extrapmean]))
 end # plate_w_hole_T10_PE_convergence
 
-
 function plate_w_hole_T10_stress()
-    E = 2.4*phun("MEGA*PA");# 210e3 MPa
-    nu = 0.3;
-    Re = 0.3*phun("M"); # outer radius
-    Ri= 0.1*phun("M"); # hole radius
-    H = 0.1*phun("M") # thickness of the plate
-    nRadial, nCircumferential, nThickness = 6, 8, 1;
-    sigma0=1*phun("MEGA*PA");
+    E = 2.4 * phun("MEGA*PA")# 210e3 MPa
+    nu = 0.3
+    Re = 0.3 * phun("M") # outer radius
+    Ri = 0.1 * phun("M") # hole radius
+    H = 0.1 * phun("M") # thickness of the plate
+    nRadial, nCircumferential, nThickness = 6, 8, 1
+    sigma0 = 1 * phun("MEGA*PA")
 
     function sigmaxx(x)
-        local r = norm(x[1:2]);
-        local th = atan(x[2],x[1]);
-        return sigma0*(1-Ri^2/r^2*(3/2*cos(2*th)+cos(4*th))+3/2*Ri^4/r^4*cos(4*th));
+        local r = norm(x[1:2])
+        local th = atan(x[2], x[1])
+        return sigma0 * (1 - Ri^2 / r^2 * (3 / 2 * cos(2 * th) + cos(4 * th)) +
+                3 / 2 * Ri^4 / r^4 * cos(4 * th))
     end
     function sigmayy(x)
-        local r=norm(x[1:2]);
-        local th = atan(x[2],x[1]);
-        return -sigma0*(Ri^2/r^2*(1/2*cos(2*th)-cos(4*th))+3/2*Ri^4/r^4*cos(4*th));
+        local r = norm(x[1:2])
+        local th = atan(x[2], x[1])
+        return -sigma0 * (Ri^2 / r^2 * (1 / 2 * cos(2 * th) - cos(4 * th)) +
+                3 / 2 * Ri^4 / r^4 * cos(4 * th))
     end
     function sigmaxy(x)
-        local r=norm(x[1:2]);
-        local th = atan(x[2],x[1]);
-        return -sigma0*(Ri^2/r^2*(1/2*sin(2*th)+sin(4*th))-3/2*Ri^4/r^4*sin(4*th));
+        local r = norm(x[1:2])
+        local th = atan(x[2], x[1])
+        return -sigma0 * (Ri^2 / r^2 * (1 / 2 * sin(2 * th) + sin(4 * th)) -
+                3 / 2 * Ri^4 / r^4 * sin(4 * th))
     end
     function sigmarr(x)
-        local r = norm(x[1:2]);
-        local th = atan(x[2],x[1]);
-        return sigma0/2*(1-Ri^2/r^2) + sigma0/2*(1-4*Ri^2/r^2+3*Ri^4/r^4)*cos(2*th)
+        local r = norm(x[1:2])
+        local th = atan(x[2], x[1])
+        return sigma0 / 2 * (1 - Ri^2 / r^2) +
+               sigma0 / 2 * (1 - 4 * Ri^2 / r^2 + 3 * Ri^4 / r^4) * cos(2 * th)
     end
     function sigmatt(x)
-        local r = norm(x[1:2]);
-        local th = atan(x[2],x[1]);
-        return sigma0/2*(1+Ri^2/r^2) - sigma0/2*(1+3*Ri^4/r^4)*cos(2*th)
+        local r = norm(x[1:2])
+        local th = atan(x[2], x[1])
+        return sigma0 / 2 * (1 + Ri^2 / r^2) -
+               sigma0 / 2 * (1 + 3 * Ri^4 / r^4) * cos(2 * th)
     end
     function sigmart(x)
-        local r = norm(x[1:2]);
-        local th = atan(x[2],x[1]);
-        return -sigma0/2*(1+2*Ri^2/r^2-3*Ri^4/r^4)*sin(2*th)
+        local r = norm(x[1:2])
+        local th = atan(x[2], x[1])
+        return -sigma0 / 2 * (1 + 2 * Ri^2 / r^2 - 3 * Ri^4 / r^4) * sin(2 * th)
     end
 
     convergencestudy = FDataDict[]
     for ref in 0:1:2
         println("ref = $(ref)")
         # Thickness = H
-        Thickness = H/2^ref
-        tolerance = Thickness/2^ref/1000.; # Geometrical tolerance
+        Thickness = H / 2^ref
+        tolerance = Thickness / 2^ref / 1000.0 # Geometrical tolerance
 
-        fens,fes = T10block(1.0, pi/2, Thickness, 2^ref*nRadial, 2^ref*nCircumferential, 2^ref*nThickness)
+        fens, fes = T10block(1.0,
+            pi / 2,
+            Thickness,
+            2^ref * nRadial,
+            2^ref * nCircumferential,
+            2^ref * nThickness)
 
-        bdryfes = meshboundary(fes);
-        icl = selectelem(fens, bdryfes, box=[1.0, 1.0, 0.0, pi/2, 0.0, Thickness], inflate=tolerance);
+        bdryfes = meshboundary(fes)
+        icl = selectelem(fens,
+            bdryfes,
+            box = [1.0, 1.0, 0.0, pi / 2, 0.0, Thickness],
+            inflate = tolerance)
 
-        for i=1:count(fens)
-            t=fens.xyz[i,1]; a=fens.xyz[i,2]; z=fens.xyz[i,3]
-            fens.xyz[i,:] = [(t*Re+(1-t)*Ri)*cos(a), (t*Re+(1-t)*Ri)*sin(a), z];
+        for i in 1:count(fens)
+            t = fens.xyz[i, 1]
+            a = fens.xyz[i, 2]
+            z = fens.xyz[i, 3]
+            fens.xyz[i, :] = [
+                (t * Re + (1 - t) * Ri) * cos(a),
+                (t * Re + (1 - t) * Ri) * sin(a),
+                z,
+            ]
         end
 
         geom = NodalField(fens.xyz)
-        u = NodalField(zeros(size(fens.xyz,1),3)) # displacement field
+        u = NodalField(zeros(size(fens.xyz, 1), 3)) # displacement field
 
-        l1 =selectnode(fens; box=[0.0, Inf, 0.0, 0.0, 0.0, Thickness], inflate = tolerance)
-        setebc!(u,l1,true, 2, 0.0)
-        l1 =selectnode(fens; box=[0.0, 0.0, 0.0, Inf, 0.0, Thickness], inflate = tolerance)
-        setebc!(u,l1,true, 1, 0.0)
+        l1 = selectnode(fens;
+            box = [0.0, Inf, 0.0, 0.0, 0.0, Thickness],
+            inflate = tolerance)
+        setebc!(u, l1, true, 2, 0.0)
+        l1 = selectnode(fens;
+            box = [0.0, 0.0, 0.0, Inf, 0.0, Thickness],
+            inflate = tolerance)
+        setebc!(u, l1, true, 1, 0.0)
         # Plane-stress constraint: assume the plane z=0 is the plane of symmetry of the plate
-        l1 =selectnode(fens; box=[0.0, Inf, 0.0, Inf, 0.0, 0.0], inflate = tolerance)
-        setebc!(u,l1,true, 3, 0.0)
+        l1 = selectnode(fens; box = [0.0, Inf, 0.0, Inf, 0.0, 0.0], inflate = tolerance)
+        setebc!(u, l1, true, 3, 0.0)
         # If this was enabled, the plane-strain  constraint would be enforced.
         # l1 =selectnode(fens; box=[0.0, Inf, 0.0, Inf, Thickness, Thickness], inflate = tolerance)
         # setebc!(u,l1,true, 3, 0.0)
 
         applyebc!(u)
         numberdofs!(u)
-        el1femm =  FEMMBase(IntegDomain(subset(bdryfes,icl), TriRule(3)))
-        function pfun(forceout::FVec{T}, XYZ::FFltMat, tangents::FFltMat, fe_label::FInt) where {T}
+        el1femm = FEMMBase(IntegDomain(subset(bdryfes, icl), TriRule(3)))
+        function pfun(forceout::FVec{T},
+            XYZ::FFltMat,
+            tangents::FFltMat,
+            fe_label::FInt) where {T}
             local r = sqrt(XYZ[1]^2 + XYZ[2]^2)
-            nx = XYZ[1]/r; ny = XYZ[2]/r
+            nx = XYZ[1] / r
+            ny = XYZ[2] / r
             forceout[1] = sigmarr(XYZ) * nx - sigmart(XYZ) * ny
             forceout[2] = sigmarr(XYZ) * ny + sigmart(XYZ) * nx
             forceout[3] = 0.0
             return forceout
         end
-        fi = ForceIntensity(Float64, 3, pfun);
-        F2 = distribloads(el1femm, geom, u, fi, 2);
+        fi = ForceIntensity(Float64, 3, pfun)
+        F2 = distribloads(el1femm, geom, u, fi, 2)
 
         MR = DeforModelRed3D
 
@@ -1429,21 +1771,20 @@ function plate_w_hole_T10_stress()
 
         K = stiffness(femm, geom, u)
         K = cholesky(K)
-        U = K\(F2)
+        U = K \ (F2)
         scattersysvec!(u, U[:])
 
         stressfields = elemfieldfromintegpoints(femm, geom, u, :Cauchy, collect(1:6))
 
-        push!(convergencestudy, FDataDict(
-        "elementsize"=> 1.0 / 2^ref,
-        "fens"=>fens,
-        "fes"=>fes,
-        "geom"=>geom,
-        "u"=>u,
-        "femm"=>femm,
-        "stressfields"=>[stressfields],
-        "tolerance"=>tolerance)
-        )
+        push!(convergencestudy,
+            FDataDict("elementsize" => 1.0 / 2^ref,
+                "fens" => fens,
+                "fes" => fes,
+                "geom" => geom,
+                "u" => u,
+                "femm" => femm,
+                "stressfields" => [stressfields],
+                "tolerance" => tolerance))
     end # for ref in
 
     # File = "mplate_w_hole_T10m_stress"
@@ -1489,7 +1830,6 @@ end # function allrun
 
 @info "All examples may be executed with "
 println("using .$(@__MODULE__); $(@__MODULE__).allrun()")
-
 
 end # module 
 nothing

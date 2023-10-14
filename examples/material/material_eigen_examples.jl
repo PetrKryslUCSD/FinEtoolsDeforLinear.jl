@@ -8,7 +8,7 @@ using Statistics: mean
 using LinearAlgebra: inv, cholesky, norm, eigen
 
 function iso()
-    E = 1.0e3*phun("Pa")
+    E = 1.0e3 * phun("Pa")
     nu = 0.4999999
     CTE = 0.0
 
@@ -16,21 +16,19 @@ function iso()
     material = MatDeforElastIso(MR, 0.0, E, nu, CTE)
     D = fill(0.0, 6, 6)
     t::FFlt, dt::FFlt, loc::FFltMat, label::FInt = 0.0, 0.0, [0.0 0.0 0.0], 0
-    tangentmoduli!(material,  D,  t, dt, loc, label)
+    tangentmoduli!(material, D, t, dt, loc, label)
     @show dec = eigen(D)
     @show idec = eigen(inv(D))
 
     true
 end # iso
 
-
-
 function ortho()
-    E1s = 100.0*phun("GPa")
-    E2s = 1.0*phun("MPa")
+    E1s = 100.0 * phun("GPa")
+    E2s = 1.0 * phun("MPa")
     E3s = E2s
     nu23s = nu12s = nu13s = 0.25
-    G12s = 0.13*phun("GPa")
+    G12s = 0.13 * phun("GPa")
     G23s = G13s = G12s
     CTE1 = 0.0
     CTE2 = 0.0
@@ -38,13 +36,13 @@ function ortho()
 
     MR = DeforModelRed3D
     material = MatDeforElastOrtho(MR,
-    	0.0, E1s, E2s, E3s,
-    	nu12s, nu13s, nu23s,
-    	G12s, G13s, G23s,
-    	CTE1, CTE2, CTE3)
+        0.0, E1s, E2s, E3s,
+        nu12s, nu13s, nu23s,
+        G12s, G13s, G23s,
+        CTE1, CTE2, CTE3)
     D = fill(0.0, 6, 6)
     t::FFlt, dt::FFlt, loc::FFltMat, label::FInt = 0.0, 0.0, [0.0 0.0 0.0], 0
-    tangentmoduli!(material,  D,  t, dt, loc, label)
+    tangentmoduli!(material, D, t, dt, loc, label)
     @show dec = eigen(D)
     @show idec = eigen(inv(D))
 
@@ -170,7 +168,6 @@ end # iso
 #     true
 
 # end # fiber_reinf_cant_yn_strong
-
 
 # function fiber_reinf_cant_yn_strong_no_algo()
 #     println("""
@@ -428,7 +425,6 @@ end # function allrun
 
 @info "All examples may be executed with "
 println("using .$(@__MODULE__); $(@__MODULE__).allrun()")
-
 
 end # module 
 nothing

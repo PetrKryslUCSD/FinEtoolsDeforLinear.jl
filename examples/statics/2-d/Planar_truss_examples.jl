@@ -19,23 +19,22 @@ function Planar_truss()
     nu = 0.0
     alpha = 0.0
     fens = FENodeSetModule.FENodeSet([0.0 0;
-    0 40;
-    40 0;
-    40 40;
-    80 0;
-    80 40] )
-    fes = FESetL2([1     3
-    1     4
-    2     4
-    3     4
-    3     5
-    5     4
-    6     4
-    5     6])
-
+        0 40;
+        40 0;
+        40 40;
+        80 0;
+        80 40])
+    fes = FESetL2([1 3
+        1 4
+        2 4
+        3 4
+        3 5
+        5 4
+        6 4
+        5 6])
 
     MR = DeforModelRed1D
-    material = MatDeforElastIso(MR,  0.0, E, nu, alpha)
+    material = MatDeforElastIso(MR, 0.0, E, nu, alpha)
     # display(material )
 
     geom = NodalField(fens.xyz)
@@ -49,31 +48,31 @@ function Planar_truss()
     integdata = IntegDomain(fes, GaussRule(1, 1), (loc, conn, N) -> Area, false)
     femm = FEMMDeforLinear(MR, integdata, CSys(2, 1), material)
     display(femm.mcsys)
-    K = stiffness(femm,  geom,  u)
+    K = stiffness(femm, geom, u)
 
     fi = ForceIntensity(vec([0 -2000.0]))
-    lfemm = FEMMBase(IntegDomain(FESetP1(reshape([3], 1,1)), PointRule()))
-    F = distribloads(lfemm,  geom,  u,  fi,  3);
+    lfemm = FEMMBase(IntegDomain(FESetP1(reshape([3], 1, 1)), PointRule()))
+    F = distribloads(lfemm, geom, u, fi, 3)
     fi = ForceIntensity(vec([+2000.0 0]))
-    lfemm = FEMMBase(IntegDomain(FESetP1(reshape([5], 1,1)), PointRule()))
-    F = F + distribloads(lfemm,  geom,  u,  fi,  3);
+    lfemm = FEMMBase(IntegDomain(FESetP1(reshape([5], 1, 1)), PointRule()))
+    F = F + distribloads(lfemm, geom, u, fi, 3)
     fi = ForceIntensity(vec([+4000.0 +6000.0]))
-    lfemm = FEMMBase(IntegDomain(FESetP1(reshape([6], 1,1)), PointRule()))
-    F = F + distribloads(lfemm,  geom,  u,  fi,  3);
+    lfemm = FEMMBase(IntegDomain(FESetP1(reshape([6], 1, 1)), PointRule()))
+    F = F + distribloads(lfemm, geom, u, fi, 3)
 
     K = cholesky(K)
-    U=  K\F
+    U = K \ F
     scattersysvec!(u, U[:])
 
-    sfld =  elemfieldfromintegpoints(femm, geom, u, :Cauchy, 1)
+    sfld = elemfieldfromintegpoints(femm, geom, u, :Cauchy, 1)
     display(sfld)
     println("Cauchy = $(sfld.values)")
-    vfld =  elemfieldfromintegpoints(femm, geom, u, :vm, 1)
+    vfld = elemfieldfromintegpoints(femm, geom, u, :vm, 1)
     display(vfld)
 
     File = "Planar_truss.vtk"
     MeshExportModule.vtkexportmesh(File, fens, fes;
-    scalars=[("sx", sfld.values), ("vm", vfld.values)])
+        scalars = [("sx", sfld.values), ("vm", vfld.values)])
     @async run(`"paraview.exe" $File`)
     # try rm(File) catch end
 

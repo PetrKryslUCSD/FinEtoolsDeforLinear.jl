@@ -12,7 +12,15 @@ function coldata(inputcsv, theset)
     return contents[1][:, theset]
 end
 
-set(axis="loglog", plotstyle="linespoints", linewidth=2, pointsize = 2, xrange="[0.002:0.1]", xlabel = "Element size", ylabel = "Approximate error", grid="on", title = "")
+set(axis = "loglog",
+    plotstyle = "linespoints",
+    linewidth = 2,
+    pointsize = 2,
+    xrange = "[0.002:0.1]",
+    xlabel = "Element size",
+    ylabel = "Approximate error",
+    grid = "on",
+    title = "")
 
 # inputcsv = "All_EBC_2dir_T10_default_Stress.CSV"
 # x = coldata(inputcsv, 1)
@@ -50,8 +58,6 @@ figure(f)
 # x = coldata(inputcsv, 1)
 # y = coldata(inputcsv, 4)
 # plot!(x, abs.(y), legend="TBE", color = "black", marker = "ecircle")
-
-
 
 # julia> include("All_EBC_2dir_examples.jl"); All_EBC_2dir_examples.allrun()
 # WARNING: replacing module All_EBC_2dir_examples.
