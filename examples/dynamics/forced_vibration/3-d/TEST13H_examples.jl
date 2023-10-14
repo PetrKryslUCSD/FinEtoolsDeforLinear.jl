@@ -61,7 +61,7 @@ function TEST13H_hva()
     fens,fes  = H8block(L, L, t, nL, nL, nt)
     
     geom = NodalField(fens.xyz)
-    u = NodalField(zeros(FCplxFlt, size(fens.xyz,1), 3)) # displacement field
+    u = NodalField(zeros(Complex{Float64}, size(fens.xyz,1), 3)) # displacement field
     nl = selectnode(fens, box=[0.0 0.0 -Inf Inf -Inf Inf], inflate=tolerance)
     setebc!(u, nl, true, 3)
     nl = selectnode(fens, box=[L L -Inf Inf -Inf Inf], inflate=tolerance)
@@ -99,7 +99,7 @@ function TEST13H_hva()
     bdryfes = meshboundary(fes)
     topbfl = selectelem(fens, bdryfes, facing=true, direction=[0.0 0.0 1.0])
     el1femm =  FEMMBase(IntegDomain(subset(bdryfes,topbfl), GaussRule(2,2)))
-    function pfun(forceout::FVec{T}, XYZ::FFltMat, tangents::FFltMat, feid::FInt, qpid::FInt) where {T}
+    function pfun(forceout::Vector{T}, XYZ, tangents, feid, qpid) where {T}
         forceout .=  [0.0, 0.0, -qmagn]
         return forceout
     end
@@ -108,7 +108,7 @@ function TEST13H_hva()
 
     F_f = vector_blocked(F, nfreedofs(u))[:f]
     
-    U_f = zeros(FCplxFlt, nfreedofs(u), length(frequencies))
+    U_f = zeros(Complex{Flowat64}, nfreedofs(u), length(frequencies))
     for k = 1:length(frequencies)
         frequency = frequencies[k];
         omega = 2*pi*frequency;
