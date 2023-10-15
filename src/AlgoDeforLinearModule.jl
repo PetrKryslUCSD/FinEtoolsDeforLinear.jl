@@ -7,9 +7,7 @@ module AlgoDeforLinearModule
 
 __precompile__(true)
 
-using FinEtools.FTypesModule:
-    FInt,
-    FFlt, FCplxFlt, FFltVec, FIntVec, FFltMat, FIntMat, FMat, FVec, FDataDict
+using FinEtools.FTypesModule: FDataDict
 using FinEtools.AlgoBaseModule: dcheck!
 using Arpack: eigs
 using SparseArrays: spzeros
@@ -170,7 +168,7 @@ function linearstatics(modeldata::FDataDict)
 
     tstart = time()
     # Initialize the heat loads vector
-    F = zeros(FFlt, nalldofs(u))
+    F = zeros(UFT, nalldofs(u))
     # Construct the system stiffness matrix
     K = spzeros(nalldofs(u), nalldofs(u)) # (all zeros, for the moment)
     regions = get(() -> error("Must get region list!"), modeldata, "regions")
@@ -357,6 +355,7 @@ function exportdeformation(modeldata::FDataDict)
     fens = get(() -> error("Must get fens!"), modeldata, "fens")
     geom = get(() -> error("Must get geometry field!"), modeldata, "geom")
     u = get(modeldata, "u", nothing)
+    UFT = eltype(u.values)
     us = get(modeldata, "us", nothing)
     if us == nothing
         us = [("u", u)]
@@ -369,7 +368,7 @@ function exportdeformation(modeldata::FDataDict)
         region = regions[i]
         femm = region["femm"]
         rfile = ffile * "$i" * ".vtk"
-        vectors = Tuple{String, FFltMat}[]
+        vectors = Tuple{String, Matrix{UFT}[]
         for ixxxx in 1:length(us)
             push!(vectors, (us[ixxxx][1], us[ixxxx][2].values))
         end
@@ -756,6 +755,7 @@ function modal(modeldata::FDataDict)
 
     # Construct the displacement field
     u = NodalField(zeros(nnodes(geom), ndofs(geom)))
+    UFT = eltype(u.values)
 
     # Apply the essential boundary conditions on the displacement field
     essential_bcs = get(modeldata, "essential_bcs", nothing)
@@ -765,7 +765,7 @@ function modal(modeldata::FDataDict)
             dcheck!(ebc, essential_bcs_recognized_keys)
             fenids = get(() -> error("Must get node list!"), ebc, "node_list")
             displacement = get(ebc, "displacement", nothing)
-            u_fixed = zeros(FFlt, length(fenids)) # only zero displacement accepted
+            u_fixed = zeros(UFT, length(fenids)) # only zero displacement accepted
             component = get(ebc, "component", 0) # which component?
             setebc!(u, fenids[:], true, component, u_fixed)
         end
@@ -937,97 +937,5 @@ function exportmode(modeldata::FDataDict)
 
     return exportdeformation(modeldata)
 end
-
-# """
-#     ssit(K, M; nev=6, v0=fill(zero(FFlt), 0, 0), tol=1.0e-3, maxiter=300, verbose=false)
-
-# Subspace  Iteration method for the generalized eigenvalue problem.
-
-# Block inverse power (subspace iteration) method for k smallest eigenvalues of
-# the generalized eigenvalue problem `K*v = lambda*M*v`.
-
-# # Arguments
-# * `K` =  square symmetric stiffness matrix (if necessary mass-shifted),
-# * `M` =  square symmetric mass matrix,
-
-# Keyword arguments
-# * `v0` =  initial guess of the eigenvectors (for instance random),
-# * `nev` = the number of eigenvalues sought
-# * `tol` = relative tolerance on the eigenvalue, expressed in terms of norms 
-#       of the change of the eigenvalue estimates from iteration to iteration.
-# * `maxiter` =  maximum number of allowed iterations
-# * `verbose` = verbose? (default is false)
-
-# # Output
-# * `labm` = computed eigenvalues,
-# * `v` = computed eigenvectors,
-# * `nconv` = number of converged eigenvalues
-# * `niter` = number of iterations taken
-# * `lamberr` = eigenvalue errors, defined as normalized  differences  of
-#     successive  estimates of the eigenvalues (or not normalized if the 
-#     eigenvalues converge to zero).
-# """
-# function ssit(K, M; nev::Int=6, v0::FFltMat = fill(zero(FFlt), 0, 0), tol::FFlt = 1.0e-3, maxiter::Int = 300, verbose::Bool=false)
-#     @assert nev >= 1
-#     if size(v0) == (0, 0)
-#         p = 2*nev
-#         v0 = [i==j ? one(FFlt) : zero(FFlt) for i=1:size(K,1), j=1:p]
-#     end
-#     v = deepcopy(v0)
-#     @assert nev <= size(v0, 2)
-#     nvecs = size(v, 2)  # How many eigenvalues are iterated?
-#     plamb = zeros(nvecs)  # previous eigenvalue
-#     lamb = zeros(nvecs)
-#     lamberr = zeros(nvecs)
-#     converged = falses(nvecs)  # not yet
-#     niter = 0
-#     nconv = 0
-#     factor = cholesky(K)
-#     Kv = zeros(size(K, 1), nvecs)
-#     Mv = zeros(size(M, 1), nvecs)
-
-#     for i = 1:maxiter
-#         my_A_mul_B!(Mv, M, v)
-#         v .= factor \ Mv
-#         _mass_normalize!(v, M)
-#         my_A_mul_B!(Kv, K, v)
-#         my_A_mul_B!(Mv, M, v)
-#         decomp = eigen(transpose(v)*Kv, transpose(v)*Mv)
-#         ix = sortperm(real.(decomp.values))
-#         evalues = decomp.values[ix]
-#         evectors = decomp.vectors[:, ix]
-#         v .= v * real.(evectors)
-#         lamb .= real.(evalues)
-#         for j = 1:nvecs
-#             if abs(lamb[j]) <= tol # zero eigenvalues
-#                 lamberr[j] = abs(lamb[j])
-#             else # non zero eigenvalues
-#                 lamberr[j] = abs(lamb[j] - plamb[j])/abs(lamb[j])
-#             end
-#             converged[j] = lamberr[j] <= tol
-#         end
-#         nconv = length(findall(converged[1:nev]))
-#         verbose && println("nconv = $(nconv)")
-#         if nconv >= nev # converged on all requested eigenvalues
-#             break
-#         end
-#         plamb, lamb = lamb, plamb # swap the eigenvalue arrays
-#         niter = niter + 1
-#     end
-#     _mass_normalize!(v, M)
-#     return lamb[1:nev], v[:, 1:nev], nconv, niter, lamberr
-# end
-
-# function _mass_normalize!(v, M)
-#     for k in axes(v, 2)
-#         v[:, k] ./= @views sqrt(v[:, k]' * M * v[:, k])
-#     end
-#     v
-# end
-# (d,[v,],nconv,niter,nmult,resid)
-# eigs returns the nev requested eigenvalues in d, the corresponding Ritz vectors
-# v (only if ritzvec=true), the number of converged eigenvalues nconv, the number
-# of iterations niter and the number of matrix vector multiplications nmult, as
-# well as the final residual vector resid.
 
 end
