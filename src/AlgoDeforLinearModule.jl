@@ -368,7 +368,7 @@ function exportdeformation(modeldata::FDataDict)
         region = regions[i]
         femm = region["femm"]
         rfile = ffile * "$i" * ".vtk"
-        vectors = Tuple{String, Matrix{UFT}[]
+        vectors = Tuple{String, Matrix{UFT}}[]
         for ixxxx in 1:length(us)
             push!(vectors, (us[ixxxx][1], us[ixxxx][2].values))
         end
