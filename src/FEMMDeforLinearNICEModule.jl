@@ -14,9 +14,6 @@ module FEMMDeforLinearNICEModule
 
 __precompile__(true)
 
-using FinEtools.FTypesModule:
-    FInt,
-    FFlt, FCplxFlt, FFltVec, FIntVec, FFltMat, FIntMat, FMat, FVec, FDataDict
 using FinEtools.FENodeSetModule: FENodeSet
 using FinEtools.FESetModule: AbstractFESet, FESetH8, FESetT4, manifdim, nodesperelem, gradN!
 using FinEtools.IntegDomainModule: IntegDomain, integrationdata, Jacobianvolume
@@ -59,6 +56,8 @@ A_mul_B!(C, A, B) = mul!(C, A, B)
 using LinearAlgebra: norm, qr, diag, dot, cond, I
 using Statistics: mean
 
+const StabParamFloat = Float64
+
 """
     AbstractFEMMDeforLinearNICE <: AbstractFEMMDeforLinear
 
@@ -66,14 +65,19 @@ Abstract FEMM type for Nodally Integrated Continuum Elements (NICE).
 """
 abstract type AbstractFEMMDeforLinearNICE <: AbstractFEMMDeforLinear end
 
-mutable struct _NodalBasisFunctionGradients
-    gradN::FFltMat
-    patchconn::FIntVec
-    Vpatch::FFlt
+mutable struct _NodalBasisFunctionGradients{FT, IT}
+    gradN::Matrix{FT}
+    patchconn::Vector{IT}
+    Vpatch::FT
 end
 
 """
-    FEMMDeforLinearNICEH8{MR<:AbstractDeforModelRed, S<:FESetH8, F<:Function, M<:AbstractMatDeforLinearElastic} <: AbstractFEMMDeforLinearNICE
+    mutable struct FEMMDeforLinearNICEH8{
+        MR <: AbstractDeforModelRed,
+        S <: FESetH8,
+        F <: Function,
+        M <: AbstractMatDeforLinearElastic,
+    } <: AbstractFEMMDeforLinearNICE
 
 FEMM type for Nodally Integrated Continuum Elements (NICE) based on the eight-node hexahedron.
 """
@@ -87,7 +91,7 @@ mutable struct FEMMDeforLinearNICEH8{
     integdomain::IntegDomain{S, F} # geometry data
     mcsys::CSys # updater of the material orientation matrix
     material::M # material object
-    stabfact::FFlt
+    stabfact::StabParamFloat
     nodalbasisfunctiongrad::Vector{_NodalBasisFunctionGradients}
 end
 
@@ -133,7 +137,7 @@ end
 function FEMMDeforLinearNICEH8(mr::Type{MR},
     integdomain::IntegDomain{S, F},
     material::M,
-    stabfact::FFlt) where {
+    stabfact) where {
     MR <: AbstractDeforModelRed,
     S <: FESetH8,
     F <: Function,
@@ -150,7 +154,12 @@ function FEMMDeforLinearNICEH8(mr::Type{MR},
 end
 
 """
-    FEMMDeforLinearNICET4{MR<:AbstractDeforModelRed, S<:FESetT4, F<:Function, M<:AbstractMatDeforLinearElastic} <: AbstractFEMMDeforLinearNICE
+    mutable struct FEMMDeforLinearNICET4{
+        MR <: AbstractDeforModelRed,
+        S <: FESetT4,
+        F <: Function,
+        M <: AbstractMatDeforLinearElastic,
+    } <: AbstractFEMMDeforLinearNICE
 
 FEMM type for Nodally Integrated Continuum Elements (NICE) based on the 4-node tetrahedron.
 """
@@ -164,7 +173,7 @@ mutable struct FEMMDeforLinearNICET4{
     integdomain::IntegDomain{S, F} # geometry data
     mcsys::CSys # updater of the material orientation matrix
     material::M # material object
-    stabfact::FFlt
+    stabfact::StabParamFloat
     nodalbasisfunctiongrad::Vector{_NodalBasisFunctionGradients}
 end
 
@@ -210,7 +219,7 @@ end
 function FEMMDeforLinearNICET4(mr::Type{MR},
     integdomain::IntegDomain{S, F},
     material::M,
-    stabfact::FFlt) where {
+    stabfact) where {
     MR <: AbstractDeforModelRed,
     S <: FESetT4,
     F <: Function,
@@ -226,36 +235,36 @@ function FEMMDeforLinearNICET4(mr::Type{MR},
         _NodalBasisFunctionGradients[])
 end
 
-function _buffers1(self::AbstractFEMMDeforLinearNICE, geom::NodalField, npts::FInt)
+function _buffers1(self::AbstractFEMMDeforLinearNICE, geom::NodalField{GFT}, npts::Int) where {GFT}
     fes = self.integdomain.fes
     nne = nodesperelem(fes) # number of nodes for element
     sdim = ndofs(geom)            # number of space dimensions
     mdim = manifdim(fes) # manifold dimension of the element
     # Prepare buffers
-    loc = fill(zero(FFlt), 1, sdim) # quadrature point location -- buffer
-    J = fill(zero(FFlt), sdim, mdim) # Jacobian matrix -- buffer
-    adjJ = fill(zero(FFlt), sdim, mdim) # Jacobian matrix -- buffer
-    csmatTJ = fill(zero(FFlt), mdim, mdim) # intermediate result -- buffer
-    gradN = fill(zero(FFlt), nne, mdim)
-    xl = fill(zero(FFlt), nne, mdim)
+    loc = fill(zero(GFT), 1, sdim) # quadrature point location -- buffer
+    J = fill(zero(GFT), sdim, mdim) # Jacobian matrix -- buffer
+    adjJ = fill(zero(GFT), sdim, mdim) # Jacobian matrix -- buffer
+    csmatTJ = fill(zero(GFT), mdim, mdim) # intermediate result -- buffer
+    gradN = fill(zero(GFT), nne, mdim)
+    xl = fill(zero(GFT), nne, mdim)
     return loc, J, adjJ, csmatTJ, gradN, xl
 end
 
 function _buffers2(self::AbstractFEMMDeforLinearNICE,
-    geom::NodalField,
+    geom::NodalField{GFT},
     u::NodalField,
-    npts::FInt)
+    npts::Int) where {GFT}
     fes = self.integdomain.fes
     ndn = ndofs(u) # number of degrees of freedom per node
     nne = nodesperelem(fes) # number of nodes for element
     sdim = ndofs(geom)            # number of space dimensions
     mdim = manifdim(fes) # manifold dimension of the element
     nstrs = nstressstrain(self.mr)  # number of stresses
-    loc = fill(zero(FFlt), 1, sdim) # quadrature point location -- buffer
-    J = fill(zero(FFlt), sdim, mdim) # Jacobian matrix -- buffer
-    csmatTJ = fill(zero(FFlt), mdim, mdim) # intermediate result -- buffer
-    Jac = fill(zero(FFlt), npts)
-    D = fill(zero(FFlt), nstrs, nstrs) # material stiffness matrix -- buffer
+    loc = fill(zero(GFT), 1, sdim) # quadrature point location -- buffer
+    J = fill(zero(GFT), sdim, mdim) # Jacobian matrix -- buffer
+    csmatTJ = fill(zero(GFT), mdim, mdim) # intermediate result -- buffer
+    Jac = fill(zero(GFT), npts)
+    D = fill(zero(GFT), nstrs, nstrs) # material stiffness matrix -- buffer
     return loc, J, csmatTJ, Jac, D
 end
 
@@ -325,14 +334,15 @@ function computenodalbfungrads(self, geom)
 end
 
 """
-    associategeometry!(self::FEMMAbstractBase,  geom::NodalField{FFlt})
+    associategeometry!(self::F,
+        geom::NodalField{GFT}) where {F <: AbstractFEMMDeforLinearNICE, GFT}
 
 Associate geometry field with the FEMM.
 
 Compute the  correction factors to account for  the shape of the  elements.
 """
 function associategeometry!(self::F,
-    geom::NodalField{FFlt}) where {F <: AbstractFEMMDeforLinearNICE}
+    geom::NodalField{GFT}) where {F <: AbstractFEMMDeforLinearNICE, GFT}
     return computenodalbfungrads(self, geom)
 end
 
@@ -357,16 +367,17 @@ function Phi3(dim, np, lx, c)
 end
 
 """
-    stiffness(self::AbstractFEMMDeforLinearNICE, assembler::A,
-      geom::NodalField{FFlt},
-      u::NodalField{T}) where {A<:AbstractSysmatAssembler, T<:Number}
+    stiffness(self::AbstractFEMMDeforLinearNICE,
+        assembler::A,
+        geom::NodalField{GFT},
+        u::NodalField{UFT}) where {A <: AbstractSysmatAssembler, GFT <: Number, UFT <: Number}
 
 Compute and assemble  stiffness matrix.
 """
 function stiffness(self::AbstractFEMMDeforLinearNICE,
     assembler::A,
-    geom::NodalField{FFlt},
-    u::NodalField{T}) where {A <: AbstractSysmatAssembler, T <: Number}
+    geom::NodalField{GFT},
+    u::NodalField{UFT}) where {A <: AbstractSysmatAssembler, GFT <: Number, UFT <: Number}
     fes = self.integdomain.fes
     npts, Ns, gradNparams, w, pc = integrationdata(self.integdomain)
     loc, J, csmatTJ, Jac, D = _buffers2(self, geom, u, npts)
@@ -401,13 +412,15 @@ function stiffness(self::AbstractFEMMDeforLinearNICE,
 end
 
 """
-    stiffness(self::AbstractFEMMDeforLinearNICE, geom::NodalField{FFlt},  u::NodalField{T}) where {T<:Number}
+    stiffness(self::AbstractFEMMDeforLinearNICE,
+        geom::NodalField{GFT},
+        u::NodalField{UFT}) where {GFT <: Number, UFT <: Number}
 
 Compute and assemble  stiffness matrix.
 """
 function stiffness(self::AbstractFEMMDeforLinearNICE,
-    geom::NodalField{FFlt},
-    u::NodalField{T}) where {T <: Number}
+    geom::NodalField{GFT},
+    u::NodalField{UFT}) where {GFT <: Number, UFT <: Number}
     assembler = SysmatAssemblerSparseSymm()
     return stiffness(self, assembler, geom, u)
 end
