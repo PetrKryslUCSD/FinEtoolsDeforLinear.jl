@@ -61,13 +61,13 @@ Default number of incompatible modes is 12.
 """
 mutable struct FEMMDeforLinearIMH8{
     MR <: AbstractDeforModelRed,
-    S <: FESetH8,
-    F <: Function,
+    ID <: IntegDomain{S, F} where {S <: FESetH8, F <: Function},
+    CS <: CSys,
     M <: AbstractMatDeforLinearElastic,
 } <: AbstractFEMMDeforLinear
     mr::Type{MR}
-    integdomain::IntegDomain{S, F} # geometry data
-    mcsys::CSys # updater of the material orientation matrix
+    integdomain::ID # geometry data
+    mcsys::CS # updater of the material orientation matrix
     material::M # material object
     nmodes::Int
 end

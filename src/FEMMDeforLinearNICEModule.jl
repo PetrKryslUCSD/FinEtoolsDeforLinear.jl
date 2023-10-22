@@ -83,13 +83,13 @@ FEMM type for Nodally Integrated Continuum Elements (NICE) based on the eight-no
 """
 mutable struct FEMMDeforLinearNICEH8{
     MR <: AbstractDeforModelRed,
-    S <: FESetH8,
-    F <: Function,
+    ID <: IntegDomain{S, F} where {S <: FESetH8, F <: Function},
+    CS <: CSys,
     M <: AbstractMatDeforLinearElastic,
 } <: AbstractFEMMDeforLinearNICE
     mr::Type{MR}
-    integdomain::IntegDomain{S, F} # geometry data
-    mcsys::CSys # updater of the material orientation matrix
+    integdomain::ID # integration domain
+    mcsys::CS # updater of the material orientation matrix
     material::M # material object
     stabfact::StabParamFloat
     nodalbasisfunctiongrad::Vector{_NodalBasisFunctionGradients}
@@ -165,13 +165,13 @@ FEMM type for Nodally Integrated Continuum Elements (NICE) based on the 4-node t
 """
 mutable struct FEMMDeforLinearNICET4{
     MR <: AbstractDeforModelRed,
-    S <: FESetT4,
-    F <: Function,
+    ID <: IntegDomain{S, F} where {S <: FESetT4, F <: Function},
+    CS <: CSys,
     M <: AbstractMatDeforLinearElastic,
 } <: AbstractFEMMDeforLinearNICE
     mr::Type{MR}
-    integdomain::IntegDomain{S, F} # geometry data
-    mcsys::CSys # updater of the material orientation matrix
+    integdomain::ID # geometry data
+    mcsys::CS # updater of the material orientation matrix
     material::M # material object
     stabfact::StabParamFloat
     nodalbasisfunctiongrad::Vector{_NodalBasisFunctionGradients}

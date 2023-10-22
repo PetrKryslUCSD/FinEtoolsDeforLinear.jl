@@ -66,15 +66,16 @@ Type for mean-strain linear deformation FEMM based on eight-node hexahedral elem
 """
 mutable struct FEMMDeforLinearMSH8{
     MR <: AbstractDeforModelRed,
-    S <: FESetH8,
-    F <: Function,
+    ID <: IntegDomain{S, F} where {S <: FESetH8, F <: Function},
+    CS <: CSys,
     M <: AbstractMatDeforLinearElastic,
+    MS <: MatDeforElastIso
 } <: AbstractFEMMDeforLinearMS
     mr::Type{MR}
-    integdomain::IntegDomain{S, F} # geometry data
-    mcsys::CSys # updater of the material orientation matrix
+    integdomain::ID # geometry data
+    mcsys::CS # updater of the material orientation matrix
     material::M # material object
-    stabilization_material::MatDeforElastIso
+    stabilization_material::MS
     phis::Vector{StabParamFloat}
 end
 
@@ -124,15 +125,16 @@ Type for mean-strain linear deformation FEMM based on 10-node tetrahedral elemen
 """
 mutable struct FEMMDeforLinearMST10{
     MR <: AbstractDeforModelRed,
-    S <: FESetT10,
-    F <: Function,
+    ID <: IntegDomain{S, F} where {S <: FESetT10, F <: Function},
+    CS <: CSys,
     M <: AbstractMatDeforLinearElastic,
+    MS <: MatDeforElastIso
 } <: AbstractFEMMDeforLinearMS
     mr::Type{MR}
-    integdomain::IntegDomain{S, F} # geometry data
-    mcsys::CSys # updater of the material orientation matrix
+    integdomain::ID # geometry data
+    mcsys::CS # updater of the material orientation matrix
     material::M # material object
-    stabilization_material::MatDeforElastIso
+    stabilization_material::MS
     phis::Vector{StabParamFloat}
 end
 

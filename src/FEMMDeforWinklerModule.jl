@@ -26,8 +26,8 @@ import LinearAlgebra: norm, cross
 
 Type for normal spring support  (Winkler).
 """
-mutable struct FEMMDeforWinkler{S <: AbstractFESet, F <: Function} <: AbstractFEMM
-    integdomain::IntegDomain{S, F} # geometry data
+mutable struct FEMMDeforWinkler{ID <: IntegDomain} <: AbstractFEMM
+    integdomain::ID # geometry data
 end
 
 """

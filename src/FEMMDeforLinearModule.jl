@@ -24,11 +24,12 @@ Class for linear deformation finite element modeling machine.
 mutable struct FEMMDeforLinear{
     MR <: AbstractDeforModelRed,
     ID <: IntegDomain,
+    CS <: CSys,
     M <: AbstractMatDeforLinearElastic,
 } <: AbstractFEMMDeforLinear
     mr::Type{MR} # model reduction type
     integdomain::ID # integration domain data
-    mcsys::CSys # updater of the material orientation matrix
+    mcsys::CS # updater of the material orientation matrix
     material::M # material object
 end
 """

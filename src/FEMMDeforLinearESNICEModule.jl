@@ -113,13 +113,15 @@ FEMM type for Nodally Integrated Continuum Elements (NICE) based on the 4-node t
 mutable struct FEMMDeforLinearESNICET4{
     MR <: AbstractDeforModelRed,
     ID <: IntegDomain{S} where {S <: FESetT4},
+    CS <: CSys,
     M <: AbstractMatDeforLinearElastic,
+    MS <: MatDeforElastIso
 } <: AbstractFEMMDeforLinearESNICE
     mr::Type{MR}
     integdomain::ID # geometry data
-    mcsys::CSys # updater of the material orientation matrix
+    mcsys::CS # updater of the material orientation matrix
     material::M # material object
-    stabilization_material::MatDeforElastIso
+    stabilization_material::MS
     nodalbasisfunctiongrad::Vector{_NodalBasisFunctionGradients}
     ephis::Vector{StabParamFloat}
     nphis::Vector{StabParamFloat}
@@ -134,13 +136,15 @@ hexahedron.
 mutable struct FEMMDeforLinearESNICEH8{
     MR <: AbstractDeforModelRed,
     ID <: IntegDomain{S} where {S <: FESetH8},
+    CS <: CSys,
     M <: AbstractMatDeforLinearElastic,
+    MS <: MatDeforElastIso
 } <: AbstractFEMMDeforLinearESNICE
     mr::Type{MR}
     integdomain::ID # geometry data
-    mcsys::CSys # updater of the material orientation matrix
+    mcsys::CS # updater of the material orientation matrix
     material::M # material object
-    stabilization_material::MatDeforElastIso
+    stabilization_material::MS
     nodalbasisfunctiongrad::Vector{_NodalBasisFunctionGradients}
     ephis::Vector{StabParamFloat}
     nphis::Vector{StabParamFloat}
