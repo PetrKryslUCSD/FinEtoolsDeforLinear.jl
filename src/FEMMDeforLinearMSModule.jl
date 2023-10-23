@@ -69,7 +69,7 @@ mutable struct FEMMDeforLinearMSH8{
     ID <: IntegDomain{S, F} where {S <: FESetH8, F <: Function},
     CS <: CSys,
     M <: AbstractMatDeforLinearElastic,
-    MS <: MatDeforElastIso
+    MS <: MatDeforElastIso,
 } <: AbstractFEMMDeforLinearMS
     mr::Type{MR}
     integdomain::ID # geometry data
@@ -128,7 +128,7 @@ mutable struct FEMMDeforLinearMST10{
     ID <: IntegDomain{S, F} where {S <: FESetT10, F <: Function},
     CS <: CSys,
     M <: AbstractMatDeforLinearElastic,
-    MS <: MatDeforElastIso
+    MS <: MatDeforElastIso,
 } <: AbstractFEMMDeforLinearMS
     mr::Type{MR}
     integdomain::ID # geometry data

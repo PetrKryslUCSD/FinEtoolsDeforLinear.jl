@@ -115,7 +115,7 @@ mutable struct FEMMDeforLinearESNICET4{
     ID <: IntegDomain{S} where {S <: FESetT4},
     CS <: CSys,
     M <: AbstractMatDeforLinearElastic,
-    MS <: MatDeforElastIso
+    MS <: MatDeforElastIso,
 } <: AbstractFEMMDeforLinearESNICE
     mr::Type{MR}
     integdomain::ID # geometry data
@@ -138,7 +138,7 @@ mutable struct FEMMDeforLinearESNICEH8{
     ID <: IntegDomain{S} where {S <: FESetH8},
     CS <: CSys,
     M <: AbstractMatDeforLinearElastic,
-    MS <: MatDeforElastIso
+    MS <: MatDeforElastIso,
 } <: AbstractFEMMDeforLinearESNICE
     mr::Type{MR}
     integdomain::ID # geometry data

@@ -235,7 +235,9 @@ function FEMMDeforLinearNICET4(mr::Type{MR},
         _NodalBasisFunctionGradients[])
 end
 
-function _buffers1(self::AbstractFEMMDeforLinearNICE, geom::NodalField{GFT}, npts::Int) where {GFT}
+function _buffers1(self::AbstractFEMMDeforLinearNICE,
+    geom::NodalField{GFT},
+    npts::Int) where {GFT}
     fes = self.integdomain.fes
     nne = nodesperelem(fes) # number of nodes for element
     sdim = ndofs(geom)            # number of space dimensions
