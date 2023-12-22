@@ -84,7 +84,12 @@ function FEMMDeforLinearIMH8(
     integdomain::ID,
     mcsys::CS,
     material::M,
-) where {MR<:AbstractDeforModelRed, ID<:IntegDomain{S,F} where {S<:FESetH8,F<:Function}, CS<:CSys, M<:AbstractMatDeforLinearElastic}
+) where {
+    MR<:AbstractDeforModelRed,
+    ID<:IntegDomain{S,F} where {S<:FESetH8,F<:Function},
+    CS<:CSys,
+    M<:AbstractMatDeforLinearElastic,
+}
     @assert mr == material.mr "Model reduction is mismatched"
     @assert (mr == DeforModelRed3D) "3D model required"
     return FEMMDeforLinearIMH8(mr, integdomain, mcsys, material, 12)
@@ -103,7 +108,11 @@ function FEMMDeforLinearIMH8(
     mr::Type{MR},
     integdomain::ID,
     material::M,
-) where {MR<:AbstractDeforModelRed, ID<:IntegDomain{S,F} where {S<:FESetH8,F<:Function}, M<:AbstractMatDeforLinearElastic}
+) where {
+    MR<:AbstractDeforModelRed,
+    ID<:IntegDomain{S,F} where {S<:FESetH8,F<:Function},
+    M<:AbstractMatDeforLinearElastic,
+}
     @assert mr == material.mr "Model reduction is mismatched"
     @assert (mr == DeforModelRed3D) "3D model required"
     return FEMMDeforLinearIMH8(
@@ -130,7 +139,11 @@ function FEMMDeforLinearIMH8(
     integdomain::ID,
     material::M,
     nmodes::Int64,
-) where {MR<:AbstractDeforModelRed, ID<:IntegDomain{S,F} where {S<:FESetH8,F<:Function}, M<:AbstractMatDeforLinearElastic}
+) where {
+    MR<:AbstractDeforModelRed,
+    ID<:IntegDomain{S,F} where {S<:FESetH8,F<:Function},
+    M<:AbstractMatDeforLinearElastic,
+}
     @assert mr == material.mr "Model reduction is mismatched"
     @assert (mr == DeforModelRed3D) "3D model required"
     return FEMMDeforLinearIMH8(

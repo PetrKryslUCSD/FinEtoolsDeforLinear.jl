@@ -97,7 +97,12 @@ function FEMMDeforLinearMSH8(
     integdomain::ID,
     mcsys::CS,
     material::M,
-) where {MR<:AbstractDeforModelRed, ID<:IntegDomain{S} where {S<:FESetH8}, CS<:CSys, M<:AbstractMatDeforLinearElastic}
+) where {
+    MR<:AbstractDeforModelRed,
+    ID<:IntegDomain{S} where {S<:FESetH8},
+    CS<:CSys,
+    M<:AbstractMatDeforLinearElastic,
+}
     @assert mr == material.mr "Model reduction is mismatched"
     @assert (mr == DeforModelRed3D) "3D model required"
     stabilization_material = _make_stabilization_material(material)
@@ -124,7 +129,11 @@ function FEMMDeforLinearMSH8(
     mr::Type{MR},
     integdomain::ID,
     material::M,
-) where {MR<:AbstractDeforModelRed, ID<:IntegDomain{S} where {S<:FESetH8}, M<:AbstractMatDeforLinearElastic}
+) where {
+    MR<:AbstractDeforModelRed,
+    ID<:IntegDomain{S} where {S<:FESetH8},
+    M<:AbstractMatDeforLinearElastic,
+}
     @assert mr == material.mr "Model reduction is mismatched"
     @assert (mr == DeforModelRed3D) "3D model required"
     stabilization_material = _make_stabilization_material(material)
@@ -179,7 +188,12 @@ function FEMMDeforLinearMST10(
     integdomain::ID,
     mcsys::CS,
     material::M,
-) where {MR<:AbstractDeforModelRed, ID<:IntegDomain{S} where {S<:FESetT10}, CS<:CSys, M<:AbstractMatDeforLinearElastic}
+) where {
+    MR<:AbstractDeforModelRed,
+    ID<:IntegDomain{S} where {S<:FESetT10},
+    CS<:CSys,
+    M<:AbstractMatDeforLinearElastic,
+}
     @assert mr == material.mr "Model reduction is mismatched"
     @assert (mr == DeforModelRed3D) "3D model required"
     stabilization_material = _make_stabilization_material(material)
@@ -206,7 +220,11 @@ function FEMMDeforLinearMST10(
     mr::Type{MR},
     integdomain::ID,
     material::M,
-) where {MR<:AbstractDeforModelRed, ID<:IntegDomain{S} where {S<:FESetT10}, M<:AbstractMatDeforLinearElastic}
+) where {
+    MR<:AbstractDeforModelRed,
+    ID<:IntegDomain{S} where {S<:FESetT10},
+    M<:AbstractMatDeforLinearElastic,
+}
     @assert mr == material.mr "Model reduction is mismatched"
     @assert (mr == DeforModelRed3D) "3D model required"
     stabilization_material = _make_stabilization_material(material)
