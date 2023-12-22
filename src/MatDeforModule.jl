@@ -16,7 +16,7 @@ using FinEtools.DeforModelRedModule:
 using FinEtools.MatModule: AbstractMat
 using LinearAlgebra
 
-_RotationMatrix = Union{Array{T, 2}, Transpose{T, Array{T, 2}}} where {T}
+_RotationMatrix = Union{Array{T,2},Transpose{T,Array{T,2}}} where {T}
 
 """
     AbstractMatDefor
