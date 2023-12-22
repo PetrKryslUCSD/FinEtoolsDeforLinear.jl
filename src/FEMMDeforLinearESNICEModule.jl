@@ -178,6 +178,7 @@ function FEMMDeforLinearESNICET4(
 ) where {
     MR<:AbstractDeforModelRed,
     ID<:IntegDomain{S} where {S<:FESetT4},
+    CS<:CSys,
     M<:AbstractMatDeforLinearElastic,
 }
     @assert mr == material.mr "Model reduction is mismatched"
@@ -246,6 +247,7 @@ function FEMMDeforLinearESNICEH8(
 ) where {
     MR<:AbstractDeforModelRed,
     ID<:IntegDomain{S} where {S<:FESetH8},
+    CS<:CSys,
     M<:AbstractMatDeforLinearElastic,
 }
     @assert mr == material.mr "Model reduction is mismatched"
