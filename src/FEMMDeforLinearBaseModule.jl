@@ -34,13 +34,11 @@ import FinEtools.FEMMBaseModule: inspectintegpoints, bilform_dot, bilform_lin_el
 using FinEtools.CSysModule: CSys, updatecsmat!, csmat
 using FinEtools.DeforModelRedModule: nstressstrain, nthermstrain, blmat!, divmat, vgradmat
 using FinEtools.MatrixUtilityModule:
-    add_btdb_ut_only!,
-    complete_lt!, locjac!, add_nnt_ut_only!, add_btsigma!
+    add_btdb_ut_only!, complete_lt!, locjac!, add_nnt_ut_only!, add_btsigma!
 using FinEtoolsDeforLinear.MatDeforModule: rotstressvec!
 using FinEtools.MatModule: massdensity
 using FinEtoolsDeforLinear.MatDeforLinearElasticModule:
-    tangentmoduli!,
-    update!, thermalstrain!
+    tangentmoduli!, update!, thermalstrain!
 using FinEtools.SurfaceNormalModule: SurfaceNormal, updatenormal!
 using LinearAlgebra: Transpose, mul!
 At_mul_B!(C, A, B) = mul!(C, Transpose(A), B)
@@ -55,9 +53,11 @@ Abstract type of FEMM for linear deformation.
 """
 abstract type AbstractFEMMDeforLinear <: AbstractFEMM end
 
-function _buffers(self::AbstractFEMMDeforLinear,
+function _buffers(
+    self::AbstractFEMMDeforLinear,
     geom::NodalField{GFT},
-    u::NodalField{UFT}) where {GFT, UFT}
+    u::NodalField{UFT},
+) where {GFT,UFT}
     fes = self.integdomain.fes
     ndn = ndofs(u) # number of degrees of freedom per node
     nne = nodesperelem(fes) # number of nodes for element
@@ -88,17 +88,21 @@ Compute the consistent mass matrix
 
 This is a general routine for the abstract linear-deformation  FEMM.
 """
-function mass(self::AbstractFEMMDeforLinear,
+function mass(
+    self::AbstractFEMMDeforLinear,
     assembler::A,
     geom::NodalField{GFT},
-    u::NodalField{UFT}) where {A <: AbstractSysmatAssembler, GFT <: Number, UFT <: Number}
+    u::NodalField{UFT},
+) where {A<:AbstractSysmatAssembler,GFT<:Number,UFT<:Number}
     cf = DataCache(massdensity(self.material) * LinearAlgebra.I(ndofs(u)))
     return bilform_dot(self, assembler, geom, u, cf)
 end
 
-function mass(self::AbstractFEMMDeforLinear,
+function mass(
+    self::AbstractFEMMDeforLinear,
     geom::NodalField{GFT},
-    u::NodalField{UFT}) where {GFT <: Number, UFT <: Number}
+    u::NodalField{UFT},
+) where {GFT<:Number,UFT<:Number}
     assembler = SysmatAssemblerSparseSymm()
     return mass(self, assembler, geom, u)
 end
@@ -113,15 +117,12 @@ Compute and assemble  stiffness matrix.
     The material stiffness matrix is assumed to be the same at all the points of
     the domain (homogeneous material).
 """
-function stiffness(self::FEMM,
+function stiffness(
+    self::FEMM,
     assembler::A,
     geom::NodalField{GFT},
-    u::NodalField{UFT}) where {
-    FEMM <: AbstractFEMMDeforLinear,
-    A <: AbstractSysmatAssembler,
-    GFT <: Number,
-    UFT <: Number,
-}
+    u::NodalField{UFT},
+) where {FEMM<:AbstractFEMMDeforLinear,A<:AbstractSysmatAssembler,GFT<:Number,UFT<:Number}
     sdim = ndofs(geom)
     loc = fill(zero(GFT), 1, sdim)
     nstrs = nstressstrain(self.mr)
@@ -130,9 +131,11 @@ function stiffness(self::FEMM,
     return bilform_lin_elastic(self, assembler, geom, u, self.mr, DataCache(D))
 end
 
-function stiffness(self::FEMM,
+function stiffness(
+    self::FEMM,
     geom::NodalField{GFT},
-    u::NodalField{UFT}) where {FEMM <: AbstractFEMMDeforLinear, GFT <: Number, UFT <: Number}
+    u::NodalField{UFT},
+) where {FEMM<:AbstractFEMMDeforLinear,GFT<:Number,UFT<:Number}
     assembler = SysmatAssemblerSparseSymm()
     return stiffness(self, assembler, geom, u)
 end
@@ -142,16 +145,17 @@ end
 
 Compute the thermal-strain load vector.
 """
-function thermalstrainloads(self::AbstractFEMMDeforLinear,
+function thermalstrainloads(
+    self::AbstractFEMMDeforLinear,
     assembler::A,
     geom::NodalField{GFT},
     u::NodalField{UFT},
-    dT::NodalField{TFT}) where {A <: AbstractSysvecAssembler, GFT <: Number, UFT <: Number, TFT <: Number}
+    dT::NodalField{TFT},
+) where {A<:AbstractSysvecAssembler,GFT<:Number,UFT<:Number,TFT<:Number}
     fes = self.integdomain.fes
     npts, Ns, gradNparams, w, pc = integrationdata(self.integdomain)
-    ecoords, dofnums, loc, J, csmatTJ, gradN, D, B, DB, elmat, elvec, elvecfix = _buffers(self,
-        geom,
-        u)
+    ecoords, dofnums, loc, J, csmatTJ, gradN, D, B, DB, elmat, elvec, elvecfix =
+        _buffers(self, geom, u)
     t = 0.0
     dt = 0.0
     DeltaT = fill(zero(GFT), nodesperelem(fes))
@@ -164,7 +168,7 @@ function thermalstrainloads(self::AbstractFEMMDeforLinear,
         if norm(DeltaT, Inf) != 0     # Is the thermal increment nonzero?
             gathervalues_asmat!(geom, ecoords, fes.conn[i])
             fill!(elvec, 0.0) # Initialize element matrix
-            for j in 1:npts # Loop over quadrature points
+            for j = 1:npts # Loop over quadrature points
                 locjac!(loc, J, ecoords, Ns[j], gradNparams[j])
                 Jac = Jacobianvolume(self.integdomain, J, loc, fes.conn[i], Ns[j])
                 updatecsmat!(self.mcsys, loc, J, i, j)
@@ -172,7 +176,8 @@ function thermalstrainloads(self::AbstractFEMMDeforLinear,
                 gradN!(fes, gradN, gradNparams[j], csmatTJ)#Do: gradN = gradNparams[j]/csmatTJ;
                 blmat!(self.mr, B, Ns[j], gradN, loc, csmat(self.mcsys))# strains in mater cs, displ in global cs
                 thermalstrain!(self.material, thstrain, dot(vec(Ns[j]), DeltaT))
-                thstress = update!(self.material,
+                thstress = update!(
+                    self.material,
                     thstress,
                     thstress,
                     strain,
@@ -181,7 +186,8 @@ function thermalstrainloads(self::AbstractFEMMDeforLinear,
                     dt,
                     loc,
                     fes.label[i],
-                    :nothing)
+                    :nothing,
+                )
                 add_btsigma!(elvec, B, (-1) * (Jac * w[j]), thstress)
             end
             gatherdofnums!(u, dofnums, fes.conn[i]) # retrieve degrees of freedom
@@ -191,10 +197,12 @@ function thermalstrainloads(self::AbstractFEMMDeforLinear,
     return makevector!(assembler)
 end
 
-function thermalstrainloads(self::AbstractFEMMDeforLinear,
+function thermalstrainloads(
+    self::AbstractFEMMDeforLinear,
     geom::NodalField{GFT},
     u::NodalField{UFT},
-    dT::NodalField{TFT}) where {GFT <: Number, UFT <: Number, TFT <: Number}
+    dT::NodalField{TFT},
+) where {GFT<:Number,UFT<:Number,TFT<:Number}
     assembler = SysvecAssembler()
     return thermalstrainloads(self, assembler, geom, u, dT)
 end
@@ -223,7 +231,8 @@ Inspect integration point quantities.
 
 The updated inspector data is returned.
 """
-function inspectintegpoints(self::FEMM,
+function inspectintegpoints(
+    self::FEMM,
     geom::NodalField{GFT},
     u::NodalField{UFT},
     dT::NodalField{TFT},
@@ -231,19 +240,19 @@ function inspectintegpoints(self::FEMM,
     inspector::F,
     idat,
     quantity = :Cauchy;
-    context...,) where {
-    FEMM <: AbstractFEMMDeforLinear,
-    GFT <: Number,
-    UFT <: Number,
-    TFT <: Number,
-    IT <: Integer,
-    F <: Function,
+    context...,
+) where {
+    FEMM<:AbstractFEMMDeforLinear,
+    GFT<:Number,
+    UFT<:Number,
+    TFT<:Number,
+    IT<:Integer,
+    F<:Function,
 }
     fes = self.integdomain.fes
     npts, Ns, gradNparams, w, pc = integrationdata(self.integdomain)
-    ecoords, dofnums, loc, J, csmatTJ, gradN, D, B, DB, elmat, elvec, elvecfix = _buffers(self,
-        geom,
-        u)
+    ecoords, dofnums, loc, J, csmatTJ, gradN, D, B, DB, elmat, elvec, elvecfix =
+        _buffers(self, geom, u)
     # Sort out  the output requirements
     outputcsys = self.mcsys # default: report the stresses in the material coord system
     for apair in pairs(context)
@@ -266,12 +275,12 @@ function inspectintegpoints(self::FEMM,
     out1 = fill(zero(GFT), nstressstrain(self.mr)) # stress -- buffer
     out = fill(zero(GFT), nstressstrain(self.mr))# output -- buffer
     # Loop over  all the elements and all the quadrature points within them
-    for ilist in 1:length(felist) # Loop over elements
+    for ilist = 1:length(felist) # Loop over elements
         i = felist[ilist]
         gathervalues_asmat!(geom, ecoords, fes.conn[i])
         gathervalues_asvec!(u, ue, fes.conn[i])# retrieve element displacements
         gathervalues_asvec!(dT, dTe, fes.conn[i])# retrieve element temp. increments
-        for j in 1:npts # Loop over quadrature points
+        for j = 1:npts # Loop over quadrature points
             locjac!(loc, J, ecoords, Ns[j], gradNparams[j])
             Jac = Jacobianvolume(self.integdomain, J, loc, fes.conn[i], Ns[j])
             updatecsmat!(self.mcsys, loc, J, i, j)
@@ -284,7 +293,8 @@ function inspectintegpoints(self::FEMM,
             qpdT = dot(vec(dTe), vec(Ns[j]))# Quadrature point temperature increment
             thermalstrain!(self.material, qpthstrain, qpdT)
             # Material updates the state and returns the output
-            out = update!(self.material,
+            out = update!(
+                self.material,
                 qpstress,
                 out,
                 vec(qpstrain),
@@ -293,7 +303,8 @@ function inspectintegpoints(self::FEMM,
                 dt,
                 loc,
                 fes.label[i],
-                quantity)
+                quantity,
+            )
             if (quantity == :Cauchy)   # Transform stress tensor,  if that is "out"
                 (length(out1) >= length(out)) || (out1 = zeros(length(out)))
                 rotstressvec!(self.mr, out1, out, transpose(csmat(self.mcsys)))# To global coord sys
@@ -306,16 +317,19 @@ function inspectintegpoints(self::FEMM,
     return idat # return the updated inspector data
 end
 
-function inspectintegpoints(self::FEMM,
+function inspectintegpoints(
+    self::FEMM,
     geom::NodalField{GFT},
     u::NodalField{UFT},
     felist::AbstractVector{IT},
     inspector::F,
     idat,
     quantity = :Cauchy;
-    context...,) where {FEMM <: AbstractFEMMDeforLinear, GFT <: Number, UFT <: Number, IT, F <: Function}
+    context...,
+) where {FEMM<:AbstractFEMMDeforLinear,GFT<:Number,UFT<:Number,IT,F<:Function}
     dT = NodalField(fill(zero(GFT), nnodes(geom), 1)) # zero difference in temperature
-    return inspectintegpoints(self,
+    return inspectintegpoints(
+        self,
         geom,
         u,
         dT,
@@ -323,12 +337,15 @@ function inspectintegpoints(self::FEMM,
         inspector,
         idat,
         quantity;
-        context...,)
+        context...,
+    )
 end
 
-function _buffers2(self::AbstractFEMMDeforLinear,
+function _buffers2(
+    self::AbstractFEMMDeforLinear,
     geom::NodalField{GFT},
-    u::NodalField{UFT}) where {GFT, UFT}
+    u::NodalField{UFT},
+) where {GFT,UFT}
     fes = self.integdomain.fes
     ndn = ndofs(u) # number of degrees of freedom per node
     nne = nodesperelem(fes) # number of nodes for element
@@ -362,10 +379,12 @@ Computers and Structures 79 (2001) 243-252.)
 This computation has not been optimized in any way. It can be expected to be
 inefficient.
 """
-function infsup_gh(self::AbstractFEMMDeforLinear,
+function infsup_gh(
+    self::AbstractFEMMDeforLinear,
     assembler::A,
     geom::NodalField{GFT},
-    u::NodalField{UFT}) where {A <: AbstractSysmatAssembler, GFT, UFT}
+    u::NodalField{UFT},
+) where {A<:AbstractSysmatAssembler,GFT,UFT}
     fes = self.integdomain.fes
     npts, Ns, gradNparams, w, pc = integrationdata(self.integdomain)
     ecoords, dofnums, loc, J, csmatTJ, gradN, elmat = _buffers2(self, geom, u)
@@ -373,7 +392,7 @@ function infsup_gh(self::AbstractFEMMDeforLinear,
     for i in eachindex(fes) # Loop over elements
         gathervalues_asmat!(geom, ecoords, fes.conn[i])
         fill!(elmat, 0.0) # Initialize element matrix
-        for j in 1:npts # Loop over quadrature points
+        for j = 1:npts # Loop over quadrature points
             locjac!(loc, J, ecoords, Ns[j], gradNparams[j])
             Jac = Jacobianvolume(self.integdomain, J, loc, fes.conn[i], Ns[j])
             updatecsmat!(self.mcsys, loc, J, i, j)
@@ -388,16 +407,20 @@ function infsup_gh(self::AbstractFEMMDeforLinear,
     return makematrix!(assembler)
 end
 
-function infsup_gh(self::AbstractFEMMDeforLinear,
+function infsup_gh(
+    self::AbstractFEMMDeforLinear,
     geom::NodalField{GFT},
-    u::NodalField{UFT}) where {GFT, UFT}
+    u::NodalField{UFT},
+) where {GFT,UFT}
     assembler = SysmatAssemblerSparseSymm()
     return infsup_gh(self, assembler, geom, u)
 end
 
-function _buffers3(self::AbstractFEMMDeforLinear,
+function _buffers3(
+    self::AbstractFEMMDeforLinear,
     geom::NodalField{GFT},
-    u::NodalField{UFT}) where {GFT, UFT}
+    u::NodalField{UFT},
+) where {GFT,UFT}
     fes = self.integdomain.fes
     ndn = ndofs(u) # number of degrees of freedom per node
     nne = nodesperelem(fes) # number of nodes for element
@@ -432,10 +455,12 @@ Computers and Structures 79 (2001) 243-252.)
 This computation has not been optimized in any way. It can be expected to be
 inefficient.
 """
-function infsup_sh(self::AbstractFEMMDeforLinear,
+function infsup_sh(
+    self::AbstractFEMMDeforLinear,
     assembler::A,
     geom::NodalField{GFT},
-    u::NodalField{UFT}) where {A <: AbstractSysmatAssembler, GFT <: Number, UFT <: Number}
+    u::NodalField{UFT},
+) where {A<:AbstractSysmatAssembler,GFT<:Number,UFT<:Number}
     fes = self.integdomain.fes
     npts, Ns, gradNparams, w, pc = integrationdata(self.integdomain)
     ecoords, dofnums, loc, J, csmatTJ, gradN, elmat = _buffers3(self, geom, u)
@@ -443,7 +468,7 @@ function infsup_sh(self::AbstractFEMMDeforLinear,
     for i in eachindex(fes) # Loop over elements
         gathervalues_asmat!(geom, ecoords, fes.conn[i])
         fill!(elmat, 0.0) # Initialize element matrix
-        for j in 1:npts # Loop over quadrature points
+        for j = 1:npts # Loop over quadrature points
             locjac!(loc, J, ecoords, Ns[j], gradNparams[j])
             Jac = Jacobianvolume(self.integdomain, J, loc, fes.conn[i], Ns[j])
             updatecsmat!(self.mcsys, loc, J, i, j)
@@ -458,9 +483,11 @@ function infsup_sh(self::AbstractFEMMDeforLinear,
     return makematrix!(assembler)
 end
 
-function infsup_sh(self::AbstractFEMMDeforLinear,
+function infsup_sh(
+    self::AbstractFEMMDeforLinear,
     geom::NodalField{GFT},
-    u::NodalField{UFT}) where {GFT <: Number, UFT <: Number}
+    u::NodalField{UFT},
+) where {GFT<:Number,UFT<:Number}
     assembler = SysmatAssemblerSparseSymm()
     return infsup_sh(self, assembler, geom, u)
 end

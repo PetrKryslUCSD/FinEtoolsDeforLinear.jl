@@ -23,8 +23,7 @@ using FinEtools.IntegDomainModule: IntegDomain, integrationdata, Jacobianvolume
 using FinEtoolsDeforLinear.FEMMDeforLinearBaseModule: AbstractFEMMDeforLinear
 using FinEtools.DeforModelRedModule: AbstractDeforModelRed, DeforModelRed3D
 using FinEtoolsDeforLinear.MatDeforLinearElasticModule:
-    AbstractMatDeforLinearElastic,
-    tangentmoduli!, update!, thermalstrain!
+    AbstractMatDeforLinearElastic, tangentmoduli!, update!, thermalstrain!
 using FinEtoolsDeforLinear.MatDeforElastIsoModule: MatDeforElastIso
 using FinEtools.FieldModule:
     ndofs,
@@ -47,11 +46,9 @@ using FinEtools.AssemblyModule:
     makevector!,
     SysvecAssembler
 using FinEtools.MatrixUtilityModule:
-    add_btdb_ut_only!,
-    complete_lt!, loc!, jac!, locjac!, adjugate3!
+    add_btdb_ut_only!, complete_lt!, loc!, jac!, locjac!, adjugate3!
 import FinEtoolsDeforLinear.FEMMDeforLinearBaseModule:
-    stiffness,
-    mass, thermalstrainloads, inspectintegpoints
+    stiffness, mass, thermalstrainloads, inspectintegpoints
 import FinEtools.FEMMBaseModule: associategeometry!
 using FinEtoolsDeforLinear.MatDeforModule: rotstressvec!
 using FinEtools.MatModule: massdensity
@@ -77,7 +74,7 @@ abstract type AbstractFEMMDeforLinearESNICE <: AbstractFEMMDeforLinear end
 # Fitting for a small aspect-ratio range (1.0 to 10)
 _T4_stabilization_parameters = (2.101588423297799, 1.311321055432958)
 
-mutable struct _NodalBasisFunctionGradients{FT, IT}
+mutable struct _NodalBasisFunctionGradients{FT,IT}
     gradN::Matrix{FT}
     patchconn::Vector{IT}
     Vpatch::FT
@@ -111,11 +108,11 @@ end
 FEMM type for Nodally Integrated Continuum Elements (NICE) based on the 4-node tetrahedron.
 """
 mutable struct FEMMDeforLinearESNICET4{
-    MR <: AbstractDeforModelRed,
-    ID <: IntegDomain{S} where {S <: FESetT4},
-    CS <: CSys,
-    M <: AbstractMatDeforLinearElastic,
-    MS <: MatDeforElastIso,
+    MR<:AbstractDeforModelRed,
+    ID<:IntegDomain{S} where {S<:FESetT4},
+    CS<:CSys,
+    M<:AbstractMatDeforLinearElastic,
+    MS<:MatDeforElastIso,
 } <: AbstractFEMMDeforLinearESNICE
     mr::Type{MR}
     integdomain::ID # geometry data
@@ -134,11 +131,11 @@ FEMM type for Nodally Integrated Continuum Elements (NICE) based on the 8-node
 hexahedron.
 """
 mutable struct FEMMDeforLinearESNICEH8{
-    MR <: AbstractDeforModelRed,
-    ID <: IntegDomain{S} where {S <: FESetH8},
-    CS <: CSys,
-    M <: AbstractMatDeforLinearElastic,
-    MS <: MatDeforElastIso,
+    MR<:AbstractDeforModelRed,
+    ID<:IntegDomain{S} where {S<:FESetH8},
+    CS<:CSys,
+    M<:AbstractMatDeforLinearElastic,
+    MS<:MatDeforElastIso,
 } <: AbstractFEMMDeforLinearESNICE
     mr::Type{MR}
     integdomain::ID # geometry data
@@ -150,90 +147,86 @@ mutable struct FEMMDeforLinearESNICEH8{
     nphis::Vector{StabParamFloat}
 end
 
-function FEMMDeforLinearESNICET4(mr::Type{MR},
-    integdomain::IntegDomain{S, F},
+function FEMMDeforLinearESNICET4(
+    mr::Type{MR},
+    integdomain::IntegDomain{S,F},
     mcsys::CSys,
-    material::M) where {
-    MR <: AbstractDeforModelRed,
-    S <: FESetT4,
-    F <: Function,
-    M <: AbstractMatDeforLinearElastic,
-}
-    @assert mr==material.mr "Model reduction is mismatched"
-    @assert (mr==DeforModelRed3D) "3D model required"
+    material::M,
+) where {MR<:AbstractDeforModelRed,S<:FESetT4,F<:Function,M<:AbstractMatDeforLinearElastic}
+    @assert mr == material.mr "Model reduction is mismatched"
+    @assert (mr == DeforModelRed3D) "3D model required"
     stabilization_material = _make_stabilization_material(material)
-    return FEMMDeforLinearESNICET4(mr,
+    return FEMMDeforLinearESNICET4(
+        mr,
         integdomain,
         mcsys,
         material,
         stabilization_material,
         _NodalBasisFunctionGradients[],
         fill(zero(StabParamFloat), 1),
-        fill(zero(StabParamFloat), 1))
+        fill(zero(StabParamFloat), 1),
+    )
 end
 
-function FEMMDeforLinearESNICET4(mr::Type{MR},
-    integdomain::IntegDomain{S, F},
-    material::M) where {
-    MR <: AbstractDeforModelRed,
-    S <: FESetT4,
-    F <: Function,
-    M <: AbstractMatDeforLinearElastic,
-}
-    @assert mr==material.mr "Model reduction is mismatched"
-    @assert (mr==DeforModelRed3D) "3D model required"
+function FEMMDeforLinearESNICET4(
+    mr::Type{MR},
+    integdomain::IntegDomain{S,F},
+    material::M,
+) where {MR<:AbstractDeforModelRed,S<:FESetT4,F<:Function,M<:AbstractMatDeforLinearElastic}
+    @assert mr == material.mr "Model reduction is mismatched"
+    @assert (mr == DeforModelRed3D) "3D model required"
     stabilization_material = _make_stabilization_material(material)
-    return FEMMDeforLinearESNICET4(mr,
+    return FEMMDeforLinearESNICET4(
+        mr,
         integdomain,
         CSys(manifdim(integdomain.fes)),
         material,
         stabilization_material,
         _NodalBasisFunctionGradients[],
         fill(zero(StabParamFloat), 1),
-        fill(zero(StabParamFloat), 1))
+        fill(zero(StabParamFloat), 1),
+    )
 end
 
-function FEMMDeforLinearESNICEH8(mr::Type{MR},
-    integdomain::IntegDomain{S, F},
+function FEMMDeforLinearESNICEH8(
+    mr::Type{MR},
+    integdomain::IntegDomain{S,F},
     mcsys::CSys,
-    material::M) where {
-    MR <: AbstractDeforModelRed,
-    S <: FESetH8,
-    F <: Function,
-    M <: AbstractMatDeforLinearElastic,
-}
-    @assert mr==material.mr "Model reduction is mismatched"
-    @assert (mr==DeforModelRed3D) "3D model required"
+    material::M,
+) where {MR<:AbstractDeforModelRed,S<:FESetH8,F<:Function,M<:AbstractMatDeforLinearElastic}
+    @assert mr == material.mr "Model reduction is mismatched"
+    @assert (mr == DeforModelRed3D) "3D model required"
     stabilization_material = _make_stabilization_material(material)
-    return FEMMDeforLinearESNICEH8(mr,
+    return FEMMDeforLinearESNICEH8(
+        mr,
         integdomain,
         mcsys,
         material,
         stabilization_material,
         _NodalBasisFunctionGradients[],
         fill(zero(StabParamFloat), 1),
-        fill(zero(StabParamFloat), 1))
+        fill(zero(StabParamFloat), 1),
+    )
 end
 
-function FEMMDeforLinearESNICEH8(mr::Type{MR},
-    integdomain::IntegDomain{S, F},
-    material::M) where {
-    MR <: AbstractDeforModelRed,
-    S <: FESetH8,
-    F <: Function,
-    M <: AbstractMatDeforLinearElastic,
-}
-    @assert mr==material.mr "Model reduction is mismatched"
-    @assert (mr==DeforModelRed3D) "3D model required"
+function FEMMDeforLinearESNICEH8(
+    mr::Type{MR},
+    integdomain::IntegDomain{S,F},
+    material::M,
+) where {MR<:AbstractDeforModelRed,S<:FESetH8,F<:Function,M<:AbstractMatDeforLinearElastic}
+    @assert mr == material.mr "Model reduction is mismatched"
+    @assert (mr == DeforModelRed3D) "3D model required"
     stabilization_material = _make_stabilization_material(material)
-    return FEMMDeforLinearESNICEH8(mr,
+    return FEMMDeforLinearESNICEH8(
+        mr,
         integdomain,
         CSys(manifdim(integdomain.fes)),
         material,
         stabilization_material,
         _NodalBasisFunctionGradients[],
         fill(zero(StabParamFloat), 1),
-        fill(zero(StabParamFloat), 1))
+        fill(zero(StabParamFloat), 1),
+    )
 end
 
 function _buffers1(self::AbstractFEMMDeforLinearESNICE, geom::NodalField{GFT}) where {GFT}
@@ -251,10 +244,12 @@ function _buffers1(self::AbstractFEMMDeforLinearESNICE, geom::NodalField{GFT}) w
     return loc, J, adjJ, csmatTJ, gradN, xl
 end
 
-function _buffers2(self::AbstractFEMMDeforLinearESNICE,
+function _buffers2(
+    self::AbstractFEMMDeforLinearESNICE,
     geom::NodalField{GFT},
     u::NodalField,
-    npts::Int) where {GFT}
+    npts::Int,
+) where {GFT}
     fes = self.integdomain.fes
     ndn = ndofs(u) # number of degrees of freedom per node
     nne = nodesperelem(fes) # number of nodes for element
@@ -276,9 +271,11 @@ function _buffers2(self::AbstractFEMMDeforLinearESNICE,
     return ecoords, dofnums, loc, J, csmatTJ, Jac, D, Dstab, elmat, B
 end
 
-function _buffers3(self::AbstractFEMMDeforLinearESNICE,
+function _buffers3(
+    self::AbstractFEMMDeforLinearESNICE,
     geom::NodalField{GFT},
-    u::NodalField) where {GFT}
+    u::NodalField,
+) where {GFT}
     fes = self.integdomain.fes
     ndn = ndofs(u) # number of degrees of freedom per node
     nne = nodesperelem(fes) # number of nodes for element
@@ -300,9 +297,10 @@ end
 function _patchconn(fes, gl, thisnn)
     # Generate patch connectivity for a given node (thisnn)
     # from the connectivities of the finite elements attached to it.
-    return vcat(collect(setdiff(Set([i for j in 1:length(gl) for i in fes.conn[gl[j]]]),
-            thisnn)),
-        [thisnn])
+    return vcat(
+        collect(setdiff(Set([i for j = 1:length(gl) for i in fes.conn[gl[j]]]), thisnn)),
+        [thisnn],
+    )
 end
 
 function _computenodalbfungrads(self, geom)
@@ -319,11 +317,11 @@ function _computenodalbfungrads(self, geom)
     # Get the inverse map from finite element nodes to geometric cells
     fen2fe = FENodeToFEMap(fes.conn, nnodes(geom))
     # Initialize the nodal gradients, nodal patch, and patch connectivity
-    bfungrads = fill(_NodalBasisFunctionGradients(fill(0.0, 0, 0), fill(0, 0), 0.0),
-        nnodes(geom))
+    bfungrads =
+        fill(_NodalBasisFunctionGradients(fill(0.0, 0, 0), fill(0, 0), 0.0), nnodes(geom))
     # Now loop over all finite element nodes in the map
     lnmap = fill(0, length(fen2fe.map)) # Local node map: buffer to speed up operations
-    for nix in 1:length(fen2fe.map)
+    for nix = 1:length(fen2fe.map)
         gl = fen2fe.map[nix]
         thisnn = nix # We are at this node
         if !isempty(gl) # This node has an element patch in this block
@@ -335,15 +333,16 @@ function _computenodalbfungrads(self, geom)
             updatecsmat!(self.mcsys, c, J, nix, 0)
             gradNavg = fill(0.0, np, ndofs(geom))# preallocate strain-displacement matrix
             Vpatch = 0.0
-            for k in 1:length(gl)
+            for k = 1:length(gl)
                 i = gl[k]
                 kconn = collect(fes.conn[i])
                 pci = findfirst(cx -> cx == thisnn, kconn)# at which node in the element are we with this quadrature point?
                 @assert 1 <= pci <= nodesperelem(fes)
                 # centered coordinates of nodes in the material coordinate system
-                for cn in 1:length(kconn)
-                    xl[cn, :] = (reshape(geom.values[kconn[cn], :], 1, ndofs(geom)) - c) *
-                                csmat(self.mcsys)
+                for cn = 1:length(kconn)
+                    xl[cn, :] =
+                        (reshape(geom.values[kconn[cn], :], 1, ndofs(geom)) - c) *
+                        csmat(self.mcsys)
                 end
                 jac!(J, xl, gradNparams[pci])
                 At_mul_B!(csmatTJ, csmat(self.mcsys), J) # local Jacobian matrix
@@ -375,12 +374,8 @@ function _tetaspectratiovol(X)
     A3 = norm(cross(edge3, edge1))
     A4 = norm(cross(edge4, edge6))
     #h1, h2, h3, h4 = V/A1, V/A2, V/A3, V/A4
-    L1, L2, L3, L4, L5, L6 = norm(edge1),
-    norm(edge2),
-    norm(edge3),
-    norm(edge4),
-    norm(edge5),
-    norm(edge6)
+    L1, L2, L3, L4, L5, L6 =
+        norm(edge1), norm(edge2), norm(edge3), norm(edge4), norm(edge5), norm(edge6)
     # the heights and the edge lengths will now be used to derive a composite
     # index: aspect ratio index. If this cannot be computed without generating
     # not-a-number or infinity, this number is assumed to be better represented
@@ -401,16 +396,18 @@ Associate geometry field with the FEMM.
 
 Compute the  correction factors to account for  the shape of the  elements.
 """
-function associategeometry!(self::F,
+function associategeometry!(
+    self::F,
     geom::NodalField{GFT};
-    stabilization_parameters = _T4_stabilization_parameters,) where {F <: FEMMDeforLinearESNICET4, GFT}
+    stabilization_parameters = _T4_stabilization_parameters,
+) where {F<:FEMMDeforLinearESNICET4,GFT}
     (a, b) = stabilization_parameters
     fes = self.integdomain.fes
     self.ephis = fill(zero(StabParamFloat), count(fes))
     evols = fill(zero(StabParamFloat), count(fes))
     self.nphis = fill(zero(StabParamFloat), nnodes(geom))
     nvols = fill(zero(StabParamFloat), nnodes(geom))
-    for i in 1:count(fes) # Loop over elements
+    for i = 1:count(fes) # Loop over elements
         ar1, ar2, ar3, ar4, V = _tetaspectratiovol(geom.values[collect(fes.conn[i]), :])
         evols[i] = V
         # If the aspect ratios are not reasonable, such as when the element is a
@@ -423,14 +420,14 @@ function associategeometry!(self::F,
         end
         # Accumulate: the stabilization factor at the node is the weighted mean
         # of the stabilization factors of the elements at that node
-        for k in 1:nodesperelem(fes)
+        for k = 1:nodesperelem(fes)
             nvols[fes.conn[i][k]] += evols[i]
             self.nphis[fes.conn[i][k]] += self.ephis[i] * evols[i]
         end
     end # Loop over elements
     @assert any(isnan.(self.ephis)) == false
     # Now scale the values at the nodes with the nodal volumes
-    for k in 1:length(nvols)
+    for k = 1:length(nvols)
         if nvols[k] != 0.0
             self.nphis[k] /= nvols[k]
         end
@@ -447,8 +444,10 @@ Associate geometry field with the FEMM.
 
 Compute the  correction factors to account for  the shape of the  elements.
 """
-function associategeometry!(self::F,
-    geom::NodalField{GFT}) where {F <: FEMMDeforLinearESNICEH8, GFT}
+function associategeometry!(
+    self::F,
+    geom::NodalField{GFT},
+) where {F<:FEMMDeforLinearESNICEH8,GFT}
     fes = self.integdomain.fes
     self.ephis = fill(zero(StabParamFloat), count(fes))
     evols = fill(zero(StabParamFloat), count(fes))
@@ -456,13 +455,13 @@ function associategeometry!(self::F,
     nvols = fill(zero(StabParamFloat), nnodes(geom))
     npts, Ns, gradNparams, w, pc = integrationdata(self.integdomain)
 
-    for i in 1:count(fes) # Loop over elements
+    for i = 1:count(fes) # Loop over elements
         X = geom.values[collect(fes.conn[i]), :]
         V = 0.0
-        for j in 1:npts
+        for j = 1:npts
             J = X' * gradNparams[j]
             Jac = det(J)
-            @assert Jac>0 "Nonpositive Jacobian"
+            @assert Jac > 0 "Nonpositive Jacobian"
             V = V + Jac * w[j]
             hs = sum(J .* J; dims = 1)
             phi = 2 * (1.0 + self.stabilization_material.nu) * minimum(hs) / maximum(hs)
@@ -470,13 +469,13 @@ function associategeometry!(self::F,
         end
         evols[i] = V
         # Accumulate: the stabilization factor at the node is the weighted mean of the stabilization factors of the elements at that node
-        for k in 1:nodesperelem(fes)
+        for k = 1:nodesperelem(fes)
             nvols[fes.conn[i][k]] += evols[i]
             self.nphis[fes.conn[i][k]] += self.ephis[i] * evols[i]
         end
     end # Loop over elements
     # Now scale the values at the nodes with the nodal volumes
-    for k in 1:length(nvols)
+    for k = 1:length(nvols)
         self.nphis[k] /= nvols[k]
     end
     # Now calculate the nodal basis function gradients
@@ -488,10 +487,12 @@ end
 
 Compute and assemble  stiffness matrix.
 """
-function stiffness(self::AbstractFEMMDeforLinearESNICE,
+function stiffness(
+    self::AbstractFEMMDeforLinearESNICE,
     assembler::A,
     geom::NodalField{GFT},
-    u::NodalField{T}) where {A <: AbstractSysmatAssembler, GFT <: Number, T <: Number}
+    u::NodalField{T},
+) where {A<:AbstractSysmatAssembler,GFT<:Number,T<:Number}
     fes = self.integdomain.fes
     npts, Ns, gradNparams, w, pc = integrationdata(self.integdomain)
     ecoords, dofnums, loc, J, csmatTJ, Jac, D, Dstab = _buffers2(self, geom, u, npts)
@@ -499,7 +500,7 @@ function stiffness(self::AbstractFEMMDeforLinearESNICE,
     tangentmoduli!(self.stabilization_material, Dstab, 0.0, 0.0, loc, 0)
     elmatsizeguess = 4 * nodesperelem(fes) * ndofs(u)
     startassembly!(assembler, elmatsizeguess^2 * nnodes(u), nalldofs(u), nalldofs(u))
-    for nix in 1:length(self.nodalbasisfunctiongrad)
+    for nix = 1:length(self.nodalbasisfunctiongrad)
         gradN = self.nodalbasisfunctiongrad[nix].gradN
         patchconn = self.nodalbasisfunctiongrad[nix].patchconn
         Vpatch = self.nodalbasisfunctiongrad[nix].Vpatch
@@ -520,14 +521,16 @@ function stiffness(self::AbstractFEMMDeforLinearESNICE,
     Kn = makematrix!(assembler)
     dofnums, B, DB, elmat, elvec, elvecfix, gradN = _buffers3(self, geom, u)
     # OPTIMIZATION: switch to a single-point quadrature rule here
-    startassembly!(assembler,
+    startassembly!(
+        assembler,
         (nodesperelem(fes) * ndofs(u))^2 * count(fes),
         nalldofs(u),
-        nalldofs(u))
-    for i in 1:count(fes) # Loop over elements
+        nalldofs(u),
+    )
+    for i = 1:count(fes) # Loop over elements
         gathervalues_asmat!(geom, ecoords, fes.conn[i])
         fill!(elmat, 0.0) # Initialize element matrix
-        for j in 1:npts # Loop over quadrature points
+        for j = 1:npts # Loop over quadrature points
             locjac!(loc, J, ecoords, Ns[j], gradNparams[j])
             Jac = Jacobianvolume(self.integdomain, J, loc, fes.conn[i], Ns[j])
             # Do the  following only if the element is well shaped and the
@@ -548,9 +551,11 @@ function stiffness(self::AbstractFEMMDeforLinearESNICE,
     return makematrix!(assembler) + Kn
 end
 
-function stiffness(self::AbstractFEMMDeforLinearESNICE,
+function stiffness(
+    self::AbstractFEMMDeforLinearESNICE,
     geom::NodalField{GFT},
-    u::NodalField{UFT}) where {GFT <: Number, UFT <: Number}
+    u::NodalField{UFT},
+) where {GFT<:Number,UFT<:Number}
     assembler = SysmatAssemblerSparseSymm()
     return stiffness(self, assembler, geom, u)
 end
@@ -581,7 +586,8 @@ Inspect integration point quantities.
 
 The updated inspector data is returned.
 """
-function inspectintegpoints(self::AbstractFEMMDeforLinearESNICE,
+function inspectintegpoints(
+    self::AbstractFEMMDeforLinearESNICE,
     geom::NodalField{GFT},
     u::NodalField{UFT},
     dT::NodalField{TFT},
@@ -589,7 +595,8 @@ function inspectintegpoints(self::AbstractFEMMDeforLinearESNICE,
     inspector::F,
     idat,
     quantity = :Cauchy;
-    context...,) where {GFT <: Number, UFT <: Number, TFT <: Number, IT <: Integer, F <: Function}
+    context...,
+) where {GFT<:Number,UFT<:Number,TFT<:Number,IT<:Integer,F<:Function}
     fes = self.integdomain.fes
     npts, Ns, gradNparams, w, pc = integrationdata(self.integdomain)
     ecoords, dofnums, loc, J, csmatTJ, Jac, D, Dstab = _buffers2(self, geom, u, npts)
@@ -615,7 +622,7 @@ function inspectintegpoints(self::AbstractFEMMDeforLinearESNICE,
     gradN = fill(zero(GFT), nodesperelem(fes), ndofs(u))
     B = fill(zero(GFT), nstressstrain(self.mr), nodesperelem(fes) * ndofs(u))
     # Loop over  all the elements and all the quadrature points within them
-    for ilist in 1:length(felist) # Loop over elements
+    for ilist = 1:length(felist) # Loop over elements
         i = felist[ilist]
         gathervalues_asmat!(geom, ecoords, fes.conn[i])# retrieve element coords
         for nix in fes.conn[i] # For all nodes connected by this element
@@ -635,7 +642,8 @@ function inspectintegpoints(self::AbstractFEMMDeforLinearESNICE,
             qpdT = dT.values[nix] # Quadrature point temperature increment
             thermalstrain!(self.material, qpthstrain, qpdT)
             # Real Material: update the state and return the output
-            out = update!(self.material,
+            out = update!(
+                self.material,
                 qpstress,
                 out,
                 vec(qpstrain),
@@ -644,10 +652,12 @@ function inspectintegpoints(self::AbstractFEMMDeforLinearESNICE,
                 dt,
                 loc,
                 nix,
-                quantity)
+                quantity,
+            )
             copyto!(outtot, out)
             # Stabilization Material: update the state and return the output
-            out = update!(self.stabilization_material,
+            out = update!(
+                self.stabilization_material,
                 qpstress,
                 out,
                 vec(qpstrain),
@@ -656,7 +666,8 @@ function inspectintegpoints(self::AbstractFEMMDeforLinearESNICE,
                 dt,
                 loc,
                 nix,
-                quantity)
+                quantity,
+            )
             outtot .+= -self.nphis[nix] .* out
             pci = findfirst(cx -> cx == nix, fes.conn[i])# at which node are we?
             locjac!(loc, J, geom.values, fes.conn[i], Ns[pci], gradNparams[pci])
@@ -666,7 +677,8 @@ function inspectintegpoints(self::AbstractFEMMDeforLinearESNICE,
             blmat!(self.mr, B, Ns[pci], gradN, loc, csmat(self.mcsys))
             gathervalues_asvec!(u, eue, fes.conn[i])# retrieve element displacements
             A_mul_B!(qpstrain, B, eue) # strain in material coordinates
-            out = update!(self.stabilization_material,
+            out = update!(
+                self.stabilization_material,
                 qpstress,
                 out,
                 vec(qpstrain),
@@ -675,7 +687,8 @@ function inspectintegpoints(self::AbstractFEMMDeforLinearESNICE,
                 dt,
                 loc,
                 nix,
-                quantity)
+                quantity,
+            )
             outtot .+= +self.ephis[i] .* out
             out, outtot = outtot, out # swap in the total output
             if (quantity == :Cauchy)   # Transform stress tensor,  if that is "out"
@@ -690,16 +703,19 @@ function inspectintegpoints(self::AbstractFEMMDeforLinearESNICE,
     return idat
 end
 
-function inspectintegpoints(self::AbstractFEMMDeforLinearESNICE,
+function inspectintegpoints(
+    self::AbstractFEMMDeforLinearESNICE,
     geom::NodalField{GFT},
     u::NodalField{UFT},
     felist::Vector{IT},
     inspector::F,
     idat,
     quantity = :Cauchy;
-    context...,) where {GFT <: Number, UFT <: Number, IT <: Integer, F <: Function}
+    context...,
+) where {GFT<:Number,UFT<:Number,IT<:Integer,F<:Function}
     dT = NodalField(fill(zero(GFT), nnodes(geom), 1)) # zero difference in temperature
-    return inspectintegpoints(self,
+    return inspectintegpoints(
+        self,
         geom,
         u,
         dT,
@@ -707,7 +723,8 @@ function inspectintegpoints(self::AbstractFEMMDeforLinearESNICE,
         inspector,
         idat,
         quantity;
-        context...,)
+        context...,
+    )
 end
 
 """
@@ -725,20 +742,24 @@ Computers and Structures 79 (2001) 243-252.)
 This computation has not been optimized in any way. It can be expected to be
 inefficient.
 """
-function infsup_gh(self::AbstractFEMMDeforLinearESNICE,
+function infsup_gh(
+    self::AbstractFEMMDeforLinearESNICE,
     assembler::A,
     geom::NodalField{GFT},
-    u::NodalField{UFT}) where {A <: AbstractSysmatAssembler, GFT <: Number, UFT <: Number}
+    u::NodalField{UFT},
+) where {A<:AbstractSysmatAssembler,GFT<:Number,UFT<:Number}
     fes = self.integdomain.fes
     npts, Ns, gradNparams, w, pc = integrationdata(self.integdomain)
     elmatsizeguess = 4 * nodesperelem(fes) * ndofs(u)
-    startassembly!(assembler,
+    startassembly!(
+        assembler,
         elmatsizeguess,
         elmatsizeguess,
         nnodes(u) + count(fes),
         u.nfreedofs,
-        u.nfreedofs)
-    for nix in 1:length(self.nodalbasisfunctiongrad)
+        u.nfreedofs,
+    )
+    for nix = 1:length(self.nodalbasisfunctiongrad)
         gradN = self.nodalbasisfunctiongrad[nix].gradN
         patchconn = self.nodalbasisfunctiongrad[nix].patchconn
         Vpatch = self.nodalbasisfunctiongrad[nix].Vpatch
@@ -753,9 +774,11 @@ function infsup_gh(self::AbstractFEMMDeforLinearESNICE,
     return makematrix!(assembler)
 end
 
-function infsup_gh(self::AbstractFEMMDeforLinearESNICE,
+function infsup_gh(
+    self::AbstractFEMMDeforLinearESNICE,
     geom::NodalField{GFT},
-    u::NodalField{UFT}) where {GFT <: Number, UFT <: Number}
+    u::NodalField{UFT},
+) where {GFT<:Number,UFT<:Number}
     assembler = SysmatAssemblerSparseSymm()
     return infsup_gh(self, assembler, geom, u)
 end
@@ -776,20 +799,24 @@ Computers and Structures 79 (2001) 243-252.)
 This computation has not been optimized in any way. It can be expected to be
 inefficient.
 """
-function infsup_sh(self::AbstractFEMMDeforLinearESNICE,
+function infsup_sh(
+    self::AbstractFEMMDeforLinearESNICE,
     assembler::A,
     geom::NodalField{GFT},
-    u::NodalField{UFT}) where {A <: AbstractSysmatAssembler, GFT <: Number, UFT <: Number}
+    u::NodalField{UFT},
+) where {A<:AbstractSysmatAssembler,GFT<:Number,UFT<:Number}
     fes = self.integdomain.fes
     npts, Ns, gradNparams, w, pc = integrationdata(self.integdomain)
     elmatsizeguess = 4 * nodesperelem(fes) * ndofs(u)
-    startassembly!(assembler,
+    startassembly!(
+        assembler,
         elmatsizeguess,
         elmatsizeguess,
         nnodes(u) + count(fes),
         u.nfreedofs,
-        u.nfreedofs)
-    for nix in 1:length(self.nodalbasisfunctiongrad)
+        u.nfreedofs,
+    )
+    for nix = 1:length(self.nodalbasisfunctiongrad)
         gradN = self.nodalbasisfunctiongrad[nix].gradN
         patchconn = self.nodalbasisfunctiongrad[nix].patchconn
         Vpatch = self.nodalbasisfunctiongrad[nix].Vpatch
@@ -804,9 +831,11 @@ function infsup_sh(self::AbstractFEMMDeforLinearESNICE,
     return makematrix!(assembler)
 end
 
-function infsup_sh(self::AbstractFEMMDeforLinearESNICE,
+function infsup_sh(
+    self::AbstractFEMMDeforLinearESNICE,
     geom::NodalField{GFT},
-    u::NodalField{UFT}) where {GFT <: Number, UFT <: Number}
+    u::NodalField{UFT},
+) where {GFT<:Number,UFT<:Number}
     assembler = SysmatAssemblerSparseSymm()
     return infsup_sh(self, assembler, geom, u)
 end

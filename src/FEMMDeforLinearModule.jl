@@ -22,10 +22,10 @@ import FinEtools.CSysModule: CSys
 Class for linear deformation finite element modeling machine.
 """
 mutable struct FEMMDeforLinear{
-    MR <: AbstractDeforModelRed,
-    ID <: IntegDomain,
-    CS <: CSys,
-    M <: AbstractMatDeforLinearElastic,
+    MR<:AbstractDeforModelRed,
+    ID<:IntegDomain,
+    CS<:CSys,
+    M<:AbstractMatDeforLinearElastic,
 } <: AbstractFEMMDeforLinear
     mr::Type{MR} # model reduction type
     integdomain::ID # integration domain data
@@ -37,16 +37,18 @@ end
 
 Constructor of linear deformation finite element modeling machine.
 """
-function FEMMDeforLinear(mr::Type{MR},
-    integdomain::IntegDomain{S, F},
-    material::M) where {
-    MR <: AbstractDeforModelRed,
-    S <: AbstractFESet,
-    F <: Function,
-    M <: AbstractMatDeforLinearElastic,
+function FEMMDeforLinear(
+    mr::Type{MR},
+    integdomain::IntegDomain{S,F},
+    material::M,
+) where {
+    MR<:AbstractDeforModelRed,
+    S<:AbstractFESet,
+    F<:Function,
+    M<:AbstractMatDeforLinearElastic,
 }
-    @assert mr==material.mr "Model reduction is mismatched"
-    @assert (integdomain.axisymmetric)||(mr != DeforModelRed2DAxisymm) "Axially symmetric requires axisymmetric to be true"
+    @assert mr == material.mr "Model reduction is mismatched"
+    @assert (integdomain.axisymmetric) || (mr != DeforModelRed2DAxisymm) "Axially symmetric requires axisymmetric to be true"
     return FEMMDeforLinear(mr, integdomain, CSys(manifdim(integdomain.fes)), material)
 end
 

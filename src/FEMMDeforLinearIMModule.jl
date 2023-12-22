@@ -10,15 +10,13 @@ __precompile__(true)
 
 using FinEtools.FENodeSetModule: FENodeSet
 using FinEtools.FESetModule:
-    AbstractFESet,
-    FESetH8, FESetT10, manifdim, nodesperelem, gradN!, bfun, bfundpar
+    AbstractFESet, FESetH8, FESetT10, manifdim, nodesperelem, gradN!, bfun, bfundpar
 using FinEtools.IntegDomainModule: IntegDomain, integrationdata, Jacobianvolume
 using FinEtools.IntegRuleModule: GaussRule
 using FinEtoolsDeforLinear.FEMMDeforLinearBaseModule: AbstractFEMMDeforLinear
 using FinEtools.DeforModelRedModule: AbstractDeforModelRed, DeforModelRed3D
 using FinEtoolsDeforLinear.MatDeforLinearElasticModule:
-    AbstractMatDeforLinearElastic,
-    tangentmoduli!, update!, thermalstrain!
+    AbstractMatDeforLinearElastic, tangentmoduli!, update!, thermalstrain!
 using FinEtoolsDeforLinear.MatDeforElastIsoModule: MatDeforElastIso
 using FinEtools.FieldModule:
     ndofs,
@@ -41,8 +39,7 @@ using FinEtools.AssemblyModule:
     SysvecAssembler
 using FinEtools.MatrixUtilityModule: add_btdb_ut_only!, complete_lt!, loc!, jac!, locjac!
 import FinEtoolsDeforLinear.FEMMDeforLinearBaseModule:
-    stiffness,
-    mass, thermalstrainloads, inspectintegpoints
+    stiffness, mass, thermalstrainloads, inspectintegpoints
 import FinEtools.FEMMBaseModule: associategeometry!
 using FinEtoolsDeforLinear.MatDeforModule: rotstressvec!
 using LinearAlgebra: mul!, Transpose, UpperTriangular
@@ -60,10 +57,10 @@ Type for mean-strain linear deformation FEMM based on eight-node hexahedral elem
 Default number of incompatible modes is 12.
 """
 mutable struct FEMMDeforLinearIMH8{
-    MR <: AbstractDeforModelRed,
-    ID <: IntegDomain{S, F} where {S <: FESetH8, F <: Function},
-    CS <: CSys,
-    M <: AbstractMatDeforLinearElastic,
+    MR<:AbstractDeforModelRed,
+    ID<:IntegDomain{S,F} where {S<:FESetH8,F<:Function},
+    CS<:CSys,
+    M<:AbstractMatDeforLinearElastic,
 } <: AbstractFEMMDeforLinear
     mr::Type{MR}
     integdomain::ID # geometry data
@@ -72,53 +69,48 @@ mutable struct FEMMDeforLinearIMH8{
     nmodes::Int
 end
 
-function FEMMDeforLinearIMH8(mr::Type{MR},
-    integdomain::IntegDomain{S, F},
+function FEMMDeforLinearIMH8(
+    mr::Type{MR},
+    integdomain::IntegDomain{S,F},
     mcsys::CSys,
-    material::M) where {
-    MR <: AbstractDeforModelRed,
-    S <: FESetH8,
-    F <: Function,
-    M <: AbstractMatDeforLinearElastic,
-}
-    @assert mr==material.mr "Model reduction is mismatched"
-    @assert (mr==DeforModelRed3D) "3D model required"
+    material::M,
+) where {MR<:AbstractDeforModelRed,S<:FESetH8,F<:Function,M<:AbstractMatDeforLinearElastic}
+    @assert mr == material.mr "Model reduction is mismatched"
+    @assert (mr == DeforModelRed3D) "3D model required"
     return FEMMDeforLinearIMH8(mr, integdomain, mcsys, material, 12)
 end
 
-function FEMMDeforLinearIMH8(mr::Type{MR},
-    integdomain::IntegDomain{S, F},
-    material::M) where {
-    MR <: AbstractDeforModelRed,
-    S <: FESetH8,
-    F <: Function,
-    M <: AbstractMatDeforLinearElastic,
-}
-    @assert mr==material.mr "Model reduction is mismatched"
-    @assert (mr==DeforModelRed3D) "3D model required"
-    return FEMMDeforLinearIMH8(mr,
+function FEMMDeforLinearIMH8(
+    mr::Type{MR},
+    integdomain::IntegDomain{S,F},
+    material::M,
+) where {MR<:AbstractDeforModelRed,S<:FESetH8,F<:Function,M<:AbstractMatDeforLinearElastic}
+    @assert mr == material.mr "Model reduction is mismatched"
+    @assert (mr == DeforModelRed3D) "3D model required"
+    return FEMMDeforLinearIMH8(
+        mr,
         integdomain,
         CSys(manifdim(integdomain.fes)),
         material,
-        12)
+        12,
+    )
 end
 
-function FEMMDeforLinearIMH8(mr::Type{MR},
-    integdomain::IntegDomain{S, F},
+function FEMMDeforLinearIMH8(
+    mr::Type{MR},
+    integdomain::IntegDomain{S,F},
     material::M,
-    nmodes::Int64) where {
-    MR <: AbstractDeforModelRed,
-    S <: FESetH8,
-    F <: Function,
-    M <: AbstractMatDeforLinearElastic,
-}
-    @assert mr==material.mr "Model reduction is mismatched"
-    @assert (mr==DeforModelRed3D) "3D model required"
-    return FEMMDeforLinearIMH8(mr,
+    nmodes::Int64,
+) where {MR<:AbstractDeforModelRed,S<:FESetH8,F<:Function,M<:AbstractMatDeforLinearElastic}
+    @assert mr == material.mr "Model reduction is mismatched"
+    @assert (mr == DeforModelRed3D) "3D model required"
+    return FEMMDeforLinearIMH8(
+        mr,
         integdomain,
         CSys(manifdim(integdomain.fes)),
         material,
-        nmodes)
+        nmodes,
+    )
 end
 
 function centroidintegrationdata(self)
@@ -130,7 +122,7 @@ function centroidintegrationdata(self)
     # Precompute basis f. values + basis f. gradients wrt parametric coor
     Ns = Matrix{FT}[]
     gradNparams = Matrix{FT}[]
-    for j in 1:npts
+    for j = 1:npts
         push!(Ns, bfun(self.fes, vec(pc[j, :])))
         push!(gradNparams, bfundpar(self.fes, vec(pc[j, :])))
     end
@@ -145,34 +137,42 @@ function imintegrationdata(nmodes, integration_rule)
     FT = eltype(pc)
     function bfun(nmodes, pc)
         if nmodes == 12 # Simo basis functions
-            N = [0.5 * (pc[1]^2 - 1)
+            N = [
+                0.5 * (pc[1]^2 - 1)
                 0.5 * (pc[2]^2 - 1)
                 0.5 * (pc[3]^2 - 1)
-                pc[1] * pc[2] * pc[3]]
+                pc[1] * pc[2] * pc[3]
+            ]
         else # Wilson basis functions
-            N = [0.5 * (pc[1]^2 - 1)
+            N = [
+                0.5 * (pc[1]^2 - 1)
                 0.5 * (pc[2]^2 - 1)
-                0.5 * (pc[3]^2 - 1)]
+                0.5 * (pc[3]^2 - 1)
+            ]
         end
         return reshape(N, length(N), 1)
     end
     function bfundpar(nmodes, pc)
         if nmodes == 12 # Simo basis functions
-            gradN = [pc[1] 0 0
+            gradN = [
+                pc[1] 0 0
                 0 pc[2] 0
                 0 0 pc[3]
-                (pc[2]*pc[3]) (pc[1]*pc[3]) (pc[1]*pc[2])]
+                (pc[2]*pc[3]) (pc[1]*pc[3]) (pc[1]*pc[2])
+            ]
         else # Wilson basis functions
-            gradN = [pc[1] 0 0
+            gradN = [
+                pc[1] 0 0
                 0 pc[2] 0
-                0 0 pc[3]]
+                0 0 pc[3]
+            ]
         end
         return gradN
     end
     # Precompute basis f. values + basis f. gradients wrt parametric coor
     Ns = Matrix{FT}[]
     gradNparams = Matrix{FT}[]
-    for j in 1:npts
+    for j = 1:npts
         push!(Ns, bfun(nmodes, vec(pc[j, :])))
         push!(gradNparams, bfundpar(nmodes, vec(pc[j, :])))
     end
@@ -189,7 +189,7 @@ function imblmat!(mr, imB, imNs, imgradN, loc0, csmat, nmodes)
     end
 end
 
-function _buffers2(self, geom::NodalField{GFT}, u::NodalField{UFT}) where {GFT, UFT}
+function _buffers2(self, geom::NodalField{GFT}, u::NodalField{UFT}) where {GFT,UFT}
     fes = self.integdomain.fes
     ndn = ndofs(u) # number of degrees of freedom per node
     nne = nodesperelem(fes) # number of nodes for element
@@ -249,8 +249,10 @@ Associate geometry field with the FEMM.
 
 Compute the  correction factors to account for  the shape of the  elements.
 """
-function associategeometry!(self::F,
-    geom::NodalField{GFT}) where {F <: FEMMDeforLinearIMH8, GFT}
+function associategeometry!(
+    self::F,
+    geom::NodalField{GFT},
+) where {F<:FEMMDeforLinearIMH8,GFT}
     # Nothing needs to be done
     return self
 end
@@ -262,10 +264,12 @@ u::NodalField{T}) where {A<:AbstractSysmatAssembler, T<:Number}
 
 Compute and assemble  stiffness matrix.
 """
-function stiffness(self::FEMMDeforLinearIMH8,
+function stiffness(
+    self::FEMMDeforLinearIMH8,
     assembler::A,
     geom::NodalField{GFT},
-    u::NodalField{UFT}) where {A <: AbstractSysmatAssembler, GFT <: Number, UFT <: Number}
+    u::NodalField{UFT},
+) where {A<:AbstractSysmatAssembler,GFT<:Number,UFT<:Number}
     fes = self.integdomain.fes
     npts, Ns, gradNparams, w, pc = integrationdata(self.integdomain)
     npts0, Ns0, gradNparams0, w0, pc0 = centroidintegrationdata(self.integdomain)
@@ -289,10 +293,12 @@ function stiffness(self::FEMMDeforLinearIMH8,
     elmatc,
     elmat = _buffers2(self, geom, u)
     tangentmoduli!(self.material, D, 0.0, 0.0, loc, 0)
-    startassembly!(assembler,
+    startassembly!(
+        assembler,
         size(elmatc, 1) * size(elmatc, 2) * count(fes),
         nalldofs(u),
-        nalldofs(u))
+        nalldofs(u),
+    )
     for i in eachindex(fes) # Loop over elements
         gathervalues_asmat!(geom, ecoords, fes.conn[i])
         # NOTE: the coordinate system should be evaluated at a single point within the
@@ -304,7 +310,7 @@ function stiffness(self::FEMMDeforLinearIMH8,
         At_mul_B!(csmatTJ0, csmat(self.mcsys), J0) # local Jacobian matrix
         gradN!(fes, gradN0, gradNparams0[1], csmatTJ0)
         fill!(elmat, 0.0) # Initialize element matrix
-        for j in 1:npts # Loop over quadrature points
+        for j = 1:npts # Loop over quadrature points
             locjac!(loc, J, ecoords, Ns[j], gradNparams[j])
             Jac = Jacobianvolume(self.integdomain, J, loc, fes.conn[i], Ns[j])
             At_mul_B!(csmatTJ, csmat(self.mcsys), J) # local Jacobian matrix
@@ -318,17 +324,20 @@ function stiffness(self::FEMMDeforLinearIMH8,
         end # Loop over quadrature points
         complete_lt!(elmat)
         # Static condensation
-        elmatc .= elmat[1:24, 1:24] -
-                  elmat[1:24, 25:end] * (elmat[25:end, 25:end] \ elmat[25:end, 1:24])
+        elmatc .=
+            elmat[1:24, 1:24] -
+            elmat[1:24, 25:end] * (elmat[25:end, 25:end] \ elmat[25:end, 1:24])
         gatherdofnums!(u, dofnums, fes.conn[i]) # retrieve degrees of freedom
         assemble!(assembler, elmatc, dofnums, dofnums) # assemble symmetric matrix
     end # Loop over elements
     return makematrix!(assembler)
 end
 
-function stiffness(self::FEMMDeforLinearIMH8,
+function stiffness(
+    self::FEMMDeforLinearIMH8,
     geom::NodalField{GFT},
-    u::NodalField{UFT}) where {GFT <: Number, UFT <: Number}
+    u::NodalField{UFT},
+) where {GFT<:Number,UFT<:Number}
     assembler = SysmatAssemblerSparseSymm()
     return stiffness(self, assembler, geom, u)
 end

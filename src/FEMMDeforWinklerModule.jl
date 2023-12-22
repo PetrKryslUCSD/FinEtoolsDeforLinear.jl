@@ -15,8 +15,13 @@ import FinEtools.IntegDomainModule: IntegDomain, integrationdata, Jacobiansurfac
 import FinEtools.FieldModule: ndofs, gatherdofnums!, gathervalues_asmat!, nalldofs
 import FinEtools.NodalFieldModule: NodalField
 import FinEtools.FEMMBaseModule: AbstractFEMM
-import FinEtools.AssemblyModule: AbstractSysvecAssembler, AbstractSysmatAssembler,
-    SysmatAssemblerSparseSymm, startassembly!, assemble!, makematrix!
+import FinEtools.AssemblyModule:
+    AbstractSysvecAssembler,
+    AbstractSysmatAssembler,
+    SysmatAssemblerSparseSymm,
+    startassembly!,
+    assemble!,
+    makematrix!
 import FinEtools.MatrixUtilityModule: add_nnt_ut_only!, complete_lt!, locjac!
 import FinEtools.SurfaceNormalModule: SurfaceNormal, updatenormal!
 import LinearAlgebra: norm, cross
@@ -26,7 +31,7 @@ import LinearAlgebra: norm, cross
 
 Type for normal spring support  (Winkler).
 """
-mutable struct FEMMDeforWinkler{ID <: IntegDomain} <: AbstractFEMM
+mutable struct FEMMDeforWinkler{ID<:IntegDomain} <: AbstractFEMM
     integdomain::ID # geometry data
 end
 
@@ -40,12 +45,14 @@ solid body and the 'ground', in the direction normal to the surface. If the
 spring coefficient becomes large, we have an approximate method of enforcing the
 normal displacement to the surface.
 """
-function surfacenormalspringstiffness(self::FEMMDeforWinkler,
+function surfacenormalspringstiffness(
+    self::FEMMDeforWinkler,
     assembler::A,
     geom::NodalField{GFT},
     u::NodalField{UFT},
     springconstant::UFT,
-    surfacenormal::SurfaceNormal) where {A <: AbstractSysmatAssembler, GFT <: Number, UFT <: Number}
+    surfacenormal::SurfaceNormal,
+) where {A<:AbstractSysmatAssembler,GFT<:Number,UFT<:Number}
     integdomain = self.integdomain
     # Constants
     nfes = count(integdomain.fes) # number of finite elements in the set
@@ -64,16 +71,16 @@ function surfacenormalspringstiffness(self::FEMMDeforWinkler,
     J = fill(zero(GFT), sdim, mdim) # Jacobian matrix -- used as a buffer
     Nn = zeros(GFT, Kedim) # column vector
     startassembly!(assembler, Kedim^2 * nfes, nalldofs(u), nalldofs(u))
-    for i in 1:nfes # Loop over elements
+    for i = 1:nfes # Loop over elements
         gathervalues_asmat!(geom, ecoords, integdomain.fes.conn[i])
         fill!(Ke, zero(UFT)) # Initialize element matrix
-        for j in 1:npts # Loop over quadrature points
+        for j = 1:npts # Loop over quadrature points
             locjac!(loc, J, ecoords, Ns[j], gradNparams[j])
             Jac = Jacobiansurface(integdomain, J, loc, integdomain.fes.conn[i], Ns[j])
             n = updatenormal!(surfacenormal, loc, J, i, j)
-            for k in 1:nne
-                for r in 1:sdim
-                    Nn[(k - 1) * sdim + r] = n[r] * Ns[j][k]
+            for k = 1:nne
+                for r = 1:sdim
+                    Nn[(k-1)*sdim+r] = n[r] * Ns[j][k]
                 end
             end
             add_nnt_ut_only!(Ke, Nn, springconstant * Jac * w[j])
@@ -85,18 +92,22 @@ function surfacenormalspringstiffness(self::FEMMDeforWinkler,
     return makematrix!(assembler)
 end
 
-function surfacenormalspringstiffness(self::FEMMDeforWinkler,
+function surfacenormalspringstiffness(
+    self::FEMMDeforWinkler,
     geom::NodalField{GFT},
     u::NodalField{UFT},
     springconstant::UFT,
-    surfacenormal::SurfaceNormal) where {GFT <: Number, UFT <: Number}
+    surfacenormal::SurfaceNormal,
+) where {GFT<:Number,UFT<:Number}
     assembler = SysmatAssemblerSparseSymm()
-    return surfacenormalspringstiffness(self,
+    return surfacenormalspringstiffness(
+        self,
         assembler,
         geom,
         u,
         springconstant,
-        surfacenormal)
+        surfacenormal,
+    )
 end
 
 end

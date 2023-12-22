@@ -27,8 +27,7 @@ using .MatDeforModule: AbstractMatDefor
 # using .MatDeforModule: AbstractMatDefor, strain2x2tto3v!, strain3vto2x2t!, strain3x3tto6v!, strain6vto3x3t!, strain9vto3x3t!, strain3x3tto9v!, strain9vto6v!, strain6vto9v!, stress2x2to3v!,  stress3vto2x2t!, stress3vto3x3t!, stress4vto3x3t!, stress6vto3x3t!, stress3x3tto6v!, stress9vto6v!,  stress6vto9v!
 using .MatDeforModule: rotstressvec!
 using .MatDeforModule:
-    dett,
-    strainvdet, strainvtr, strainttov!, strainvtot!, stressttov!, stressvtot!
+    dett, strainvdet, strainvtr, strainttov!, strainvtot!, stressttov!, stressvtot!
 using .MatDeforModule:
     tens4checksymmetry,
     tens4symmtto6x6t!,
@@ -74,8 +73,7 @@ using .MatDeforElastOrthoModule: MatDeforElastOrtho
 export MatDeforElastOrtho
 
 using .FEMMDeforLinearBaseModule:
-    AbstractFEMMDeforLinear,
-    stiffness, thermalstrainloads, mass, inspectintegpoints
+    AbstractFEMMDeforLinear, stiffness, thermalstrainloads, mass, inspectintegpoints
 # Exported: abstract type for linear information, discretization methods for the abstract type
 export AbstractFEMMDeforLinear, stiffness, thermalstrainloads, mass, inspectintegpoints
 
@@ -98,8 +96,7 @@ export FEMMDeforLinearMSH8,
     FEMMDeforLinearMST10, stiffness, thermalstrainloads, inspectintegpoints
 
 using .FEMMDeforLinearIMModule:
-    FEMMDeforLinearIMH8,
-    stiffness, thermalstrainloads, inspectintegpoints
+    FEMMDeforLinearIMH8, stiffness, thermalstrainloads, inspectintegpoints
 # Exported: type for mean-strain solid elements, discretization methods
 export FEMMDeforLinearIMH8, stiffness, thermalstrainloads, inspectintegpoints
 
