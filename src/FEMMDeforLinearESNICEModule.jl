@@ -103,9 +103,16 @@ function _make_stabilization_material(material::M) where {M}
 end
 
 """
-    FEMMDeforLinearESNICET4{MR<:AbstractDeforModelRed, S<:FESetT4, F<:Function, M<:AbstractMatDeforLinearElastic} <: AbstractFEMMDeforLinearESNICE
+    mutable struct FEMMDeforLinearESNICET4{
+        MR<:AbstractDeforModelRed,
+        ID<:IntegDomain{S} where {S<:FESetT4},
+        CS<:CSys,
+        M<:AbstractMatDeforLinearElastic,
+        MS<:MatDeforElastIso,
+    } <: AbstractFEMMDeforLinearESNICE
 
-FEMM type for Nodally Integrated Continuum Elements (NICE) based on the 4-node tetrahedron.
+FEMM type for Energy-sampling Stabilized Nodally Integrated Continuum Elements
+(NICE) based on the 4-node tetrahedron.
 """
 mutable struct FEMMDeforLinearESNICET4{
     MR<:AbstractDeforModelRed,
@@ -125,10 +132,16 @@ mutable struct FEMMDeforLinearESNICET4{
 end
 
 """
-    FEMMDeforLinearESNICEH8{MR<:AbstractDeforModelRed, S<:FESetH8, F<:Function, M<:AbstractMatDeforLinearElastic} <: AbstractFEMMDeforLinearESNICE
+    mutable struct FEMMDeforLinearESNICEH8{
+        MR<:AbstractDeforModelRed,
+        ID<:IntegDomain{S} where {S<:FESetH8},
+        CS<:CSys,
+        M<:AbstractMatDeforLinearElastic,
+        MS<:MatDeforElastIso,
+    } <: AbstractFEMMDeforLinearESNICE
 
-FEMM type for Nodally Integrated Continuum Elements (NICE) based on the 8-node
-hexahedron.
+FEMM type for Energy-sampling Stabilized Nodally Integrated Continuum Elements
+(NICE) based on the p-node hexahedron.
 """
 mutable struct FEMMDeforLinearESNICEH8{
     MR<:AbstractDeforModelRed,
@@ -147,12 +160,26 @@ mutable struct FEMMDeforLinearESNICEH8{
     nphis::Vector{StabParamFloat}
 end
 
+"""
+    FEMMDeforLinearESNICET4(
+        mr::Type{MR},
+        integdomain::ID,
+        mcsys::CS,
+        material::M,
+    ) where {MR<:AbstractDeforModelRed, ID<:IntegDomain{S} where {S<:FESetT4}, M<:AbstractMatDeforLinearElastic}
+
+Constructor.
+"""
 function FEMMDeforLinearESNICET4(
     mr::Type{MR},
-    integdomain::IntegDomain{S,F},
-    mcsys::CSys,
+    integdomain::ID,
+    mcsys::CS,
     material::M,
-) where {MR<:AbstractDeforModelRed,S<:FESetT4,F<:Function,M<:AbstractMatDeforLinearElastic}
+) where {
+    MR<:AbstractDeforModelRed,
+    ID<:IntegDomain{S} where {S<:FESetT4},
+    M<:AbstractMatDeforLinearElastic,
+}
     @assert mr == material.mr "Model reduction is mismatched"
     @assert (mr == DeforModelRed3D) "3D model required"
     stabilization_material = _make_stabilization_material(material)
@@ -168,11 +195,24 @@ function FEMMDeforLinearESNICET4(
     )
 end
 
+"""
+    FEMMDeforLinearESNICET4(
+            mr::Type{MR},
+            integdomain::ID,
+            material::M,
+        ) where {MR<:AbstractDeforModelRed, ID<:IntegDomain{S} where {S<:FESetT4}, M<:AbstractMatDeforLinearElastic}
+
+Constructor.
+"""
 function FEMMDeforLinearESNICET4(
     mr::Type{MR},
-    integdomain::IntegDomain{S,F},
+    integdomain::ID,
     material::M,
-) where {MR<:AbstractDeforModelRed,S<:FESetT4,F<:Function,M<:AbstractMatDeforLinearElastic}
+) where {
+    MR<:AbstractDeforModelRed,
+    ID<:IntegDomain{S} where {S<:FESetT4},
+    M<:AbstractMatDeforLinearElastic,
+}
     @assert mr == material.mr "Model reduction is mismatched"
     @assert (mr == DeforModelRed3D) "3D model required"
     stabilization_material = _make_stabilization_material(material)
@@ -188,12 +228,26 @@ function FEMMDeforLinearESNICET4(
     )
 end
 
+"""
+    FEMMDeforLinearESNICEH8(
+            mr::Type{MR},
+            integdomain::ID,
+            mcsys::CS,
+            material::M,
+        ) where {MR<:AbstractDeforModelRed, ID<:IntegDomain{S} where {S<:FESetH8}, M<:AbstractMatDeforLinearElastic}
+
+Constructor.
+"""
 function FEMMDeforLinearESNICEH8(
     mr::Type{MR},
-    integdomain::IntegDomain{S,F},
-    mcsys::CSys,
+    integdomain::ID,
+    mcsys::CS,
     material::M,
-) where {MR<:AbstractDeforModelRed,S<:FESetH8,F<:Function,M<:AbstractMatDeforLinearElastic}
+) where {
+    MR<:AbstractDeforModelRed,
+    ID<:IntegDomain{S} where {S<:FESetH8},
+    M<:AbstractMatDeforLinearElastic,
+}
     @assert mr == material.mr "Model reduction is mismatched"
     @assert (mr == DeforModelRed3D) "3D model required"
     stabilization_material = _make_stabilization_material(material)
@@ -209,11 +263,24 @@ function FEMMDeforLinearESNICEH8(
     )
 end
 
+"""
+    FEMMDeforLinearESNICEH8(
+            mr::Type{MR},
+            integdomain::ID,
+            material::M,
+        ) where {MR<:AbstractDeforModelRed, ID<:IntegDomain{S} where {S<:FESetH8}, M<:AbstractMatDeforLinearElastic}
+
+Constructor.
+"""
 function FEMMDeforLinearESNICEH8(
     mr::Type{MR},
-    integdomain::IntegDomain{S,F},
+    integdomain::ID,
     material::M,
-) where {MR<:AbstractDeforModelRed,S<:FESetH8,F<:Function,M<:AbstractMatDeforLinearElastic}
+) where {
+    MR<:AbstractDeforModelRed,
+    ID<:IntegDomain{S} where {S<:FESetH8},
+    M<:AbstractMatDeforLinearElastic,
+}
     @assert mr == material.mr "Model reduction is mismatched"
     @assert (mr == DeforModelRed3D) "3D model required"
     stabilization_material = _make_stabilization_material(material)
