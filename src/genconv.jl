@@ -7,12 +7,12 @@
 Compute the determinant of a general square matrix.
 """
 function dett(::Type{DeforModelRed3D}, C::Matrix{T}) where {T}
-    return (C[1, 1] * C[2, 2] * C[3, 3] +
-            C[1, 2] * C[2, 3] * C[3, 1] +
-            C[1, 3] * C[2, 1] * C[3, 2] -
-            C[1, 3] * C[2, 2] * C[3, 1] -
-            C[1, 2] * C[2, 1] * C[3, 3] -
-            C[1, 1] * C[2, 3] * C[3, 2])
+    return (
+        C[1, 1] * C[2, 2] * C[3, 3] +
+        C[1, 2] * C[2, 3] * C[3, 1] +
+        C[1, 3] * C[2, 1] * C[3, 2] - C[1, 3] * C[2, 2] * C[3, 1] -
+        C[1, 2] * C[2, 1] * C[3, 3] - C[1, 1] * C[2, 3] * C[3, 2]
+    )
 end
 
 """
@@ -23,12 +23,12 @@ as a vector. Remember that the shear strain components are twice the entries
 of the matrix representation.
 """
 function strainvdet(::Type{DeforModelRed3D}, Cv::Vector{T}) where {T}
-    return (Cv[1] * Cv[2] * Cv[3] +
-            Cv[4] / 2 * Cv[6] / 2 * Cv[5] / 2 +
-            Cv[5] / 2 * Cv[4] / 2 * Cv[6] / 2 -
-            Cv[5] / 2 * Cv[2] * Cv[5] / 2 -
-            Cv[4] / 2 * Cv[4] / 2 * Cv[3] -
-            Cv[1] * Cv[6] / 2 * Cv[6] / 2)
+    return (
+        Cv[1] * Cv[2] * Cv[3] +
+        Cv[4] / 2 * Cv[6] / 2 * Cv[5] / 2 +
+        Cv[5] / 2 * Cv[4] / 2 * Cv[6] / 2 - Cv[5] / 2 * Cv[2] * Cv[5] / 2 -
+        Cv[4] / 2 * Cv[4] / 2 * Cv[3] - Cv[1] * Cv[6] / 2 * Cv[6] / 2
+    )
 end
 
 """

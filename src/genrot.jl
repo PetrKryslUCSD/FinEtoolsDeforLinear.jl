@@ -15,10 +15,12 @@ by the columns of the rotation matrix `Rm`.
 - `Rm` = columns are components of 'bar' basis vectors on the 'plain'
      basis vectors
 """
-function rotstressvec!(::Type{DeforModelRed3D},
+function rotstressvec!(
+    ::Type{DeforModelRed3D},
     outstress::Vector{T},
     instress::Vector{T},
-    Rm::_RotationMatrix) where {T}
+    Rm::_RotationMatrix,
+) where {T}
     # # Derivation of the transformation matrix [T]
     # #This is from Barbero''s  book Finite element analysis of composite
     # #materials  using Abaqus.  Note that his matrix "a"  is the transpose of
@@ -69,27 +71,48 @@ function rotstressvec!(::Type{DeforModelRed3D},
     a32 = Rm[3, 2]
     a33 = Rm[3, 3]
 
-    outstress[1] = (a11^2) * instress[1] + (a21^2) * instress[2] +
-                   (a31^2) * instress[3] + (2 * a11 * a21) * instress[4] +
-                   (2 * a11 * a31) * instress[5] + (2 * a21 * a31) * instress[6]
-    outstress[2] = (a12^2) * instress[1] + (a22^2) * instress[2] +
-                   (a32^2) * instress[3] + (2 * a12 * a22) * instress[4] +
-                   (2 * a12 * a32) * instress[5] + (2 * a22 * a32) * instress[6]
-    outstress[3] = (a13^2) * instress[1] + (a23^2) * instress[2] +
-                   (a33^2) * instress[3] + (2 * a13 * a23) * instress[4] +
-                   (2 * a13 * a33) * instress[5] + (2 * a23 * a33) * instress[6]
-    outstress[4] = a11 * a12 * instress[1] + a21 * a22 * instress[2] +
-                   a31 * a32 * instress[3] + (a11 * a22 + a12 * a21) * instress[4] +
-                   (a11 * a32 + a12 * a31) * instress[5] +
-                   (a21 * a32 + a22 * a31) * instress[6]
-    outstress[5] = (a11 * a13) * instress[1] + (a21 * a23) * instress[2] +
-                   (a31 * a33) * instress[3] + (a11 * a23 + a13 * a21) * instress[4] +
-                   (a11 * a33 + a13 * a31) * instress[5] +
-                   (a21 * a33 + a23 * a31) * instress[6]
-    outstress[6] = (a12 * a13) * instress[1] + (a22 * a23) * instress[2] +
-                   (a32 * a33) * instress[3] + (a12 * a23 + a13 * a22) * instress[4] +
-                   (a12 * a33 + a13 * a32) * instress[5] +
-                   (a22 * a33 + a23 * a32) * instress[6]
+    outstress[1] =
+        (a11^2) * instress[1] +
+        (a21^2) * instress[2] +
+        (a31^2) * instress[3] +
+        (2 * a11 * a21) * instress[4] +
+        (2 * a11 * a31) * instress[5] +
+        (2 * a21 * a31) * instress[6]
+    outstress[2] =
+        (a12^2) * instress[1] +
+        (a22^2) * instress[2] +
+        (a32^2) * instress[3] +
+        (2 * a12 * a22) * instress[4] +
+        (2 * a12 * a32) * instress[5] +
+        (2 * a22 * a32) * instress[6]
+    outstress[3] =
+        (a13^2) * instress[1] +
+        (a23^2) * instress[2] +
+        (a33^2) * instress[3] +
+        (2 * a13 * a23) * instress[4] +
+        (2 * a13 * a33) * instress[5] +
+        (2 * a23 * a33) * instress[6]
+    outstress[4] =
+        a11 * a12 * instress[1] +
+        a21 * a22 * instress[2] +
+        a31 * a32 * instress[3] +
+        (a11 * a22 + a12 * a21) * instress[4] +
+        (a11 * a32 + a12 * a31) * instress[5] +
+        (a21 * a32 + a22 * a31) * instress[6]
+    outstress[5] =
+        (a11 * a13) * instress[1] +
+        (a21 * a23) * instress[2] +
+        (a31 * a33) * instress[3] +
+        (a11 * a23 + a13 * a21) * instress[4] +
+        (a11 * a33 + a13 * a31) * instress[5] +
+        (a21 * a33 + a23 * a31) * instress[6]
+    outstress[6] =
+        (a12 * a13) * instress[1] +
+        (a22 * a23) * instress[2] +
+        (a32 * a33) * instress[3] +
+        (a12 * a23 + a13 * a22) * instress[4] +
+        (a12 * a33 + a13 * a32) * instress[5] +
+        (a22 * a33 + a23 * a32) * instress[6]
     return outstress
 end
 
@@ -109,10 +132,12 @@ by the columns of the rotation matrix `Rm`.
 - `Rm` = columns are components of 'bar' basis vectors on the 'plain'
      basis vectors
 """
-function rotstressvec!(::Type{DeforModelRed2DStrain},
+function rotstressvec!(
+    ::Type{DeforModelRed2DStrain},
     outstress::Vector{T},
     instress::Vector{T},
-    Rm::_RotationMatrix) where {T}
+    Rm::_RotationMatrix,
+) where {T}
     a11 = Rm[1, 1]
     a12 = Rm[1, 2]
     a13 = 0.0
@@ -123,14 +148,26 @@ function rotstressvec!(::Type{DeforModelRed2DStrain},
     a32 = 0.0
     a33 = 1.0
     # Note the special arrangement  of the components for plane strain
-    outstress[1] = (a11^2) * instress[1] + (a21^2) * instress[2] + (a31^2) * instress[4] +
-                   (2 * a11 * a21) * instress[3]
-    outstress[2] = (a12^2) * instress[1] + (a22^2) * instress[2] + (a32^2) * instress[4] +
-                   (2 * a12 * a22) * instress[3]
-    outstress[4] = (a13^2) * instress[1] + (a23^2) * instress[2] + (a33^2) * instress[4] +
-                   (2 * a13 * a23) * instress[3]
-    outstress[3] = a11 * a12 * instress[1] + a21 * a22 * instress[2] +
-                   a31 * a32 * instress[4] + (a11 * a22 + a12 * a21) * instress[3]
+    outstress[1] =
+        (a11^2) * instress[1] +
+        (a21^2) * instress[2] +
+        (a31^2) * instress[4] +
+        (2 * a11 * a21) * instress[3]
+    outstress[2] =
+        (a12^2) * instress[1] +
+        (a22^2) * instress[2] +
+        (a32^2) * instress[4] +
+        (2 * a12 * a22) * instress[3]
+    outstress[4] =
+        (a13^2) * instress[1] +
+        (a23^2) * instress[2] +
+        (a33^2) * instress[4] +
+        (2 * a13 * a23) * instress[3]
+    outstress[3] =
+        a11 * a12 * instress[1] +
+        a21 * a22 * instress[2] +
+        a31 * a32 * instress[4] +
+        (a11 * a22 + a12 * a21) * instress[3]
     return outstress
 end
 
@@ -150,20 +187,24 @@ by the columns of the rotation matrix `Rm`.
 - `Rm` = columns are components of 'bar' basis vectors on the 'plain'
      basis vectors
 """
-function rotstressvec!(::Type{DeforModelRed2DStress},
+function rotstressvec!(
+    ::Type{DeforModelRed2DStress},
     outstress::Vector{T},
     instress::Vector{T},
-    Rm::_RotationMatrix) where {T}
+    Rm::_RotationMatrix,
+) where {T}
     a11 = Rm[1, 1]
     a12 = Rm[1, 2]
     a21 = Rm[2, 1]
     a22 = Rm[2, 2]
-    outstress[1] = (a11^2) * instress[1] + (a21^2) * instress[2] +
-                   (2 * a11 * a21) * instress[3]
-    outstress[2] = (a12^2) * instress[1] + (a22^2) * instress[2] +
-                   (2 * a12 * a22) * instress[3]
-    outstress[3] = (a11 * a12) * instress[1] + (a21 * a22) * instress[2] +
-                   (a11 * a22 + a12 * a21) * instress[3]
+    outstress[1] =
+        (a11^2) * instress[1] + (a21^2) * instress[2] + (2 * a11 * a21) * instress[3]
+    outstress[2] =
+        (a12^2) * instress[1] + (a22^2) * instress[2] + (2 * a12 * a22) * instress[3]
+    outstress[3] =
+        (a11 * a12) * instress[1] +
+        (a21 * a22) * instress[2] +
+        (a11 * a22 + a12 * a21) * instress[3]
     return outstress
 end
 
@@ -183,22 +224,36 @@ by the columns of the rotation matrix `Rm`.
 - `Rm` = columns are components of 'bar' basis vectors on the 'plain'
      basis vectors
 """
-function rotstressvec!(::Type{DeforModelRed2DAxisymm},
+function rotstressvec!(
+    ::Type{DeforModelRed2DAxisymm},
     outstress::Vector{T},
     instress::Vector{T},
-    Rm::_RotationMatrix) where {T}
+    Rm::_RotationMatrix,
+) where {T}
     a11 = Rm[1, 1]
     a12 = Rm[1, 2]
     a21 = Rm[2, 1]
     a22 = Rm[2, 2]
-    outstress[1] = (a11^2) * instress[1] + (a21^2) * instress[2] + (0.0) * instress[3] +
-                   (2 * a11 * a21) * instress[4]
-    outstress[2] = (a12^2) * instress[1] + (a22^2) * instress[2] + (0.0) * instress[3] +
-                   (2 * a12 * a22) * instress[4]
-    outstress[3] = (0.0) * instress[1] + (0.0) * instress[2] + (1.0) * instress[3] +
-                   (0.0) * instress[4]
-    outstress[4] = (a11 * a12) * instress[1] + (a21 * a22) * instress[2] +
-                   (0.0) * instress[3] + (a11 * a22 + a12 * a21) * instress[4]
+    outstress[1] =
+        (a11^2) * instress[1] +
+        (a21^2) * instress[2] +
+        (0.0) * instress[3] +
+        (2 * a11 * a21) * instress[4]
+    outstress[2] =
+        (a12^2) * instress[1] +
+        (a22^2) * instress[2] +
+        (0.0) * instress[3] +
+        (2 * a12 * a22) * instress[4]
+    outstress[3] =
+        (0.0) * instress[1] +
+        (0.0) * instress[2] +
+        (1.0) * instress[3] +
+        (0.0) * instress[4]
+    outstress[4] =
+        (a11 * a12) * instress[1] +
+        (a21 * a22) * instress[2] +
+        (0.0) * instress[3] +
+        (a11 * a22 + a12 * a21) * instress[4]
     return outstress
 end
 
@@ -218,10 +273,12 @@ by the columns of the rotation matrix `Rm`.
 - `Rm` = columns are components of 'bar' basis vectors on the 'plain'
      basis vectors
 """
-function rotstressvec!(::Type{DeforModelRed1D},
+function rotstressvec!(
+    ::Type{DeforModelRed1D},
     outstress::Vector{T},
     instress::Vector{T},
-    Rm::_RotationMatrix) where {T}
+    Rm::_RotationMatrix,
+) where {T}
     copyto!(outstress, instress)
     return outstress
 end

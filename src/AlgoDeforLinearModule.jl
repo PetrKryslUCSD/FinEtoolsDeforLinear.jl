@@ -25,14 +25,11 @@ using FinEtools.FieldModule:
     gathersysvec
 using FinEtools.NodalFieldModule: NodalField, nnodes
 import FinEtools.FEMMBaseModule:
-    associategeometry!,
-    distribloads, fieldfromintegpoints, elemfieldfromintegpoints
+    associategeometry!, distribloads, fieldfromintegpoints, elemfieldfromintegpoints
 using FinEtoolsDeforLinear.FEMMDeforLinearBaseModule:
-    stiffness,
-    mass, thermalstrainloads, inspectintegpoints
+    stiffness, mass, thermalstrainloads, inspectintegpoints
 using FinEtoolsDeforLinear.FEMMDeforLinearMSModule:
-    stiffness,
-    mass, thermalstrainloads, inspectintegpoints
+    stiffness, mass, thermalstrainloads, inspectintegpoints
 using FinEtools.DeforModelRedModule: stresscomponentmap
 using FinEtools.AlgoBaseModule: matrix_blocked, vector_blocked
 using FinEtools.ForceIntensityModule: ForceIntensity
@@ -140,7 +137,7 @@ function linearstatics(modeldata::FDataDict)
     # Apply the essential boundary conditions on the displacement field
     essential_bcs = get(modeldata, "essential_bcs", nothing)
     if (essential_bcs != nothing)
-        for j in 1:length(essential_bcs)
+        for j = 1:length(essential_bcs)
             ebc = essential_bcs[j]
             dcheck!(ebc, essential_bcs_recognized_keys)
             fenids = get(() -> error("Must get node list!"), ebc, "node_list")
@@ -148,7 +145,7 @@ function linearstatics(modeldata::FDataDict)
             u_fixed = zeros(UFT, length(fenids)) # default is  zero displacement
             if (displacement != nothing) # if it is nonzero,
                 if (typeof(displacement) <: Function) # it could be a function
-                    for k in 1:length(fenids)
+                    for k = 1:length(fenids)
                         u_fixed[k] = displacement(geom.values[fenids[k], :])[1]
                     end
                 else # or it could be a constant
@@ -172,7 +169,7 @@ function linearstatics(modeldata::FDataDict)
     # Construct the system stiffness matrix
     K = spzeros(nalldofs(u), nalldofs(u)) # (all zeros, for the moment)
     regions = get(() -> error("Must get region list!"), modeldata, "regions")
-    for i in 1:length(regions)
+    for i = 1:length(regions)
         region = regions[i]
         dcheck!(region, regions_recognized_keys)
         femm = region["femm"]
@@ -186,7 +183,7 @@ function linearstatics(modeldata::FDataDict)
     # Process the traction boundary condition
     traction_bcs = get(modeldata, "traction_bcs", nothing)
     if (traction_bcs != nothing)
-        for j in 1:length(traction_bcs)
+        for j = 1:length(traction_bcs)
             tractionbc = traction_bcs[j]
             dcheck!(tractionbc, traction_bcs_recognized_keys)
             traction_vector = tractionbc["traction_vector"]
@@ -213,14 +210,14 @@ function linearstatics(modeldata::FDataDict)
         temperature = get(temperature_change, "temperature", nothing)
         if (temperature != nothing) # if it is nonzero,
             if (typeof(temperature) <: Function) # it could be a function
-                for k in 1:count(fens)
+                for k = 1:count(fens)
                     temp.values[k] = temperature(geom.values[k, :])[1]
                 end
             else # or it could be a constant
                 fill!(temp.values, temperature)
             end
         end
-        for i in 1:length(regions)
+        for i = 1:length(regions)
             region = regions[i]
             femm = region["femm"]
             F = F + thermalstrainloads(femm, geom, u, temp)
@@ -362,14 +359,14 @@ function exportdeformation(modeldata::FDataDict)
     end
 
     # Export one file for each region
-    modeldata["postprocessing"]["exported"] = Array{FDataDict, 1}()
+    modeldata["postprocessing"]["exported"] = Array{FDataDict,1}()
     regions = get(() -> error("Must get region!"), modeldata, "regions")
-    for i in 1:length(regions)
+    for i = 1:length(regions)
         region = regions[i]
         femm = region["femm"]
         rfile = ffile * "$i" * ".vtk"
-        vectors = Tuple{String, Matrix{UFT}}[]
-        for ixxxx in 1:length(us)
+        vectors = Tuple{String,Matrix{UFT}}[]
+        for ixxxx = 1:length(us)
             push!(vectors, (us[ixxxx][1], us[ixxxx][2].values))
         end
         if boundary_only
@@ -378,10 +375,12 @@ function exportdeformation(modeldata::FDataDict)
         else
             vtkexportmesh(rfile, fens, femm.integdomain.fes; vectors = vectors)
         end
-        ed = FDataDict("file" => rfile,
+        ed = FDataDict(
+            "file" => rfile,
             "field" => u,
             "region" => i,
-            "type" => "displacement")
+            "type" => "displacement",
+        )
         push!(modeldata["postprocessing"]["exported"], ed)
     end
 
@@ -479,9 +478,9 @@ function exportstress(modeldata::FDataDict)
     end
 
     # Export a file for each region
-    modeldata["postprocessing"]["exported"] = Array{FDataDict, 1}()
+    modeldata["postprocessing"]["exported"] = Array{FDataDict,1}()
     regions = get(() -> error("Must get region!"), modeldata, "regions")
-    for i in 1:length(regions)
+    for i = 1:length(regions)
         region = regions[i]
         femm = region["femm"]
         rfile = ffile * "-" * string(quantity) * string(component) * "-region $i" * ".vtk"
@@ -497,31 +496,31 @@ function exportstress(modeldata::FDataDict)
         # axes orientation, averaging across the material interface  would not make
         # sense.
         if (dT != nothing)
-            fld = fieldfromintegpoints(femm,
-                geom,
-                u,
-                dT,
-                quantity,
-                componentnum;
-                context...)
+            fld =
+                fieldfromintegpoints(femm, geom, u, dT, quantity, componentnum; context...)
         else
             fld = fieldfromintegpoints(femm, geom, u, quantity, componentnum; context...)
         end
         if boundary_only
             bfes = meshboundary(femm.integdomain.fes)
-            vtkexportmesh(rfile,
+            vtkexportmesh(
+                rfile,
                 fens,
                 bfes;
                 scalars = [(string(quantity) * componentname, fld.values)],
-                vectors = [("u", u.values)],)
+                vectors = [("u", u.values)],
+            )
         else
-            vtkexportmesh(rfile,
+            vtkexportmesh(
+                rfile,
                 fens,
                 femm.integdomain.fes;
                 scalars = [(string(quantity) * componentname, fld.values)],
-                vectors = [("u", u.values)],)
+                vectors = [("u", u.values)],
+            )
         end
-        ed = FDataDict("file" => rfile,
+        ed = FDataDict(
+            "file" => rfile,
             "field" => fld,
             "region" => i,
             "type" => "nodal stress",
@@ -529,7 +528,8 @@ function exportstress(modeldata::FDataDict)
             "component" => component,
             "outputcsys" => outputcsys,
             "nodevalmethod" => nodevalmethod,
-            "reportat" => reportat)
+            "reportat" => reportat,
+        )
         push!(modeldata["postprocessing"]["exported"], ed)
     end
 
@@ -576,13 +576,8 @@ mandatory, the  region dictionary  contains values for keys:
 """
 function exportstresselementwise(modeldata::FDataDict)
     modeldata_recognized_keys = ["fens", "regions", "geom", "u", "dT", "postprocessing"]
-    postprocessing_recognized_keys = [
-        "boundary_only",
-        "file",
-        "quantity",
-        "component",
-        "outputcsys",
-    ]
+    postprocessing_recognized_keys =
+        ["boundary_only", "file", "quantity", "component", "outputcsys"]
     # Defaults
     boundary_only = false
     ffile = "stress"
@@ -612,9 +607,9 @@ function exportstresselementwise(modeldata::FDataDict)
     end
 
     # Export a file for each region
-    modeldata["postprocessing"]["exported"] = Array{FDataDict, 1}()
+    modeldata["postprocessing"]["exported"] = Array{FDataDict,1}()
     regions = get(() -> error("Must get region!"), modeldata, "regions")
-    for i in 1:length(regions)
+    for i = 1:length(regions)
         region = regions[i]
         femm = region["femm"]
         rfile = ffile * "-" * string(quantity) * string(component) * "-region $i" * ".vtk"
@@ -630,42 +625,46 @@ function exportstresselementwise(modeldata::FDataDict)
         # axes orientation, averaging across the material interface  would not make
         # sense.
         if (dT != nothing)
-            fld = elemfieldfromintegpoints(femm,
+            fld = elemfieldfromintegpoints(
+                femm,
                 geom,
                 u,
                 dT,
                 quantity,
                 componentnum;
-                context...,)
+                context...,
+            )
         else
-            fld = elemfieldfromintegpoints(femm,
-                geom,
-                u,
-                quantity,
-                componentnum;
-                context...)
+            fld =
+                elemfieldfromintegpoints(femm, geom, u, quantity, componentnum; context...)
         end
         if boundary_only
             bfes = meshboundary(femm.integdomain.fes)
-            vtkexportmesh(rfile,
+            vtkexportmesh(
+                rfile,
                 fens,
                 bfes;
                 scalars = [(string(quantity) * componentname, fld.values)],
-                vectors = [("u", u.values)],)
+                vectors = [("u", u.values)],
+            )
         else
-            vtkexportmesh(rfile,
+            vtkexportmesh(
+                rfile,
                 fens,
                 femm.integdomain.fes;
                 scalars = [(string(quantity) * componentname, fld.values)],
-                vectors = [("u", u.values)],)
+                vectors = [("u", u.values)],
+            )
         end
-        ed = FDataDict("file" => rfile,
+        ed = FDataDict(
+            "file" => rfile,
             "field" => fld,
             "region" => i,
             "type" => "elemental stress",
             "quantity" => quantity,
             "component" => component,
-            "outputcsys" => outputcsys)
+            "outputcsys" => outputcsys,
+        )
         push!(modeldata["postprocessing"]["exported"], ed)
     end
 
@@ -728,14 +727,8 @@ function modal(modeldata::FDataDict)
     #          where m_i is the multiplier.
 
     # Lists of recognized keys for the data dictionaries:
-    modeldata_recognized_keys = [
-        "fens",
-        "regions",
-        "essential_bcs",
-        "neigvs",
-        "omega_shift",
-        "use_lumped_mass",
-    ]
+    modeldata_recognized_keys =
+        ["fens", "regions", "essential_bcs", "neigvs", "omega_shift", "use_lumped_mass"]
     essential_bcs_recognized_keys = ["displacement", "node_list", "component"]
     regions_recognized_keys = ["femm", "femm_stiffness", "femm_mass", "body_load"]
 
@@ -760,7 +753,7 @@ function modal(modeldata::FDataDict)
     # Apply the essential boundary conditions on the displacement field
     essential_bcs = get(modeldata, "essential_bcs", nothing)
     if (essential_bcs != nothing)
-        for j in 1:length(essential_bcs)
+        for j = 1:length(essential_bcs)
             ebc = essential_bcs[j]
             dcheck!(ebc, essential_bcs_recognized_keys)
             fenids = get(() -> error("Must get node list!"), ebc, "node_list")
@@ -778,7 +771,7 @@ function modal(modeldata::FDataDict)
     # Construct the system stiffness matrix
     K = spzeros(nalldofs(u), nalldofs(u)) # (all zeros, for the moment)
     regions = get(() -> error("Must get region list!"), modeldata, "regions")
-    for i in 1:length(regions)
+    for i = 1:length(regions)
         region = regions[i]
         dcheck!(region, regions_recognized_keys)
         if "femm_stiffness" in keys(region)
@@ -795,7 +788,7 @@ function modal(modeldata::FDataDict)
     # Construct the system mass matrix
     M = spzeros(nalldofs(u), nalldofs(u)) # (all zeros, for the moment)
     regions = get(() -> error("Must get region list!"), modeldata, "regions")
-    for i in 1:length(regions)
+    for i = 1:length(regions)
         region = regions[i]
         dcheck!(region, regions_recognized_keys)
         if "femm_mass" in keys(region)
@@ -897,15 +890,8 @@ mandatory, the  region dictionary  contains values for keys:
   - `modeldata["postprocessing"]["exported"]` = see `exportdeformation()`
 """
 function exportmode(modeldata::FDataDict)
-    modeldata_recognized_keys = [
-        "fens",
-        "regions",
-        "geom",
-        "u",
-        "omega",
-        "W",
-        "postprocessing",
-    ]
+    modeldata_recognized_keys =
+        ["fens", "regions", "geom", "u", "omega", "W", "postprocessing"]
     postprocessing_recognized_keys = ["boundary_only", "file", "mode"]
     mode = 1
     dcheck!(modeldata, modeldata_recognized_keys)
@@ -922,13 +908,13 @@ function exportmode(modeldata::FDataDict)
     # Scatter the desired mode
     W = modeldata["W"]
     if typeof(mode) <: Int
-        @assert 0<mode<=length(omega) "Invalid mode number $mode"
+        @assert 0 < mode <= length(omega) "Invalid mode number $mode"
         scattersysvec!(modeldata["u"], W[:, mode])
     else
-        us = Tuple{String, AbstractField}[]
+        us = Tuple{String,AbstractField}[]
         u = modeldata["u"]
         for ixxxx in mode
-            @assert 0<ixxxx<=length(omega) "Invalid mode number $ixxxx"
+            @assert 0 < ixxxx <= length(omega) "Invalid mode number $ixxxx"
             scattersysvec!(u, W[:, ixxxx])
             push!(us, ("mode_$(ixxxx)", deepcopy(u)))
         end
