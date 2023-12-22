@@ -10,160 +10,215 @@ import LinearAlgebra: norm, cholesky, cross
 function test()
 
 
-  E = 1.0;
-  nu = 1.0/3;
-  width = 48.0; height = 44.0; thickness  = 1.0;
-  free_height  = 16.0;
-  Mid_edge  = [48.0, 52.0];# Location of tracked  deflection
-  magn = 1.0/(free_height*thickness);# Density of applied load
-  convutip = 23.97;
-  n = 30;# number of elements per side
-  tolerance = minimum([width, height])/n/1000.;#Geometrical tolerance
+    E = 1.0
+    nu = 1.0 / 3
+    width = 48.0
+    height = 44.0
+    thickness = 1.0
+    free_height = 16.0
+    Mid_edge = [48.0, 52.0]# Location of tracked  deflection
+    magn = 1.0 / (free_height * thickness)# Density of applied load
+    convutip = 23.97
+    n = 30# number of elements per side
+    tolerance = minimum([width, height]) / n / 1000.0#Geometrical tolerance
 
-  fens,fes = T3block(width, height, n, n)
+    fens, fes = T3block(width, height, n, n)
 
-  # Reshape into a trapezoidal panel
-  for i = 1:count(fens)
-      fens.xyz[i,2] = fens.xyz[i,2]+(fens.xyz[i,1]/width)*(height -fens.xyz[i,2]/height*(height-free_height));
-  end
-
-  # Clamped edge of the membrane
-  l1 = selectnode(fens; box=[0.,0.,-Inf, Inf], inflate = tolerance)
-  ess1 = FDataDict("displacement"=>  0.0, "component"=> 1, "node_list"=>l1)
-  ess2 = FDataDict("displacement"=>  0.0, "component"=> 2, "node_list"=>l1)
-
-  # Traction on the opposite edge
-  boundaryfes =  meshboundary(fes);
-  Toplist  = selectelem(fens, boundaryfes, box= [width, width, -Inf, Inf ], inflate=  tolerance);
-  el1femm = FEMMBase(IntegDomain(subset(boundaryfes, Toplist), GaussRule(1, 2), thickness))
-  flux1 = FDataDict("traction_vector"=>[0.0,+magn],
-      "femm"=>el1femm
-      )
-
-  # Make the region
-  MR = DeforModelRed2DStress
-  material = MatDeforElastOrtho(MR,  0.0, E, nu, 0.0)
-  region1 = FDataDict("femm"=>FEMMDeforLinear(MR,
-      IntegDomain(fes, TriRule(1), thickness), material))
-
-  modeldata = FDataDict("fens"=>fens,
-   "regions"=>[region1],
-   "essential_bcs"=>[ess1, ess2],
-   "traction_bcs"=>[flux1]
-   )
-
-  # Call the solver
-  modeldata = AlgoDeforLinearModule.linearstatics(modeldata)
-
-  u = modeldata["u"]
-  geom = modeldata["geom"]
-
-  # Extract the solution
-  nl = selectnode(fens, box=[Mid_edge[1],Mid_edge[1],Mid_edge[2],Mid_edge[2]],
-            inflate=tolerance);
-  theutip = u.values[nl,:]
-  # println("displacement =$(theutip[2]) as compared to converged $convutip")
-  @test abs(theutip[2]-23.79623002934245) < 1.0e-3
-
-  modeldata["postprocessing"] = FDataDict("file"=>"cookstress-ew",
-     "quantity"=>:Cauchy, "component"=>:xy)
-  modeldata = AlgoDeforLinearModule.exportstresselementwise(modeldata)
-  fld = modeldata["postprocessing"]["exported"][1]["field"]
-  # println("range of Cauchy_xy = $((minimum(fld.values), maximum(fld.values)))")
-  @test norm([minimum(fld.values), maximum(fld.values)] - [-0.07275125002229098, 0.1309644027374448]) < 1.0e-5
-  # File = modeldata["postprocessing"]["exported"][1]["file"]
-  # @async run(`"paraview.exe" $File`)
-  try rm(modeldata["postprocessing"]["exported"][1]["file"]); catch end
-
-  modeldata["postprocessing"] = FDataDict("file"=>"cookstress-ew-vm",
-     "quantity"=>:vm, "component"=>1)
-  modeldata = AlgoDeforLinearModule.exportstresselementwise(modeldata)
-  fld = modeldata["postprocessing"]["exported"][1]["field"]
-  # println("range of vm = $((minimum(fld.values), maximum(fld.values)))")
-  @test norm([minimum(fld.values), maximum(fld.values)] - [0.014136291979824203, 0.4181381117075297]) < 1.0e-5
-  # File = modeldata["postprocessing"]["exported"][1]["file"]
-  # @async run(`"paraview.exe" $File`)
-  try rm(modeldata["postprocessing"]["exported"][1]["file"]); catch end
-
-  modeldata["postprocessing"] = FDataDict("file"=>"cookstress-ew-pressure",
-     "quantity"=>:pressure, "component"=>1)
-  modeldata = AlgoDeforLinearModule.exportstresselementwise(modeldata)
-  fld = modeldata["postprocessing"]["exported"][1]["field"]
-  # println("range of pressure = $((minimum(fld.values), maximum(fld.values)))")
-  # display(norm([minimum(fld.values), maximum(fld.values)] - [-0.12996180159464202, 0.2436183072544255]))
-  @test norm([minimum(fld.values), maximum(fld.values)] - [-0.08664120106309468, 0.16241220483628366]) < 1.0e-5
-  # File = modeldata["postprocessing"]["exported"][1]["file"]
-  # @async run(`"paraview.exe" $File`)
-  try rm(modeldata["postprocessing"]["exported"][1]["file"]); catch end
-
-  modeldata["postprocessing"] = FDataDict("file"=>"cookstress-ew-princ1",
-     "quantity"=>:princCauchy, "component"=>1)
-  modeldata = AlgoDeforLinearModule.exportstresselementwise(modeldata)
-  fld = modeldata["postprocessing"]["exported"][1]["field"]
-  # println("range of princCauchy Max = $((minimum(fld.values), maximum(fld.values)))")
-  @test norm([minimum(fld.values), maximum(fld.values)] - [-0.10280794467415574, 0.24831137383158813]) < 1.0e-5
-  # File = modeldata["postprocessing"]["exported"][1]["file"]
-  # @async run(`"paraview.exe" $File`)
-  try rm(modeldata["postprocessing"]["exported"][1]["file"]); catch end
-
-  modeldata["postprocessing"] = FDataDict("file"=>"cookstress-ew-princ3",
-     "quantity"=>:princCauchy, "component"=>2)
-  modeldata = AlgoDeforLinearModule.exportstresselementwise(modeldata)
-  fld = modeldata["postprocessing"]["exported"][1]["field"]
-  # println("range of princCauchy Min = $((minimum(fld.values), maximum(fld.values)))")
-  @test norm([minimum(fld.values), maximum(fld.values)] - [-0.4398236425818378, 0.022575693063719465]) < 1.0e-5
-  # File = modeldata["postprocessing"]["exported"][1]["file"]
-  # @async run(`"paraview.exe" $File`)
-  try rm(modeldata["postprocessing"]["exported"][1]["file"]); catch end
-
-  AE = AbaqusExporter("Cookstress_algo_stress");
-  HEADING(AE, "Cook trapezoidal panel, plane stress");
-  COMMENT(AE, "Converged free mid-edge displacement = 23.97");
-  PART(AE, "part1");
-  END_PART(AE);
-  ASSEMBLY(AE, "ASSEM1");
-  INSTANCE(AE, "INSTNC1", "PART1");
-  NODE(AE, fens.xyz);
-  COMMENT(AE, "We are assuming three node triangles in plane-stress");
-  COMMENT(AE, "CPS3 are pretty poor-accuracy elements, but here we don't care about it.");
-@test nodesperelem(modeldata["regions"][1]["femm"].integdomain.fes) == 3
-  ELEMENT(AE, "CPS3", "AllElements", connasarray(modeldata["regions"][1]["femm"].integdomain.fes))
-  NSET_NSET(AE, "clamped", modeldata["essential_bcs"][1]["node_list"])
-  ORIENTATION(AE, "GlobalOrientation", vec([1. 0 0]), vec([0 1. 0]));
-  SOLID_SECTION(AE, "elasticity", "GlobalOrientation", "AllElements", thickness);
-  END_INSTANCE(AE);
-  END_ASSEMBLY(AE);
-  MATERIAL(AE, "elasticity")
-  ELASTIC(AE, E, nu)
-  STEP_PERTURBATION_STATIC(AE)
-  BOUNDARY(AE, "ASSEM1.INSTNC1.clamped", 1)
-  BOUNDARY(AE, "ASSEM1.INSTNC1.clamped", 2)
-  bfes = modeldata["traction_bcs"][1]["femm"].integdomain.fes
-  COMMENT(AE, "Concentrated loads: we are assuming that the elements on the boundary");
-  COMMENT(AE, "have two nodes each and also that they are the same length.");
-  COMMENT(AE, "Then the concentrated loads below will be correctly lumped.");
-  nl = connectednodes(bfes)
-  F = zeros(count(modeldata["fens"]))
-  for ix = 1:count(bfes)
-    for jx = 1:2
-      F[bfes.conn[ix][jx]] += 1.0/n/2/thickness
+    # Reshape into a trapezoidal panel
+    for i = 1:count(fens)
+        fens.xyz[i, 2] =
+            fens.xyz[i, 2] +
+            (fens.xyz[i, 1] / width) *
+            (height - fens.xyz[i, 2] / height * (height - free_height))
     end
-  end
-  for ixxxx = 1:length(F)
-    if F[ixxxx] != 0.0
-      CLOAD(AE, "ASSEM1.INSTNC1.$(ixxxx)", 2, F[ixxxx])
-    end
-  end
-  END_STEP(AE)
-  close(AE)
 
-  nlines = 0
-  open(AE.filename) do f
-    s = readlines(f)
-    nlines = length(s)
-  end
-  @test nlines == 2886
-  rm(AE.filename)
+    # Clamped edge of the membrane
+    l1 = selectnode(fens; box = [0.0, 0.0, -Inf, Inf], inflate = tolerance)
+    ess1 = FDataDict("displacement" => 0.0, "component" => 1, "node_list" => l1)
+    ess2 = FDataDict("displacement" => 0.0, "component" => 2, "node_list" => l1)
+
+    # Traction on the opposite edge
+    boundaryfes = meshboundary(fes)
+    Toplist =
+        selectelem(fens, boundaryfes, box = [width, width, -Inf, Inf], inflate = tolerance)
+    el1femm =
+        FEMMBase(IntegDomain(subset(boundaryfes, Toplist), GaussRule(1, 2), thickness))
+    flux1 = FDataDict("traction_vector" => [0.0, +magn], "femm" => el1femm)
+
+    # Make the region
+    MR = DeforModelRed2DStress
+    material = MatDeforElastOrtho(MR, 0.0, E, nu, 0.0)
+    region1 = FDataDict(
+        "femm" =>
+            FEMMDeforLinear(MR, IntegDomain(fes, TriRule(1), thickness), material),
+    )
+
+    modeldata = FDataDict(
+        "fens" => fens,
+        "regions" => [region1],
+        "essential_bcs" => [ess1, ess2],
+        "traction_bcs" => [flux1],
+    )
+
+    # Call the solver
+    modeldata = AlgoDeforLinearModule.linearstatics(modeldata)
+
+    u = modeldata["u"]
+    geom = modeldata["geom"]
+
+    # Extract the solution
+    nl = selectnode(
+        fens,
+        box = [Mid_edge[1], Mid_edge[1], Mid_edge[2], Mid_edge[2]],
+        inflate = tolerance,
+    )
+    theutip = u.values[nl, :]
+    # println("displacement =$(theutip[2]) as compared to converged $convutip")
+    @test abs(theutip[2] - 23.79623002934245) < 1.0e-3
+
+    modeldata["postprocessing"] =
+        FDataDict("file" => "cookstress-ew", "quantity" => :Cauchy, "component" => :xy)
+    modeldata = AlgoDeforLinearModule.exportstresselementwise(modeldata)
+    fld = modeldata["postprocessing"]["exported"][1]["field"]
+    # println("range of Cauchy_xy = $((minimum(fld.values), maximum(fld.values)))")
+    @test norm(
+        [minimum(fld.values), maximum(fld.values)] -
+        [-0.07275125002229098, 0.1309644027374448],
+    ) < 1.0e-5
+    # File = modeldata["postprocessing"]["exported"][1]["file"]
+    # @async run(`"paraview.exe" $File`)
+    try
+        rm(modeldata["postprocessing"]["exported"][1]["file"])
+    catch
+    end
+
+    modeldata["postprocessing"] =
+        FDataDict("file" => "cookstress-ew-vm", "quantity" => :vm, "component" => 1)
+    modeldata = AlgoDeforLinearModule.exportstresselementwise(modeldata)
+    fld = modeldata["postprocessing"]["exported"][1]["field"]
+    # println("range of vm = $((minimum(fld.values), maximum(fld.values)))")
+    @test norm(
+        [minimum(fld.values), maximum(fld.values)] -
+        [0.014136291979824203, 0.4181381117075297],
+    ) < 1.0e-5
+    # File = modeldata["postprocessing"]["exported"][1]["file"]
+    # @async run(`"paraview.exe" $File`)
+    try
+        rm(modeldata["postprocessing"]["exported"][1]["file"])
+    catch
+    end
+
+    modeldata["postprocessing"] = FDataDict(
+        "file" => "cookstress-ew-pressure",
+        "quantity" => :pressure,
+        "component" => 1,
+    )
+    modeldata = AlgoDeforLinearModule.exportstresselementwise(modeldata)
+    fld = modeldata["postprocessing"]["exported"][1]["field"]
+    # println("range of pressure = $((minimum(fld.values), maximum(fld.values)))")
+    # display(norm([minimum(fld.values), maximum(fld.values)] - [-0.12996180159464202, 0.2436183072544255]))
+    @test norm(
+        [minimum(fld.values), maximum(fld.values)] -
+        [-0.08664120106309468, 0.16241220483628366],
+    ) < 1.0e-5
+    # File = modeldata["postprocessing"]["exported"][1]["file"]
+    # @async run(`"paraview.exe" $File`)
+    try
+        rm(modeldata["postprocessing"]["exported"][1]["file"])
+    catch
+    end
+
+    modeldata["postprocessing"] = FDataDict(
+        "file" => "cookstress-ew-princ1",
+        "quantity" => :princCauchy,
+        "component" => 1,
+    )
+    modeldata = AlgoDeforLinearModule.exportstresselementwise(modeldata)
+    fld = modeldata["postprocessing"]["exported"][1]["field"]
+    # println("range of princCauchy Max = $((minimum(fld.values), maximum(fld.values)))")
+    @test norm(
+        [minimum(fld.values), maximum(fld.values)] -
+        [-0.10280794467415574, 0.24831137383158813],
+    ) < 1.0e-5
+    # File = modeldata["postprocessing"]["exported"][1]["file"]
+    # @async run(`"paraview.exe" $File`)
+    try
+        rm(modeldata["postprocessing"]["exported"][1]["file"])
+    catch
+    end
+
+    modeldata["postprocessing"] = FDataDict(
+        "file" => "cookstress-ew-princ3",
+        "quantity" => :princCauchy,
+        "component" => 2,
+    )
+    modeldata = AlgoDeforLinearModule.exportstresselementwise(modeldata)
+    fld = modeldata["postprocessing"]["exported"][1]["field"]
+    # println("range of princCauchy Min = $((minimum(fld.values), maximum(fld.values)))")
+    @test norm(
+        [minimum(fld.values), maximum(fld.values)] -
+        [-0.4398236425818378, 0.022575693063719465],
+    ) < 1.0e-5
+    # File = modeldata["postprocessing"]["exported"][1]["file"]
+    # @async run(`"paraview.exe" $File`)
+    try
+        rm(modeldata["postprocessing"]["exported"][1]["file"])
+    catch
+    end
+
+    AE = AbaqusExporter("Cookstress_algo_stress")
+    HEADING(AE, "Cook trapezoidal panel, plane stress")
+    COMMENT(AE, "Converged free mid-edge displacement = 23.97")
+    PART(AE, "part1")
+    END_PART(AE)
+    ASSEMBLY(AE, "ASSEM1")
+    INSTANCE(AE, "INSTNC1", "PART1")
+    NODE(AE, fens.xyz)
+    COMMENT(AE, "We are assuming three node triangles in plane-stress")
+    COMMENT(AE, "CPS3 are pretty poor-accuracy elements, but here we don't care about it.")
+    @test nodesperelem(modeldata["regions"][1]["femm"].integdomain.fes) == 3
+    ELEMENT(
+        AE,
+        "CPS3",
+        "AllElements",
+        connasarray(modeldata["regions"][1]["femm"].integdomain.fes),
+    )
+    NSET_NSET(AE, "clamped", modeldata["essential_bcs"][1]["node_list"])
+    ORIENTATION(AE, "GlobalOrientation", vec([1.0 0 0]), vec([0 1.0 0]))
+    SOLID_SECTION(AE, "elasticity", "GlobalOrientation", "AllElements", thickness)
+    END_INSTANCE(AE)
+    END_ASSEMBLY(AE)
+    MATERIAL(AE, "elasticity")
+    ELASTIC(AE, E, nu)
+    STEP_PERTURBATION_STATIC(AE)
+    BOUNDARY(AE, "ASSEM1.INSTNC1.clamped", 1)
+    BOUNDARY(AE, "ASSEM1.INSTNC1.clamped", 2)
+    bfes = modeldata["traction_bcs"][1]["femm"].integdomain.fes
+    COMMENT(AE, "Concentrated loads: we are assuming that the elements on the boundary")
+    COMMENT(AE, "have two nodes each and also that they are the same length.")
+    COMMENT(AE, "Then the concentrated loads below will be correctly lumped.")
+    nl = connectednodes(bfes)
+    F = zeros(count(modeldata["fens"]))
+    for ix = 1:count(bfes)
+        for jx = 1:2
+            F[bfes.conn[ix][jx]] += 1.0 / n / 2 / thickness
+        end
+    end
+    for ixxxx = 1:length(F)
+        if F[ixxxx] != 0.0
+            CLOAD(AE, "ASSEM1.INSTNC1.$(ixxxx)", 2, F[ixxxx])
+        end
+    end
+    END_STEP(AE)
+    close(AE)
+
+    nlines = 0
+    open(AE.filename) do f
+        s = readlines(f)
+        nlines = length(s)
+    end
+    @test nlines == 2886
+    rm(AE.filename)
 end
 end
 using .mmmCookmstressmorthommm
@@ -179,159 +234,214 @@ import LinearAlgebra: norm, cholesky, cross
 function test()
 
 
-  E = 1.0;
-  nu = 1.0/3;
-  width = 48.0; height = 44.0; thickness  = 1.0;
-  free_height  = 16.0;
-  Mid_edge  = [48.0, 52.0];# Location of tracked  deflection
-  magn = 1.0/(free_height*thickness);# Density of applied load
-  convutip = 23.97;
-  n = 30;# number of elements per side
-  tolerance = minimum([width, height])/n/1000.;#Geometrical tolerance
+    E = 1.0
+    nu = 1.0 / 3
+    width = 48.0
+    height = 44.0
+    thickness = 1.0
+    free_height = 16.0
+    Mid_edge = [48.0, 52.0]# Location of tracked  deflection
+    magn = 1.0 / (free_height * thickness)# Density of applied load
+    convutip = 23.97
+    n = 30# number of elements per side
+    tolerance = minimum([width, height]) / n / 1000.0#Geometrical tolerance
 
-  fens,fes = T3block(width, height, n, n)
+    fens, fes = T3block(width, height, n, n)
 
-  # Reshape into a trapezoidal panel
-  for i = 1:count(fens)
-      fens.xyz[i,2] = fens.xyz[i,2]+(fens.xyz[i,1]/width)*(height -fens.xyz[i,2]/height*(height-free_height));
-  end
-
-  # Clamped edge of the membrane
-  l1 = selectnode(fens; box=[0.,0.,-Inf, Inf], inflate = tolerance)
-  ess1 = FDataDict("displacement"=>  0.0, "component"=> 1, "node_list"=>l1)
-  ess2 = FDataDict("displacement"=>  0.0, "component"=> 2, "node_list"=>l1)
-
-  # Traction on the opposite edge
-  boundaryfes =  meshboundary(fes);
-  Toplist  = selectelem(fens, boundaryfes, box= [width, width, -Inf, Inf ], inflate=  tolerance);
-  el1femm = FEMMBase(IntegDomain(subset(boundaryfes, Toplist), GaussRule(1, 2), thickness))
-  flux1 = FDataDict("traction_vector"=>[0.0,+magn],
-      "femm"=>el1femm
-      )
-
-  # Make the region
-  MR = DeforModelRed2DStress
-  material = MatDeforElastIso(MR,  0.0, E, nu, 0.0)
-  region1 = FDataDict("femm"=>FEMMDeforLinear(MR,
-      IntegDomain(fes, TriRule(1), thickness), material))
-
-  modeldata = FDataDict("fens"=>fens,
-   "regions"=>[region1],
-   "essential_bcs"=>[ess1, ess2],
-   "traction_bcs"=>[flux1]
-   )
-
-  # Call the solver
-  modeldata = AlgoDeforLinearModule.linearstatics(modeldata)
-
-  u = modeldata["u"]
-  geom = modeldata["geom"]
-
-  # Extract the solution
-  nl = selectnode(fens, box=[Mid_edge[1],Mid_edge[1],Mid_edge[2],Mid_edge[2]],
-            inflate=tolerance);
-  theutip = u.values[nl,:]
-  # println("displacement =$(theutip[2]) as compared to converged $convutip")
-  @test abs(theutip[2]-23.79623002934245) < 1.0e-3
-
-  modeldata["postprocessing"] = FDataDict("file"=>"cookstress-ew",
-     "quantity"=>:Cauchy, "component"=>:xy)
-  modeldata = AlgoDeforLinearModule.exportstresselementwise(modeldata)
-  fld = modeldata["postprocessing"]["exported"][1]["field"]
-  # println("range of Cauchy_xy = $((minimum(fld.values), maximum(fld.values)))")
-  @test norm([minimum(fld.values), maximum(fld.values)] - [-0.07275125002229098, 0.1309644027374448]) < 1.0e-5
-  # File = modeldata["postprocessing"]["exported"][1]["file"]
-  # @async run(`"paraview.exe" $File`)
-  try rm(modeldata["postprocessing"]["exported"][1]["file"]); catch end
-
-  modeldata["postprocessing"] = FDataDict("file"=>"cookstress-ew-vm",
-     "quantity"=>:vm, "component"=>1)
-  modeldata = AlgoDeforLinearModule.exportstresselementwise(modeldata)
-  fld = modeldata["postprocessing"]["exported"][1]["field"]
-  # println("range of vm = $((minimum(fld.values), maximum(fld.values)))")
-  @test norm([minimum(fld.values), maximum(fld.values)] - [0.014136291979824203, 0.4181381117075297]) < 1.0e-5
-  # File = modeldata["postprocessing"]["exported"][1]["file"]
-  # @async run(`"paraview.exe" $File`)
-  try rm(modeldata["postprocessing"]["exported"][1]["file"]); catch end
-
-  modeldata["postprocessing"] = FDataDict("file"=>"cookstress-ew-pressure",
-     "quantity"=>:pressure, "component"=>1)
-  modeldata = AlgoDeforLinearModule.exportstresselementwise(modeldata)
-  fld = modeldata["postprocessing"]["exported"][1]["field"]
-  # println("range of pressure = $((minimum(fld.values), maximum(fld.values)))")
-  @test norm([minimum(fld.values), maximum(fld.values)] - [-0.08664120106309468, 0.16241220483628366]) < 1.0e-5
-  # File = modeldata["postprocessing"]["exported"][1]["file"]
-  # @async run(`"paraview.exe" $File`)
-  try rm(modeldata["postprocessing"]["exported"][1]["file"]); catch end
-
-  modeldata["postprocessing"] = FDataDict("file"=>"cookstress-ew-princ1",
-     "quantity"=>:princCauchy, "component"=>1)
-  modeldata = AlgoDeforLinearModule.exportstresselementwise(modeldata)
-  fld = modeldata["postprocessing"]["exported"][1]["field"]
-  # println("range of princCauchy Max = $((minimum(fld.values), maximum(fld.values)))")
-  @test norm([minimum(fld.values), maximum(fld.values)] - [-0.10280794467415574, 0.24831137383158813]) < 1.0e-5
-  # File = modeldata["postprocessing"]["exported"][1]["file"]
-  # @async run(`"paraview.exe" $File`)
-  try rm(modeldata["postprocessing"]["exported"][1]["file"]); catch end
-
-  modeldata["postprocessing"] = FDataDict("file"=>"cookstress-ew-princ3",
-     "quantity"=>:princCauchy, "component"=>2)
-  modeldata = AlgoDeforLinearModule.exportstresselementwise(modeldata)
-  fld = modeldata["postprocessing"]["exported"][1]["field"]
-  # println("range of princCauchy Min = $((minimum(fld.values), maximum(fld.values)))")
-  @test norm([minimum(fld.values), maximum(fld.values)] - [-0.4398236425818378, 0.022575693063719465]) < 1.0e-5
-  # File = modeldata["postprocessing"]["exported"][1]["file"]
-  # @async run(`"paraview.exe" $File`)
-  try rm(modeldata["postprocessing"]["exported"][1]["file"]); catch end
-
-  AE = AbaqusExporter("Cookstress_algo_stress");
-  HEADING(AE, "Cook trapezoidal panel, plane stress");
-  COMMENT(AE, "Converged free mid-edge displacement = 23.97");
-  PART(AE, "part1");
-  END_PART(AE);
-  ASSEMBLY(AE, "ASSEM1");
-  INSTANCE(AE, "INSTNC1", "PART1");
-  NODE(AE, fens.xyz);
-  COMMENT(AE, "We are assuming three node triangles in plane-stress");
-  COMMENT(AE, "CPS3 are pretty poor-accuracy elements, but here we don't care about it.");
-@test  nodesperelem(modeldata["regions"][1]["femm"].integdomain.fes) == 3
-  ELEMENT(AE, "CPS3", "AllElements", connasarray(modeldata["regions"][1]["femm"].integdomain.fes))
-  NSET_NSET(AE, "clamped", modeldata["essential_bcs"][1]["node_list"])
-  ORIENTATION(AE, "GlobalOrientation", vec([1. 0 0]), vec([0 1. 0]));
-  SOLID_SECTION(AE, "elasticity", "GlobalOrientation", "AllElements", thickness);
-  END_INSTANCE(AE);
-  END_ASSEMBLY(AE);
-  MATERIAL(AE, "elasticity")
-  ELASTIC(AE, E, nu)
-  STEP_PERTURBATION_STATIC(AE)
-  BOUNDARY(AE, "ASSEM1.INSTNC1.clamped", 1)
-  BOUNDARY(AE, "ASSEM1.INSTNC1.clamped", 2)
-  bfes = modeldata["traction_bcs"][1]["femm"].integdomain.fes
-  COMMENT(AE, "Concentrated loads: we are assuming that the elements on the boundary");
-  COMMENT(AE, "have two nodes each and also that they are the same length.");
-  COMMENT(AE, "Then the concentrated loads below will be correctly lumped.");
-  nl = connectednodes(bfes)
-  F = zeros(count(modeldata["fens"]))
-  for ix = 1:count(bfes)
-    for jx = 1:2
-      F[bfes.conn[ix][jx]] += 1.0/n/2/thickness
+    # Reshape into a trapezoidal panel
+    for i = 1:count(fens)
+        fens.xyz[i, 2] =
+            fens.xyz[i, 2] +
+            (fens.xyz[i, 1] / width) *
+            (height - fens.xyz[i, 2] / height * (height - free_height))
     end
-  end
-  for ixxxx = 1:length(F)
-    if F[ixxxx] != 0.0
-      CLOAD(AE, "ASSEM1.INSTNC1.$(ixxxx)", 2, F[ixxxx])
-    end
-  end
-  END_STEP(AE)
-  close(AE)
 
-  nlines = 0
-  open(AE.filename) do f
-    s = readlines(f)
-    nlines = length(s)
-  end
-  @test nlines == 2886
-  rm(AE.filename)
+    # Clamped edge of the membrane
+    l1 = selectnode(fens; box = [0.0, 0.0, -Inf, Inf], inflate = tolerance)
+    ess1 = FDataDict("displacement" => 0.0, "component" => 1, "node_list" => l1)
+    ess2 = FDataDict("displacement" => 0.0, "component" => 2, "node_list" => l1)
+
+    # Traction on the opposite edge
+    boundaryfes = meshboundary(fes)
+    Toplist =
+        selectelem(fens, boundaryfes, box = [width, width, -Inf, Inf], inflate = tolerance)
+    el1femm =
+        FEMMBase(IntegDomain(subset(boundaryfes, Toplist), GaussRule(1, 2), thickness))
+    flux1 = FDataDict("traction_vector" => [0.0, +magn], "femm" => el1femm)
+
+    # Make the region
+    MR = DeforModelRed2DStress
+    material = MatDeforElastIso(MR, 0.0, E, nu, 0.0)
+    region1 = FDataDict(
+        "femm" =>
+            FEMMDeforLinear(MR, IntegDomain(fes, TriRule(1), thickness), material),
+    )
+
+    modeldata = FDataDict(
+        "fens" => fens,
+        "regions" => [region1],
+        "essential_bcs" => [ess1, ess2],
+        "traction_bcs" => [flux1],
+    )
+
+    # Call the solver
+    modeldata = AlgoDeforLinearModule.linearstatics(modeldata)
+
+    u = modeldata["u"]
+    geom = modeldata["geom"]
+
+    # Extract the solution
+    nl = selectnode(
+        fens,
+        box = [Mid_edge[1], Mid_edge[1], Mid_edge[2], Mid_edge[2]],
+        inflate = tolerance,
+    )
+    theutip = u.values[nl, :]
+    # println("displacement =$(theutip[2]) as compared to converged $convutip")
+    @test abs(theutip[2] - 23.79623002934245) < 1.0e-3
+
+    modeldata["postprocessing"] =
+        FDataDict("file" => "cookstress-ew", "quantity" => :Cauchy, "component" => :xy)
+    modeldata = AlgoDeforLinearModule.exportstresselementwise(modeldata)
+    fld = modeldata["postprocessing"]["exported"][1]["field"]
+    # println("range of Cauchy_xy = $((minimum(fld.values), maximum(fld.values)))")
+    @test norm(
+        [minimum(fld.values), maximum(fld.values)] -
+        [-0.07275125002229098, 0.1309644027374448],
+    ) < 1.0e-5
+    # File = modeldata["postprocessing"]["exported"][1]["file"]
+    # @async run(`"paraview.exe" $File`)
+    try
+        rm(modeldata["postprocessing"]["exported"][1]["file"])
+    catch
+    end
+
+    modeldata["postprocessing"] =
+        FDataDict("file" => "cookstress-ew-vm", "quantity" => :vm, "component" => 1)
+    modeldata = AlgoDeforLinearModule.exportstresselementwise(modeldata)
+    fld = modeldata["postprocessing"]["exported"][1]["field"]
+    # println("range of vm = $((minimum(fld.values), maximum(fld.values)))")
+    @test norm(
+        [minimum(fld.values), maximum(fld.values)] -
+        [0.014136291979824203, 0.4181381117075297],
+    ) < 1.0e-5
+    # File = modeldata["postprocessing"]["exported"][1]["file"]
+    # @async run(`"paraview.exe" $File`)
+    try
+        rm(modeldata["postprocessing"]["exported"][1]["file"])
+    catch
+    end
+
+    modeldata["postprocessing"] = FDataDict(
+        "file" => "cookstress-ew-pressure",
+        "quantity" => :pressure,
+        "component" => 1,
+    )
+    modeldata = AlgoDeforLinearModule.exportstresselementwise(modeldata)
+    fld = modeldata["postprocessing"]["exported"][1]["field"]
+    # println("range of pressure = $((minimum(fld.values), maximum(fld.values)))")
+    @test norm(
+        [minimum(fld.values), maximum(fld.values)] -
+        [-0.08664120106309468, 0.16241220483628366],
+    ) < 1.0e-5
+    # File = modeldata["postprocessing"]["exported"][1]["file"]
+    # @async run(`"paraview.exe" $File`)
+    try
+        rm(modeldata["postprocessing"]["exported"][1]["file"])
+    catch
+    end
+
+    modeldata["postprocessing"] = FDataDict(
+        "file" => "cookstress-ew-princ1",
+        "quantity" => :princCauchy,
+        "component" => 1,
+    )
+    modeldata = AlgoDeforLinearModule.exportstresselementwise(modeldata)
+    fld = modeldata["postprocessing"]["exported"][1]["field"]
+    # println("range of princCauchy Max = $((minimum(fld.values), maximum(fld.values)))")
+    @test norm(
+        [minimum(fld.values), maximum(fld.values)] -
+        [-0.10280794467415574, 0.24831137383158813],
+    ) < 1.0e-5
+    # File = modeldata["postprocessing"]["exported"][1]["file"]
+    # @async run(`"paraview.exe" $File`)
+    try
+        rm(modeldata["postprocessing"]["exported"][1]["file"])
+    catch
+    end
+
+    modeldata["postprocessing"] = FDataDict(
+        "file" => "cookstress-ew-princ3",
+        "quantity" => :princCauchy,
+        "component" => 2,
+    )
+    modeldata = AlgoDeforLinearModule.exportstresselementwise(modeldata)
+    fld = modeldata["postprocessing"]["exported"][1]["field"]
+    # println("range of princCauchy Min = $((minimum(fld.values), maximum(fld.values)))")
+    @test norm(
+        [minimum(fld.values), maximum(fld.values)] -
+        [-0.4398236425818378, 0.022575693063719465],
+    ) < 1.0e-5
+    # File = modeldata["postprocessing"]["exported"][1]["file"]
+    # @async run(`"paraview.exe" $File`)
+    try
+        rm(modeldata["postprocessing"]["exported"][1]["file"])
+    catch
+    end
+
+    AE = AbaqusExporter("Cookstress_algo_stress")
+    HEADING(AE, "Cook trapezoidal panel, plane stress")
+    COMMENT(AE, "Converged free mid-edge displacement = 23.97")
+    PART(AE, "part1")
+    END_PART(AE)
+    ASSEMBLY(AE, "ASSEM1")
+    INSTANCE(AE, "INSTNC1", "PART1")
+    NODE(AE, fens.xyz)
+    COMMENT(AE, "We are assuming three node triangles in plane-stress")
+    COMMENT(AE, "CPS3 are pretty poor-accuracy elements, but here we don't care about it.")
+    @test nodesperelem(modeldata["regions"][1]["femm"].integdomain.fes) == 3
+    ELEMENT(
+        AE,
+        "CPS3",
+        "AllElements",
+        connasarray(modeldata["regions"][1]["femm"].integdomain.fes),
+    )
+    NSET_NSET(AE, "clamped", modeldata["essential_bcs"][1]["node_list"])
+    ORIENTATION(AE, "GlobalOrientation", vec([1.0 0 0]), vec([0 1.0 0]))
+    SOLID_SECTION(AE, "elasticity", "GlobalOrientation", "AllElements", thickness)
+    END_INSTANCE(AE)
+    END_ASSEMBLY(AE)
+    MATERIAL(AE, "elasticity")
+    ELASTIC(AE, E, nu)
+    STEP_PERTURBATION_STATIC(AE)
+    BOUNDARY(AE, "ASSEM1.INSTNC1.clamped", 1)
+    BOUNDARY(AE, "ASSEM1.INSTNC1.clamped", 2)
+    bfes = modeldata["traction_bcs"][1]["femm"].integdomain.fes
+    COMMENT(AE, "Concentrated loads: we are assuming that the elements on the boundary")
+    COMMENT(AE, "have two nodes each and also that they are the same length.")
+    COMMENT(AE, "Then the concentrated loads below will be correctly lumped.")
+    nl = connectednodes(bfes)
+    F = zeros(count(modeldata["fens"]))
+    for ix = 1:count(bfes)
+        for jx = 1:2
+            F[bfes.conn[ix][jx]] += 1.0 / n / 2 / thickness
+        end
+    end
+    for ixxxx = 1:length(F)
+        if F[ixxxx] != 0.0
+            CLOAD(AE, "ASSEM1.INSTNC1.$(ixxxx)", 2, F[ixxxx])
+        end
+    end
+    END_STEP(AE)
+    close(AE)
+
+    nlines = 0
+    open(AE.filename) do f
+        s = readlines(f)
+        nlines = length(s)
+    end
+    @test nlines == 2886
+    rm(AE.filename)
 end
 end
 using .mmmCookmstressisommm
@@ -360,16 +470,16 @@ function test()
     # println("LE10NAFEMS: Transverse deflection of elliptical plate with elliptical hole."        )
     t0 = time()
 
-    E = 210e3*phun("MEGA*PA");# 210e3 MPa
-    nu = 0.3;
-    qmagn = 1.0*phun("MEGA*PA");# transverse pressure
-    sigma_yP = -5.38*phun("MEGA*PA");# tensile stress at [2.0, 0.0] meters
-    Ae =3.25*phun("m"); # Major radius of the exterior ellipse
-    Be =2.75*phun("m"); # Minor radius of the exterior ellipse
-    Ai =2.0*phun("m"); # Major radius of the interior ellipse
-    Bi =1.0*phun("m"); # Minor radius of the interior ellipse
-    Thickness = 0.6*phun("m")
-    tolerance = Thickness/1000.; # Geometrical tolerance
+    E = 210e3 * phun("MEGA*PA")# 210e3 MPa
+    nu = 0.3
+    qmagn = 1.0 * phun("MEGA*PA")# transverse pressure
+    sigma_yP = -5.38 * phun("MEGA*PA")# tensile stress at [2.0, 0.0] meters
+    Ae = 3.25 * phun("m") # Major radius of the exterior ellipse
+    Be = 2.75 * phun("m") # Minor radius of the exterior ellipse
+    Ai = 2.0 * phun("m") # Major radius of the interior ellipse
+    Bi = 1.0 * phun("m") # Minor radius of the interior ellipse
+    Thickness = 0.6 * phun("m")
+    tolerance = Thickness / 1000.0 # Geometrical tolerance
 
     INP_file = """
     *HEADING
@@ -667,39 +777,56 @@ function test()
     output = MeshImportModule.import_ABAQUS("NLE10.inp")
     fens, fes = output["fens"], output["fesets"][1]
 
-    try rm("NLE10.inp"); catch end
+    try
+        rm("NLE10.inp")
+    catch
+    end
 
     # Select the  boundary faces, on the boundary that is clamped,  and on the part
     # of the boundary that is loaded with the transverse pressure
-    bdryfes = meshboundary(fes);
-    exteriorbfl = selectelem(fens, bdryfes, facing=true,
-        direction=[1.0, 1.0, 0.0], dotmin= 0.001);
-    topbfl = selectelem(fens, bdryfes, box=[0.0, Inf, 0.0, Inf, Thickness, Thickness], inflate=tolerance);
+    bdryfes = meshboundary(fes)
+    exteriorbfl = selectelem(
+        fens,
+        bdryfes,
+        facing = true,
+        direction = [1.0, 1.0, 0.0],
+        dotmin = 0.001,
+    )
+    topbfl = selectelem(
+        fens,
+        bdryfes,
+        box = [0.0, Inf, 0.0, Inf, Thickness, Thickness],
+        inflate = tolerance,
+    )
 
     geom = NodalField(fens.xyz)
-    u = NodalField(zeros(size(fens.xyz,1),3)) # displacement field
+    u = NodalField(zeros(size(fens.xyz, 1), 3)) # displacement field
 
-    L12 =connectednodes(subset(bdryfes, exteriorbfl)) # external boundary
+    L12 = connectednodes(subset(bdryfes, exteriorbfl)) # external boundary
     setebc!(u, L12, true, 1, 0.0)
     setebc!(u, L12, true, 2, 0.0)
-    LL = selectnode(fens; box=[0.0, Inf, 0.0, Inf, Thickness/2.0, Thickness/2.0], inflate = tolerance)
+    LL = selectnode(
+        fens;
+        box = [0.0, Inf, 0.0, Inf, Thickness / 2.0, Thickness / 2.0],
+        inflate = tolerance,
+    )
     L3 = intersect(LL, connectednodes(subset(bdryfes, exteriorbfl)))
     setebc!(u, L3, true, 3, 0.0)
-    L1 =selectnode(fens; box=[0.0, 0.0, 0.0, Inf, 0.0, Thickness], inflate = tolerance)
-    setebc!(u,L1,true, 1, 0.0) # symmetry plane X = 0
-    L2 =selectnode(fens; box=[0.0, Inf, 0.0, 0.0, 0.0, Thickness], inflate = tolerance)
-    setebc!(u,L2,true, 2, 0.0) # symmetry plane Y = 0
+    L1 = selectnode(fens; box = [0.0, 0.0, 0.0, Inf, 0.0, Thickness], inflate = tolerance)
+    setebc!(u, L1, true, 1, 0.0) # symmetry plane X = 0
+    L2 = selectnode(fens; box = [0.0, Inf, 0.0, 0.0, 0.0, Thickness], inflate = tolerance)
+    setebc!(u, L2, true, 2, 0.0) # symmetry plane Y = 0
 
     applyebc!(u)
     numberdofs!(u)
 
-    eL1femm =  FEMMBase(IntegDomain(subset(bdryfes,topbfl), TriRule(3)))
+    eL1femm = FEMMBase(IntegDomain(subset(bdryfes, topbfl), TriRule(3)))
     function pfun(forceout::Vector{T}, XYZ, tangents, feid, qpid) where {T}
-        forceout .=  [0.0, 0.0, -qmagn]
+        forceout .= [0.0, 0.0, -qmagn]
         return forceout
     end
-    fi = ForceIntensity(Float64, 3, pfun);
-    F2 = distribloads(eL1femm, geom, u, fi, 2);
+    fi = ForceIntensity(Float64, 3, pfun)
+    F2 = distribloads(eL1femm, geom, u, fi, 2)
 
     # Note that the material object needs to be created with the proper
     # model-dimension reduction in mind.  In this case that is the fully three-dimensional solid.
@@ -716,52 +843,92 @@ function test()
 
     u = solve_blocked!(u, K, F2)
 
-    nl = selectnode(fens, box=[Ai,Ai,0,0,Thickness,Thickness],inflate=tolerance);
-    thecorneru = zeros(Float64,1,3)
-    gathervalues_asmat!(u, thecorneru, nl);
-    thecorneru = thecorneru/phun("mm")
+    nl = selectnode(fens, box = [Ai, Ai, 0, 0, Thickness, Thickness], inflate = tolerance)
+    thecorneru = zeros(Float64, 1, 3)
+    gathervalues_asmat!(u, thecorneru, nl)
+    thecorneru = thecorneru / phun("mm")
     # println("displacement =$(thecorneru) [MM] as compared to reference [-0.030939, 0, -0.10488] [MM]")
     @test norm(thecorneru - [-0.0268854 0.0 -0.0919955]) < 1.0e-5
 
-    fld= fieldfromintegpoints(femm, geom, u, :Cauchy, 2; nodevalmethod = :invdistance, reportat = :meanonly)#
+    fld = fieldfromintegpoints(
+        femm,
+        geom,
+        u,
+        :Cauchy,
+        2;
+        nodevalmethod = :invdistance,
+        reportat = :meanonly,
+    )#
     # println("Sigma_y =$(fld.values[nl,1][1]/phun("MPa")) as compared to reference sigma_yP = $(sigma_yP/phun("MPa")) [MPa]")
-    @test abs(fld.values[nl,1][1]/phun("MPa") - -2.2616980060965024) < 1.0e-3
+    @test abs(fld.values[nl, 1][1] / phun("MPa") - -2.2616980060965024) < 1.0e-3
 
-    fld= fieldfromintegpoints(femm, geom, u, :Cauchy, 2; nodevalmethod = :averaging, reportat = :extrapmean)#
+    fld = fieldfromintegpoints(
+        femm,
+        geom,
+        u,
+        :Cauchy,
+        2;
+        nodevalmethod = :averaging,
+        reportat = :extrapmean,
+    )#
     # println("Sigma_y =$(fld.values[nl,1][1]/phun("MPa")) as compared to reference sigma_yP = $(sigma_yP/phun("MPa")) [MPa]")
-    @test abs(fld.values[nl,1][1]/phun("MPa") - -2.382478776709117) < 1.0e-3
+    @test abs(fld.values[nl, 1][1] / phun("MPa") - -2.382478776709117) < 1.0e-3
 
-    fld= fieldfromintegpoints(femm, geom, u, :Cauchy, 2; nodevalmethod = :averaging, reportat = :extraptrend)#
+    fld = fieldfromintegpoints(
+        femm,
+        geom,
+        u,
+        :Cauchy,
+        2;
+        nodevalmethod = :averaging,
+        reportat = :extraptrend,
+    )#
     # println("Sigma_y =$(fld.values[nl,1][1]/phun("MPa")) as compared to reference sigma_yP = $(sigma_yP/phun("MPa")) [MPa]")
-# println("$(fld.values[nl,1][1]/phun("MPa"))")
-    @test abs(fld.values[nl,1][1]/phun("MPa") - -5.470291697493607) < 1.0e-3
+    # println("$(fld.values[nl,1][1]/phun("MPa"))")
+    @test abs(fld.values[nl, 1][1] / phun("MPa") - -5.470291697493607) < 1.0e-3
 
-    File =  "LE10NAFEMS_MST10_sigmay.vtk"
-    vtkexportmesh(File, connasarray(fes), geom.values,
-                   FinEtools.MeshExportModule.VTK.T10; vectors=[("u", u.values)],
-                   scalars=[("sigmay", fld.values)])
+    File = "LE10NAFEMS_MST10_sigmay.vtk"
+    vtkexportmesh(
+        File,
+        connasarray(fes),
+        geom.values,
+        FinEtools.MeshExportModule.VTK.T10;
+        vectors = [("u", u.values)],
+        scalars = [("sigmay", fld.values)],
+    )
     # @async run(`"paraview.exe" $File`)
-    try rm(File) catch end
+    try
+        rm(File)
+    catch
+    end
 
-    AE = AbaqusExporter("LE10NAFEMS_MST10");
-    HEADING(AE, "LE10NAFEMS: Transverse deflection of elliptical plate with elliptical hole.");
-    PART(AE, "part1");
-    END_PART(AE);
-    ASSEMBLY(AE, "ASSEM1");
-    INSTANCE(AE, "INSTNC1", "PART1");
-    NODE(AE, fens.xyz);
+    AE = AbaqusExporter("LE10NAFEMS_MST10")
+    HEADING(
+        AE,
+        "LE10NAFEMS: Transverse deflection of elliptical plate with elliptical hole.",
+    )
+    PART(AE, "part1")
+    END_PART(AE)
+    ASSEMBLY(AE, "ASSEM1")
+    INSTANCE(AE, "INSTNC1", "PART1")
+    NODE(AE, fens.xyz)
     ELEMENT(AE, "c3d10", "AllElements", 1, connasarray(femm.integdomain.fes))
-    ELEMENT(AE, "SFM3D6", "TractionElements",
-    1+count(femm.integdomain.fes), connasarray(eL1femm.integdomain.fes))
+    ELEMENT(
+        AE,
+        "SFM3D6",
+        "TractionElements",
+        1 + count(femm.integdomain.fes),
+        connasarray(eL1femm.integdomain.fes),
+    )
     NSET_NSET(AE, "L1", L1)
     NSET_NSET(AE, "L2", L2)
     NSET_NSET(AE, "L3", L3)
     NSET_NSET(AE, "L12", L12)
-    ORIENTATION(AE, "GlobalOrientation", vec([1. 0 0]), vec([0 1. 0]));
-    SOLID_SECTION(AE, "elasticity", "GlobalOrientation", "AllElements", "Hourglassctl");
+    ORIENTATION(AE, "GlobalOrientation", vec([1.0 0 0]), vec([0 1.0 0]))
+    SOLID_SECTION(AE, "elasticity", "GlobalOrientation", "AllElements", "Hourglassctl")
     SURFACE_SECTION(AE, "TractionElements")
-    END_INSTANCE(AE);
-    END_ASSEMBLY(AE);
+    END_INSTANCE(AE)
+    END_ASSEMBLY(AE)
     MATERIAL(AE, "elasticity")
     ELASTIC(AE, E, nu)
     SECTION_CONTROLS(AE, "Hourglassctl", "HOURGLASS=ENHANCED")
@@ -777,38 +944,56 @@ function test()
 
     output = MeshImportModule.import_ABAQUS(AE.filename)
     fens, fes = output["fens"], output["fesets"][1]
-try rm(AE.filename) catch end
+    try
+        rm(AE.filename)
+    catch
+    end
 
     # Select the  boundary faces, on the boundary that is clamped,  and on the part
     # of the boundary that is loaded with the transverse pressure
-    bdryfes = meshboundary(fes);
-    exteriorbfl = selectelem(fens, bdryfes, facing=true, direction=[1.0, 1.0, 0.0], dotmin= 0.001);
-    topbfl = selectelem(fens, bdryfes, box=[0.0, Inf, 0.0, Inf, Thickness, Thickness], inflate=tolerance);
+    bdryfes = meshboundary(fes)
+    exteriorbfl = selectelem(
+        fens,
+        bdryfes,
+        facing = true,
+        direction = [1.0, 1.0, 0.0],
+        dotmin = 0.001,
+    )
+    topbfl = selectelem(
+        fens,
+        bdryfes,
+        box = [0.0, Inf, 0.0, Inf, Thickness, Thickness],
+        inflate = tolerance,
+    )
 
     geom = NodalField(fens.xyz)
-    u = NodalField(zeros(size(fens.xyz,1),3)) # displacement field
+    u = NodalField(zeros(size(fens.xyz, 1), 3)) # displacement field
 
-    L12 =connectednodes(subset(bdryfes, exteriorbfl)) # external boundary
+    L12 = connectednodes(subset(bdryfes, exteriorbfl)) # external boundary
     setebc!(u, L12, true, 1, 0.0)
     setebc!(u, L12, true, 2, 0.0)
-    LL = selectnode(fens; box=[0.0, Inf, 0.0, Inf, Thickness/2.0, Thickness/2.0], inflate = tolerance)
+    LL = selectnode(
+        fens;
+        box = [0.0, Inf, 0.0, Inf, Thickness / 2.0, Thickness / 2.0],
+        inflate = tolerance,
+    )
     L3 = intersect(LL, connectednodes(subset(bdryfes, exteriorbfl)))
     setebc!(u, L3, true, 3, 0.0)
-    L1 =selectnode(fens; box=[0.0, 0.0, 0.0, Inf, 0.0, Thickness], inflate = tolerance)
-    setebc!(u,L1,true, 1, 0.0) # symmetry plane X = 0
-    L2 =selectnode(fens; box=[0.0, Inf, 0.0, 0.0, 0.0, Thickness], inflate = tolerance)
-    setebc!(u,L2,true, 2, 0.0) # symmetry plane Y = 0
+    L1 = selectnode(fens; box = [0.0, 0.0, 0.0, Inf, 0.0, Thickness], inflate = tolerance)
+    setebc!(u, L1, true, 1, 0.0) # symmetry plane X = 0
+    L2 = selectnode(fens; box = [0.0, Inf, 0.0, 0.0, 0.0, Thickness], inflate = tolerance)
+    setebc!(u, L2, true, 2, 0.0) # symmetry plane Y = 0
 
     applyebc!(u)
     numberdofs!(u)
 
-    eL1femm =  FEMMBase(IntegDomain(subset(bdryfes,topbfl), TriRule(3)))
+    eL1femm = FEMMBase(IntegDomain(subset(bdryfes, topbfl), TriRule(3)))
     # function pfun(forceout::FVec{T}, XYZ, tangents, feid) where {T}
     #     forceout .=  [0.0, 0.0, -qmagn]
     #     return forceout
     # end
-    fi = ForceIntensity(Float64, 3, pfun);
-    F2 = distribloads(eL1femm, geom, u, fi, 2);
+    fi = ForceIntensity(Float64, 3, pfun)
+    F2 = distribloads(eL1femm, geom, u, fi, 2)
 
     # Note that the material object needs to be created with the proper
     # model-dimension reduction in mind.  In this case that is the fully three-dimensional solid.
@@ -825,32 +1010,56 @@ try rm(AE.filename) catch end
 
     u = solve_blocked!(u, K, F2)
 
-    nl = selectnode(fens, box=[Ai,Ai,0,0,Thickness,Thickness],inflate=tolerance);
-    thecorneru = zeros(Float64,1,3)
-    gathervalues_asmat!(u, thecorneru, nl);
-    thecorneru = thecorneru/phun("mm")
+    nl = selectnode(fens, box = [Ai, Ai, 0, 0, Thickness, Thickness], inflate = tolerance)
+    thecorneru = zeros(Float64, 1, 3)
+    gathervalues_asmat!(u, thecorneru, nl)
+    thecorneru = thecorneru / phun("mm")
     # println("displacement =$(thecorneru) [MM] as compared to reference [-0.030939, 0, -0.10488] [MM]")
     @test norm(thecorneru - [-0.0268854 0.0 -0.0919955]) < 1.0e-5
 
-    fld= fieldfromintegpoints(femm, geom, u, :Cauchy, 2; reportat = :meanonly)#
+    fld = fieldfromintegpoints(femm, geom, u, :Cauchy, 2; reportat = :meanonly)#
     # println("Sigma_y =$(fld.values[nl,1][1]/phun("MPa")) as compared to reference sigma_yP = $(sigma_yP/phun("MPa")) [MPa]")
-    @test abs(fld.values[nl,1][1]/phun("MPa") - -2.2616980060965024) < 1.0e-3
+    @test abs(fld.values[nl, 1][1] / phun("MPa") - -2.2616980060965024) < 1.0e-3
 
-    fld= fieldfromintegpoints(femm, geom, u, :Cauchy, 2; nodevalmethod = :averaging, reportat = :extrapmean)#
+    fld = fieldfromintegpoints(
+        femm,
+        geom,
+        u,
+        :Cauchy,
+        2;
+        nodevalmethod = :averaging,
+        reportat = :extrapmean,
+    )#
     # println("Sigma_y =$(fld.values[nl,1][1]/phun("MPa")) as compared to reference sigma_yP = $(sigma_yP/phun("MPa")) [MPa]")
-    @test abs(fld.values[nl,1][1]/phun("MPa") - -2.382478776709117) < 1.0e-3
+    @test abs(fld.values[nl, 1][1] / phun("MPa") - -2.382478776709117) < 1.0e-3
 
-    fld= fieldfromintegpoints(femm, geom, u, :Cauchy, 2; nodevalmethod = :averaging, reportat = :extraptrend)#
+    fld = fieldfromintegpoints(
+        femm,
+        geom,
+        u,
+        :Cauchy,
+        2;
+        nodevalmethod = :averaging,
+        reportat = :extraptrend,
+    )#
     # println("Sigma_y =$(fld.values[nl,1][1]/phun("MPa")) as compared to reference sigma_yP = $(sigma_yP/phun("MPa")) [MPa]")
-# println("$(fld.values[nl,1][1]/phun("MPa"))")
-    @test abs(fld.values[nl,1][1]/phun("MPa") - -5.470291697493607) < 1.0e-3
+    # println("$(fld.values[nl,1][1]/phun("MPa"))")
+    @test abs(fld.values[nl, 1][1] / phun("MPa") - -5.470291697493607) < 1.0e-3
 
-    File =  "LE10NAFEMS_MST10_sigmay.vtk"
-    vtkexportmesh(File, connasarray(fes), geom.values,
-                   FinEtools.MeshExportModule.VTK.T10; vectors=[("u", u.values)],
-                   scalars=[("sigmay", fld.values)])
+    File = "LE10NAFEMS_MST10_sigmay.vtk"
+    vtkexportmesh(
+        File,
+        connasarray(fes),
+        geom.values,
+        FinEtools.MeshExportModule.VTK.T10;
+        vectors = [("u", u.values)],
+        scalars = [("sigmay", fld.values)],
+    )
     # @async run(`"paraview.exe" $File`)
-    try rm(File) catch end
+    try
+        rm(File)
+    catch
+    end
 end
 end
 using .mmLE10expimpmm
@@ -930,7 +1139,7 @@ mmLE10expimpmm.test()
 #         # @async run(`"paraview.exe" $File`)
 #     end
 
-    
+
 #     v0 = [i==j ? one(Float64) : zero(Float64) for i=1:size(K,1), j=1:2*neigvs]
 #     tol = 1.0e-2
 #     maxiter = 20
@@ -951,7 +1160,7 @@ mmLE10expimpmm.test()
 #         # File =  "unit_cube_modes.vtk"
 #         # vtkexportmesh(File, fens, fes; vectors=[("mode$mode", u.values)])
 #         # @async run(`"paraview.exe" $File`)
-    
+
 
 # end
 # end
@@ -977,22 +1186,22 @@ function test()
     t0 = time()
 
 
-    E = 200*phun("GPA");
-    nu = 0.3;
-    rho= 8000*phun("KG/M^3");
-    L = 10*phun("M");
-    W0 = 5*phun("M");
-    WL = 1*phun("M");
-    H = 0.05*phun("M");
-    nL, nW, nH = 8, 4, 1;# How many element edges per side?
-    neigvs=20                   # how many eigenvalues
-    Reffs = [44.623	130.03	162.70	246.05	379.90	391.44]
+    E = 200 * phun("GPA")
+    nu = 0.3
+    rho = 8000 * phun("KG/M^3")
+    L = 10 * phun("M")
+    W0 = 5 * phun("M")
+    WL = 1 * phun("M")
+    H = 0.05 * phun("M")
+    nL, nW, nH = 8, 4, 1# How many element edges per side?
+    neigvs = 20                   # how many eigenvalues
+    Reffs = [44.623 130.03 162.70 246.05 379.90 391.44]
 
-    fens,fes =H20block(1.0, 2.0, 1.0, nL, nW, nH)
+    fens, fes = H20block(1.0, 2.0, 1.0, nL, nW, nH)
     for i = 1:count(fens)
-        xi, eta, theta = fens.xyz[i,:];
+        xi, eta, theta = fens.xyz[i, :]
         eta = eta - 1.0
-        fens.xyz[i,:] = [xi*L eta*(1.0 - 0.8*xi)*W0/2 theta*H/2];
+        fens.xyz[i, :] = [xi * L eta * (1.0 - 0.8 * xi) * W0 / 2 theta * H / 2]
     end
     # File =  "mesh.vtk"
     # vtkexportmesh(File, fens, fes)
@@ -1001,35 +1210,45 @@ function test()
     # Make the region
     MR = DeforModelRed3D
     material = MatDeforElastIso(MR, rho, E, nu, 0.0)
-    region1 = FDataDict("femm"=>FEMMDeforLinear(MR, IntegDomain(fes, GaussRule(3,2)),
-      material), "femm_mass"=>FEMMDeforLinear(MR, IntegDomain(fes, GaussRule(3,3)),
-      material))
+    region1 = FDataDict(
+        "femm" => FEMMDeforLinear(MR, IntegDomain(fes, GaussRule(3, 2)), material),
+        "femm_mass" => FEMMDeforLinear(MR, IntegDomain(fes, GaussRule(3, 3)), material),
+    )
 
-    nl1 = selectnode(fens; plane=[1.0 0.0 0.0 0.0], thickness=H/1.0e4)
-    ebc1 = FDataDict("node_list"=>nl1, "component"=>1, "displacement"=>0.0)
-    ebc2 = FDataDict("node_list"=>nl1, "component"=>2, "displacement"=>0.0)
-    ebc3 = FDataDict("node_list"=>nl1, "component"=>3, "displacement"=>0.0)
+    nl1 = selectnode(fens; plane = [1.0 0.0 0.0 0.0], thickness = H / 1.0e4)
+    ebc1 = FDataDict("node_list" => nl1, "component" => 1, "displacement" => 0.0)
+    ebc2 = FDataDict("node_list" => nl1, "component" => 2, "displacement" => 0.0)
+    ebc3 = FDataDict("node_list" => nl1, "component" => 3, "displacement" => 0.0)
 
-    nl4 = selectnode(fens; plane=[0.0 0.0 1.0 0.0], thickness=H/1.0e4)
-    ebc4 = FDataDict("node_list"=>nl4, "component"=>3, "displacement"=>0.0)
+    nl4 = selectnode(fens; plane = [0.0 0.0 1.0 0.0], thickness = H / 1.0e4)
+    ebc4 = FDataDict("node_list" => nl4, "component" => 3, "displacement" => 0.0)
 
     # Make model data
-    modeldata =  FDataDict(
-      "fens"=> fens, "regions"=>  [region1], "essential_bcs"=>[ebc1 ebc2 ebc3 ebc4],
-      "neigvs"=>neigvs)
+    modeldata = FDataDict(
+        "fens" => fens,
+        "regions" => [region1],
+        "essential_bcs" => [ebc1 ebc2 ebc3 ebc4],
+        "neigvs" => neigvs,
+    )
 
     # Solve
     modeldata = FinEtoolsDeforLinear.AlgoDeforLinearModule.modal(modeldata)
 
-    fs = modeldata["omega"]/(2*pi)
-     #println("Eigenvalues: $fs [Hz]")
+    fs = modeldata["omega"] / (2 * pi)
+    #println("Eigenvalues: $fs [Hz]")
     # println("Percentage frequency errors: $((vec(fs[1:6]) - vec(Reffs))./vec(Reffs)*100)")
-    @test norm((vec(fs[1:6]) - vec(Reffs))./vec(Reffs)*100 - [0.0162775, 0.0623384, 0.00799148, 0.151669, 0.376663, 0.0191388]) < 1.0e-6
+    @test norm(
+        (vec(fs[1:6]) - vec(Reffs)) ./ vec(Reffs) * 100 -
+        [0.0162775, 0.0623384, 0.00799148, 0.151669, 0.376663, 0.0191388],
+    ) < 1.0e-6
 
-    modeldata["postprocessing"] = FDataDict("file"=>"FV32-modes", "mode"=>1:10)
-    modeldata=FinEtoolsDeforLinear.AlgoDeforLinearModule.exportmode(modeldata)
+    modeldata["postprocessing"] = FDataDict("file" => "FV32-modes", "mode" => 1:10)
+    modeldata = FinEtoolsDeforLinear.AlgoDeforLinearModule.exportmode(modeldata)
     # @async run(`"paraview.exe" $(modeldata["postprocessing"]["file"]*"1.vtk")`)
-    try rm(modeldata["postprocessing"]["file"]*"1.vtk") catch end
+    try
+        rm(modeldata["postprocessing"]["file"] * "1.vtk")
+    catch
+    end
 end
 end
 using .mmFV32mm1
@@ -1128,7 +1347,7 @@ mmFV32mm1.test()
 #         # File =  "unit_cube_modes.vtk"
 #         # vtkexportmesh(File, fens, fes; vectors=[("mode$mode", u.values)])
 #         # @async run(`"paraview.exe" $File`)
-    
+
 # end
 # end
 # using .mmtruncatedmfreem2
