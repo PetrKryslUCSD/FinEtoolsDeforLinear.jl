@@ -14,6 +14,7 @@ statics and dynamics (modal analysis, steady-state vibration).
 
 ## News
 
+- 12/22/2023: Merge the tutorials into the package tree.
 - 10/23/2023: Remove dependency on FinEtools predefined types (except for the data dictionary in the algorithm module).
 - 06/21/2023: Update for FinEtools 7.0.
 - 08/15/2022: Updated all examples.
