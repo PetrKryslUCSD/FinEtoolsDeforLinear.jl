@@ -57,7 +57,13 @@ Abstract type for mean-strain linear deformation FEMM.
 abstract type AbstractFEMMDeforLinearMS <: AbstractFEMMDeforLinear end
 
 """
-    FEMMDeforLinearMSH8{MR<:AbstractDeforModelRed, S<:FESetH8, F<:Function, M<:AbstractMatDeforLinearElastic} <: AbstractFEMMDeforLinearMS
+    mutable struct FEMMDeforLinearMSH8{
+        MR<:AbstractDeforModelRed,
+        ID<:IntegDomain{S,F} where {S<:FESetH8,F<:Function},
+        CS<:CSys,
+        M<:AbstractMatDeforLinearElastic,
+        MS<:MatDeforElastIso,
+    } <: AbstractFEMMDeforLinearMS
 
 Type for mean-strain linear deformation FEMM based on eight-node hexahedral elements.
 """
@@ -76,12 +82,22 @@ mutable struct FEMMDeforLinearMSH8{
     phis::Vector{StabParamFloat}
 end
 
+"""
+    FEMMDeforLinearMSH8(
+        mr::Type{MR},
+        integdomain::ID,
+        mcsys::CS,
+        material::M,
+    ) where {MR<:AbstractDeforModelRed, ID<:IntegDomain{S} where {S<:FESetH8}, CS<:CSys, M<:AbstractMatDeforLinearElastic}
+
+Constructor.
+"""
 function FEMMDeforLinearMSH8(
     mr::Type{MR},
-    integdomain::IntegDomain{S,F},
-    mcsys::CSys,
+    integdomain::ID,
+    mcsys::CS,
     material::M,
-) where {MR<:AbstractDeforModelRed,S<:FESetH8,F<:Function,M<:AbstractMatDeforLinearElastic}
+) where {MR<:AbstractDeforModelRed, ID<:IntegDomain{S} where {S<:FESetH8}, CS<:CSys, M<:AbstractMatDeforLinearElastic}
     @assert mr == material.mr "Model reduction is mismatched"
     @assert (mr == DeforModelRed3D) "3D model required"
     stabilization_material = _make_stabilization_material(material)
@@ -95,11 +111,20 @@ function FEMMDeforLinearMSH8(
     )
 end
 
+"""
+    FEMMDeforLinearMSH8(
+        mr::Type{MR},
+        integdomain::ID,
+        material::M,
+    ) where {MR<:AbstractDeforModelRed, ID<:IntegDomain{S} where {S<:FESetH8}, M<:AbstractMatDeforLinearElastic}
+
+Constructor.
+"""
 function FEMMDeforLinearMSH8(
     mr::Type{MR},
-    integdomain::IntegDomain{S,F},
+    integdomain::ID,
     material::M,
-) where {MR<:AbstractDeforModelRed,S<:FESetH8,F<:Function,M<:AbstractMatDeforLinearElastic}
+) where {MR<:AbstractDeforModelRed, ID<:IntegDomain{S} where {S<:FESetH8}, M<:AbstractMatDeforLinearElastic}
     @assert mr == material.mr "Model reduction is mismatched"
     @assert (mr == DeforModelRed3D) "3D model required"
     stabilization_material = _make_stabilization_material(material)
@@ -114,7 +139,13 @@ function FEMMDeforLinearMSH8(
 end
 
 """
-    FEMMDeforLinearMST10{MR<:AbstractDeforModelRed, S<:FESetT10, F<:Function, M<:AbstractMatDeforLinearElastic} <: AbstractFEMMDeforLinearMS
+    mutable struct FEMMDeforLinearMST10{
+        MR<:AbstractDeforModelRed,
+        ID<:IntegDomain{S,F} where {S<:FESetT10,F<:Function},
+        CS<:CSys,
+        M<:AbstractMatDeforLinearElastic,
+        MS<:MatDeforElastIso,
+    } <: AbstractFEMMDeforLinearMS
 
 Type for mean-strain linear deformation FEMM based on 10-node tetrahedral elements.
 """
@@ -133,12 +164,22 @@ mutable struct FEMMDeforLinearMST10{
     phis::Vector{StabParamFloat}
 end
 
+"""
+    FEMMDeforLinearMST10(
+        mr::Type{MR},
+        integdomain::ID,
+        mcsys::CS,
+        material::M,
+    ) where {MR<:AbstractDeforModelRed, ID<:IntegDomain{S} where {S<:FESetT10}, CS<:CSys, M<:AbstractMatDeforLinearElastic}
+
+Constructor.
+"""
 function FEMMDeforLinearMST10(
     mr::Type{MR},
-    integdomain::IntegDomain{S,F},
-    mcsys::CSys,
+    integdomain::ID,
+    mcsys::CS,
     material::M,
-) where {MR<:AbstractDeforModelRed,S<:FESetT10,F<:Function,M<:AbstractMatDeforLinearElastic}
+) where {MR<:AbstractDeforModelRed, ID<:IntegDomain{S} where {S<:FESetT10}, CS<:CSys, M<:AbstractMatDeforLinearElastic}
     @assert mr == material.mr "Model reduction is mismatched"
     @assert (mr == DeforModelRed3D) "3D model required"
     stabilization_material = _make_stabilization_material(material)
@@ -152,11 +193,20 @@ function FEMMDeforLinearMST10(
     )
 end
 
+"""
+    FEMMDeforLinearMST10(
+        mr::Type{MR},
+        integdomain::ID,
+        material::M,
+    ) where {MR<:AbstractDeforModelRed, ID<:IntegDomain{S} where {S<:FESetT10}, M<:AbstractMatDeforLinearElastic}
+
+Constructor.
+"""
 function FEMMDeforLinearMST10(
     mr::Type{MR},
-    integdomain::IntegDomain{S,F},
+    integdomain::ID,
     material::M,
-) where {MR<:AbstractDeforModelRed,S<:FESetT10,F<:Function,M<:AbstractMatDeforLinearElastic}
+) where {MR<:AbstractDeforModelRed, ID<:IntegDomain{S} where {S<:FESetT10}, M<:AbstractMatDeforLinearElastic}
     @assert mr == material.mr "Model reduction is mismatched"
     @assert (mr == DeforModelRed3D) "3D model required"
     stabilization_material = _make_stabilization_material(material)

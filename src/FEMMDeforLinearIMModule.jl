@@ -69,22 +69,41 @@ mutable struct FEMMDeforLinearIMH8{
     nmodes::Int
 end
 
+"""
+    FEMMDeforLinearIMH8(
+        mr::Type{MR},
+        integdomain::ID,
+        mcsys::CS,
+        material::M,
+    ) where {MR<:AbstractDeforModelRed, ID<:IntegDomain{S,F} where {S<:FESetH8,F<:Function}, CS<:CSys, M<:AbstractMatDeforLinearElastic}
+
+Constructor.
+"""
 function FEMMDeforLinearIMH8(
     mr::Type{MR},
-    integdomain::IntegDomain{S,F},
-    mcsys::CSys,
+    integdomain::ID,
+    mcsys::CS,
     material::M,
-) where {MR<:AbstractDeforModelRed,S<:FESetH8,F<:Function,M<:AbstractMatDeforLinearElastic}
+) where {MR<:AbstractDeforModelRed, ID<:IntegDomain{S,F} where {S<:FESetH8,F<:Function}, CS<:CSys, M<:AbstractMatDeforLinearElastic}
     @assert mr == material.mr "Model reduction is mismatched"
     @assert (mr == DeforModelRed3D) "3D model required"
     return FEMMDeforLinearIMH8(mr, integdomain, mcsys, material, 12)
 end
 
+"""
+    FEMMDeforLinearIMH8(
+        mr::Type{MR},
+        integdomain::ID,
+        material::M,
+    ) where {MR<:AbstractDeforModelRed, ID<:IntegDomain{S,F} where {S<:FESetH8,F<:Function}, M<:AbstractMatDeforLinearElastic}
+
+Constructor.
+"""
 function FEMMDeforLinearIMH8(
     mr::Type{MR},
-    integdomain::IntegDomain{S,F},
+    integdomain::ID,
     material::M,
-) where {MR<:AbstractDeforModelRed,S<:FESetH8,F<:Function,M<:AbstractMatDeforLinearElastic}
+) where {MR<:AbstractDeforModelRed, ID<:IntegDomain{S,F} where {S<:FESetH8,F<:Function}, M<:AbstractMatDeforLinearElastic}
     @assert mr == material.mr "Model reduction is mismatched"
     @assert (mr == DeforModelRed3D) "3D model required"
     return FEMMDeforLinearIMH8(
@@ -96,12 +115,22 @@ function FEMMDeforLinearIMH8(
     )
 end
 
+"""
+    FEMMDeforLinearIMH8(
+        mr::Type{MR},
+        integdomain::ID,
+        material::M,
+        nmodes::Int64,
+    ) where {MR<:AbstractDeforModelRed, ID<:IntegDomain{S,F} where {S<:FESetH8,F<:Function}, M<:AbstractMatDeforLinearElastic}
+
+Constructor, with optional configuration of the number of incompatible modes.
+"""
 function FEMMDeforLinearIMH8(
     mr::Type{MR},
-    integdomain::IntegDomain{S,F},
+    integdomain::ID,
     material::M,
     nmodes::Int64,
-) where {MR<:AbstractDeforModelRed,S<:FESetH8,F<:Function,M<:AbstractMatDeforLinearElastic}
+) where {MR<:AbstractDeforModelRed, ID<:IntegDomain{S,F} where {S<:FESetH8,F<:Function}, M<:AbstractMatDeforLinearElastic}
     @assert mr == material.mr "Model reduction is mismatched"
     @assert (mr == DeforModelRed3D) "3D model required"
     return FEMMDeforLinearIMH8(
