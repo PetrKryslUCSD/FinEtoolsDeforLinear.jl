@@ -39,6 +39,7 @@
 
 # Bring in required support.
 using FinEtools
+using FinEtools.AlgoBaseModule: matrix_blocked, vector_blocked
 using FinEtoolsDeforLinear
 using LinearAlgebra
 using Arpack

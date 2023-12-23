@@ -25,6 +25,7 @@ using Arpack
 
 # This is the finite element toolkit itself.
 using FinEtools
+using FinEtools.AlgoBaseModule: matrix_blocked, vector_blocked
 
 # The linear stress analysis application is implemented in this package.
 using FinEtoolsDeforLinear
