@@ -20,12 +20,6 @@ statics and dynamics (modal analysis, steady-state vibration).
 - 08/15/2022: Updated all examples.
 - 08/09/2022: Updated all 3D dynamic examples.
 - 04/03/2022: Examples now have their own project environment.
-- 02/08/2021: Updated dependencies for Julia 1.6 and FinEtools 5.0.
-- 08/23/2020: Added a separate tutorial package, [FinEtoolsDeforLinearTutorials.jl](https://petrkryslucsd.github.io/FinEtoolsDeforLinearTutorials.jl)).
-- 08/17/2020: Added tutorials to the documentation.
-- 04/02/2020: The examples still need to be updated, some don't work, sorry.
-- 01/23/2020: Dependencies have been updated to work with Julia 1.3.1.
-
 
 [Past news](oldnews.md)
 
