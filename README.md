@@ -24,50 +24,6 @@ statics and dynamics (modal analysis, steady-state vibration).
 
 [Past news](oldnews.md)
 
-## How to test the package
-
-Here is a record of a session to install this package and test it. You should
-see something similar. The git bash running on Windows 10 was used in this
-example.
-
-Clone the repo:
-```
-$ git clone https://github.com/PetrKryslUCSD/FinEtoolsDeforLinear.jl.git
-Cloning into 'FinEtoolsDeforLinear.jl'...
-...
-Resolving deltas: 100% (87/87), done.
-```
-Change your working directory, and run Julia:
-```
-PetrKrysl@Spectre MINGW64 /tmp/exp
-$ cd FinEtoolsDeforLinear.jl/
-
-PetrKrysl@Spectre MINGW64 /tmp/exp/FinEtoolsDeforLinear.jl (master)
-$ ~/AppData/Local/Julia-1.2.0-rc1/bin/julia.exe
-               _
-   _       _ _(_)_     |  Documentation: https://docs.julialang.org
-  (_)     | (_) (_)    |
-   _ _   _| |_  __ _   |  Type "?" for help, "]?" for Pkg help.
-  | | | | | | |/ _` |  |
-  | | |_| | | | (_| |  |  Version 1.2.0-rc1.0 (2019-05-30)
- _/ |\__'_|_|_|\__'_|  |  Official https://julialang.org/ release
-|__/                   |
-```
-Activate and instantiate the environment:
-```
-(v1.2) pkg> activate .; instantiate
-[ Info: activating environment ...
-```
-Test the package:
-```
-(FinEtoolsDeforLinear) pkg> test
-   Testing FinEtoolsDeforLinear
- Resolving package versions...
-Test Summary:        | Pass  Total
-...
-   Testing FinEtoolsDeforLinear tests passed
-```
-
 ## Tutorials
 
 There are a number of tutorials explaining the use of this package.
@@ -91,6 +47,7 @@ include("name.jl")
 
 ## Examples
 
+Many examples of solving for static and dynamic stress response with continuum FE models are available.
 Begin with changing your working directory to the `examples` folder. Activate
 and instantiate the examples environment.
 ```
