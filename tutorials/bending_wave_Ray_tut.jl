@@ -13,6 +13,9 @@
 # equations of motion in time. Rayleigh mass-proportional damping is
 # incorporated. The dynamic stiffness is factorized for efficiency.
 
+# Deflection at the free end will look like this:
+# ![](bending_wave_Ray.png)
+
 # ## Goals
 
 # - Show how to create the discrete model.
