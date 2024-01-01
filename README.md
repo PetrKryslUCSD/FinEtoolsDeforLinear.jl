@@ -34,11 +34,7 @@ Clone the repo:
 ```
 $ git clone https://github.com/PetrKryslUCSD/FinEtoolsDeforLinear.jl.git
 Cloning into 'FinEtoolsDeforLinear.jl'...
-remote: Enumerating objects: 207, done.
-remote: Counting objects: 100% (207/207), done.
-remote: Compressing objects: 100% (121/121), done.
-remote: Total 207 (delta 87), reused 191 (delta 74), pack-reused 0
-Receiving objects: 100% (207/207), 3.28 MiB | 6.71 MiB/s, done.
+...
 Resolving deltas: 100% (87/87), done.
 ```
 Change your working directory, and run Julia:
@@ -60,32 +56,7 @@ $ ~/AppData/Local/Julia-1.2.0-rc1/bin/julia.exe
 Activate and instantiate the environment:
 ```
 (v1.2) pkg> activate .; instantiate
-[ Info: activating environment at `C:\Users\PETRKR~1\AppData\Local\Temp\exp\FinEtoolsDeforLinear.jl\Project.toml`.
-   Cloning default registries into `C:\Users\PetrKrysl\.julia`
-   Cloning registry from "https://github.com/JuliaRegistries/General.git"
-     Added registry `General` to `C:\Users\PetrKrysl\.julia\registries\General`
-   Cloning git-repo `https://github.com/PetrKryslUCSD/FinEtools.jl.git`
-  Updating git-repo `https://github.com/PetrKryslUCSD/FinEtools.jl.git`
- Installed Missings ──────────── v0.4.1
- Installed Requires ──────────── v0.5.2
- Installed Compat ────────────── v2.1.0
- Installed Crayons ───────────── v4.0.0
- Installed OrderedCollections ── v1.1.0
- Installed DefaultApplication ── v0.1.3
- Installed Arpack ────────────── v0.3.1
- Installed BinaryProvider ────── v0.5.4
- Installed SortingAlgorithms ─── v0.3.1
- Installed ArgCheck ──────────── v1.0.1
- Installed DocStringExtensions ─ v0.7.0
- Installed Tokenize ──────────── v0.5.4
- Installed DataStructures ────── v0.15.0
- Installed MacroTools ────────── v0.5.0
- Installed StatsBase ─────────── v0.30.0
- Installed CSTParser ─────────── v0.6.0
- Installed Parameters ────────── v0.10.3
- Installed PGFPlotsX ─────────── v0.3.8
-  Building Arpack ───→ `C:\Users\PetrKrysl\.julia\packages\Arpack\cu5By\deps\build.log`
-  Building PGFPlotsX → `C:\Users\PetrKrysl\.julia\packages\PGFPlotsX\PZlVQ\deps\build.log`
+[ Info: activating environment ...
 ```
 Test the package:
 ```
