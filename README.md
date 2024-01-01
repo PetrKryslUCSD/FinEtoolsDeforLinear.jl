@@ -14,6 +14,7 @@ statics and dynamics (modal analysis, steady-state vibration).
 
 ## News
 
+- 12/31/2023: Update for Julia 1.10.
 - 12/22/2023: Merge the tutorials into the package tree.
 - 10/23/2023: Remove dependency on FinEtools predefined types (except for the data dictionary in the algorithm module).
 - 06/21/2023: Update for FinEtools 7.0.
@@ -92,27 +93,29 @@ Test the package:
    Testing FinEtoolsDeforLinear
  Resolving package versions...
 Test Summary:        | Pass  Total
-Linear deformation 1 |   12     12
- 44.937931 seconds (79.93 M allocations: 6.428 GiB, 6.69% gc time)
-Test Summary:        | Pass  Total
-Linear deformation 2 |   19     19
- 15.568998 seconds (32.58 M allocations: 2.429 GiB, 6.54% gc time)
-Test Summary:        | Pass  Total
-Linear deformation 3 |   30     30
-  5.180744 seconds (10.47 M allocations: 600.374 MiB, 3.84% gc time)
-Test Summary:        | Pass  Total
-Linear deformation 4 |   31     31
- 25.287681 seconds (32.96 M allocations: 4.108 GiB, 6.55% gc time)
-Test Summary:        | Pass  Total
-Linear deformation 5 |   22     22
-  7.057942 seconds (15.94 M allocations: 984.675 MiB, 4.71% gc time)
-Test Summary:        | Pass  Total
-Linear deformation 6 |   29     29
- 23.001916 seconds (57.78 M allocations: 6.001 GiB, 11.74% gc time)
-Test Summary:        | Pass  Total
-Linear deformation 7 |   36     36
-  3.932681 seconds (13.96 M allocations: 799.952 MiB, 6.10% gc time)
+...
    Testing FinEtoolsDeforLinear tests passed
+```
+
+## Tutorials
+
+There are a number of tutorials explaining the use of this package.
+Check out the [index](https://github.com/PetrKryslUCSD/FinEtoolsDeforLinear.jl/blob/main/tutorials/index.md). The are tutorials themselves can be executed as
+follows:
+
+- Download the package or clone it.
+```
+git clone https://github.com/PetrKryslUCSD/FinEtoolsDeforLinear.jl.git
+```
+- Change into the `tutorials` folder: `cd .\FinEtoolsDeforLinear.jl\tutorials`.
+- Start Julia: `julia`.
+- Activate the environment:
+```
+using Pkg; Pkg.activate("."); Pkg.instantiate();
+```
+- Execute the desired tutorial. Here `name.jl` is the name of the tutorial file:
+```
+include("name.jl")
 ```
 
 ## Examples
