@@ -11,8 +11,6 @@ using FinEtools.FTypesModule: FDataDict
 using FinEtools.AlgoBaseModule: dcheck!
 using Arpack: eigs
 using SparseArrays: spzeros
-using LinearAlgebra: mul!
-my_A_mul_B!(C, A, B) = mul!(C, A, B)
 using FinEtools.FieldModule:
     AbstractField,
     ndofs,
@@ -35,7 +33,8 @@ using FinEtools.AlgoBaseModule: matrix_blocked, vector_blocked
 using FinEtools.ForceIntensityModule: ForceIntensity
 using FinEtools.MeshModificationModule: meshboundary
 using FinEtools.MeshExportModule.VTK: vtkexportmesh
-using LinearAlgebra: eigen, qr, dot, cholesky
+using LinearAlgebra:  mul!, norm, eigen, qr, dot, cholesky, Symmetric
+my_A_mul_B!(C, A, B) = mul!(C, A, B)
 
 """
     AlgoDeforLinearModule.linearstatics(modeldata::FDataDict)
@@ -821,7 +820,7 @@ function modal(modeldata::FDataDict)
     K_ff = matrix_blocked(K, nfreedofs(u), nfreedofs(u))[:ff]
     M_ff = matrix_blocked(M, nfreedofs(u), nfreedofs(u))[:ff]
 
-    d, v, nconv = eigs(K_ff + omega_shift * M_ff, M_ff; nev = neigvs, which = :SM)
+    d, v, nconv = eigs(Symmetric(K_ff + omega_shift * M_ff), Symmetric(M_ff); nev = neigvs, which = :SM, explicittransform=:none)
     #    Subtract the mass-shifting Angular frequency
     broadcast!(+, d, d, -omega_shift)
 
