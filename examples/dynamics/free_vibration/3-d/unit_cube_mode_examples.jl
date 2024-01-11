@@ -4,6 +4,7 @@ using FinEtools.MeshExportModule
 using FinEtoolsDeforLinear
 using FinEtoolsDeforLinear.AlgoDeforLinearModule
 using LinearAlgebra
+using GEPHelpers: gep_smallest, check_M_orthogonality, check_K_orthogonality
 using Arpack
 
 function unit_cube_modes()
@@ -44,19 +45,86 @@ function unit_cube_modes()
     @time K = stiffness(femm, geom, u)
     femm = FEMMDeforLinear(MR, IntegDomain(fes, GaussRule(3, 3)), material)
     @time M = mass(femm, geom, u)
-    d, v, nev, nconv = eigs(K + OmegaShift * M,
-        M;
-        nev = neigvs,
-        which = :SM,
-        explicittransform = :none)
+    d, v, nconv = gep_smallest(K + OmegaShift * M,
+        M, neigvs,
+        which = :SM)
     d = d .- OmegaShift
     fs = real(sqrt.(complex(d))) / (2 * pi)
     println("Eigenvalues: $fs [Hz]")
 
-    mode = 17
-    scattersysvec!(u, v[:, mode])
+    @info check_K_orthogonality(d, v, K)
+    @info check_M_orthogonality(v, M)
+
+    @info norm(K * v - M * v * Diagonal(d))
+
+    vectors = []
     File = "unit_cube_modes.vtk"
-    vtkexportmesh(File, fens, fes; vectors = [("mode$mode", u.values)])
+    for mode  in 1:neigvs
+        scattersysvec!(u, v[:, mode])
+        push!(vectors, ("mode$mode", deepcopy(u.values)))
+    end
+    vtkexportmesh(File, fens, fes; vectors = vectors)
+
+    true
+end # unit_cube_modes
+
+function unit_cube_modes_arnoldimethod()
+    println("""
+    Vibration modes of unit cube  of almost incompressible material.
+    %
+    Reference: Puso MA, Solberg J (2006) A stabilized nodally integrated
+    tetrahedral. International Journal for Numerical Methods in
+    Engineering 67: 841-867.
+    """)
+    t0 = time()
+
+    E = 1 * phun("PA")
+    nu = 0.499
+    rho = 1 * phun("KG/M^3")
+    a = 1 * phun("M")
+    b = a
+    h = a
+    n1 = 10# How many element edges per side?
+    na = n1
+    nb = n1
+    nh = n1
+    neigvs = 20                   # how many eigenvalues
+    OmegaShift = (0.01 * 2 * pi)^2
+
+    MR = DeforModelRed3D
+    fens, fes = H20block(a, b, h, na, nb, nh)
+
+    geom = NodalField(fens.xyz)
+    u = NodalField(zeros(size(fens.xyz, 1), 3)) # displacement field
+
+    numberdofs!(u)
+
+    material = MatDeforElastIso(MR, rho, E, nu, 0.0)
+
+    femm = FEMMDeforLinear(MR, IntegDomain(fes, GaussRule(3, 2)), material)
+
+    @time K = stiffness(femm, geom, u)
+    femm = FEMMDeforLinear(MR, IntegDomain(fes, GaussRule(3, 3)), material)
+    @time M = mass(femm, geom, u)
+    d, v, nconv = gep_smallest(K + OmegaShift * M,
+        M, neigvs; method = :ArnoldiMethod, orthogonalize = true,
+        which = :SM)
+    d = d .- OmegaShift
+    fs = real(sqrt.(complex(d))) / (2 * pi)
+    println("Eigenvalues: $fs [Hz]")
+
+    @info check_K_orthogonality(d, v, K)
+    @info check_M_orthogonality(v, M)
+
+    @info norm(K * v - M * v * Diagonal(d))
+
+    vectors = []
+    File = "unit_cube_modes_arnoldimethod.vtk"
+    for mode  in 1:neigvs
+        scattersysvec!(u, v[:, mode])
+        push!(vectors, ("mode$mode", deepcopy(u.values)))
+    end
+    vtkexportmesh(File, fens, fes; vectors = vectors)
 
     true
 end # unit_cube_modes
@@ -150,7 +218,7 @@ function unit_cube_modes_export()
     K = stiffness(femm, geom, u)
     femm = FEMMDeforLinear(MR, IntegDomain(fes, GaussRule(3, 3)), material)
     M = mass(femm, geom, u)
-    d, v, nev, nconv = eigs(K + OmegaShift * M, M; nev = neigvs, which = :SM)
+    d, v, nconv = gep_smallest(K + OmegaShift * M, M, neigvs, which = :SM)
     d = d .- OmegaShift
     fs = real(sqrt.(complex(d))) / (2 * pi)
     println("Eigenvalues: $fs [Hz]")
@@ -243,14 +311,17 @@ function allrun()
     println("# unit_cube_modes ")
     unit_cube_modes()
     println("#####################################################")
-    println("# unit_cube_modes_algo ")
-    unit_cube_modes_algo()
-    println("#####################################################")
-    println("# unit_cube_modes_export ")
-    unit_cube_modes_export()
-    println("#####################################################")
-    println("# unit_cube_modes_msh8_algo ")
-    unit_cube_modes_msh8_algo()
+    println("# unit_cube_modes_arnoldimethod ")
+    unit_cube_modes_arnoldimethod()
+    # println("#####################################################")
+    # println("# unit_cube_modes_algo ")
+    # unit_cube_modes_algo()
+    # println("#####################################################")
+    # println("# unit_cube_modes_export ")
+    # unit_cube_modes_export()
+    # println("#####################################################")
+    # println("# unit_cube_modes_msh8_algo ")
+    # unit_cube_modes_msh8_algo()
     return true
 end # function allrun
 
