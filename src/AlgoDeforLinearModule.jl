@@ -135,16 +135,16 @@ function linearstatics(modeldata::FDataDict)
     tstart = time()
     # Apply the essential boundary conditions on the displacement field
     essential_bcs = get(modeldata, "essential_bcs", nothing)
-    if (essential_bcs != nothing)
-        for j = 1:length(essential_bcs)
+    if (essential_bcs !== nothing)
+        for j in eachindex(essential_bcs)
             ebc = essential_bcs[j]
             dcheck!(ebc, essential_bcs_recognized_keys)
             fenids = get(() -> error("Must get node list!"), ebc, "node_list")
             displacement = get(ebc, "displacement", nothing)
             u_fixed = zeros(UFT, length(fenids)) # default is  zero displacement
-            if (displacement != nothing) # if it is nonzero,
+            if (displacement !== nothing) # if it is nonzero,
                 if (typeof(displacement) <: Function) # it could be a function
-                    for k = 1:length(fenids)
+                    for k in eachindex(fenids)
                         u_fixed[k] = displacement(geom.values[fenids[k], :])[1]
                     end
                 else # or it could be a constant
@@ -168,7 +168,7 @@ function linearstatics(modeldata::FDataDict)
     # Construct the system stiffness matrix
     K = spzeros(nalldofs(u), nalldofs(u)) # (all zeros, for the moment)
     regions = get(() -> error("Must get region list!"), modeldata, "regions")
-    for i = 1:length(regions)
+    for i in eachindex(regions)
         region = regions[i]
         dcheck!(region, regions_recognized_keys)
         femm = region["femm"]
@@ -181,8 +181,8 @@ function linearstatics(modeldata::FDataDict)
     tstart = time()
     # Process the traction boundary condition
     traction_bcs = get(modeldata, "traction_bcs", nothing)
-    if (traction_bcs != nothing)
-        for j = 1:length(traction_bcs)
+    if (traction_bcs !== nothing)
+        for j in eachindex(traction_bcs)
             tractionbc = traction_bcs[j]
             dcheck!(tractionbc, traction_bcs_recognized_keys)
             traction_vector = tractionbc["traction_vector"]
@@ -202,21 +202,21 @@ function linearstatics(modeldata::FDataDict)
     tstart = time()
     # Process the thermal strain  loading
     temperature_change = get(modeldata, "temperature_change", nothing)
-    if (temperature_change != nothing)
+    if (temperature_change !== nothing)
         dcheck!(temperature_change, temperature_change_recognized_keys)
         # zero temperature change is a reasonable default
         temp = NodalField(zeros(size(fens.xyz, 1), 1))
         temperature = get(temperature_change, "temperature", nothing)
-        if (temperature != nothing) # if it is nonzero,
+        if (temperature !== nothing) # if it is nonzero,
             if (typeof(temperature) <: Function) # it could be a function
-                for k = 1:count(fens)
+                for k in eachindex(fens)
                     temp.values[k] = temperature(geom.values[k, :])[1]
                 end
             else # or it could be a constant
                 fill!(temp.values, temperature)
             end
         end
-        for i = 1:length(regions)
+        for i in eachindex(regions)
             region = regions[i]
             femm = region["femm"]
             F = F + thermalstrainloads(femm, geom, u, temp)
@@ -230,7 +230,7 @@ function linearstatics(modeldata::FDataDict)
 
     # Loads due to the essential boundary conditions on the displacement field
     essential_bcs = get(modeldata, "essential_bcs", nothing)
-    if (essential_bcs != nothing) # there was at least one EBC applied
+    if (essential_bcs !== nothing) # there was at least one EBC applied
         F_f = F_f - K_fd * U_d
     end
 
@@ -342,7 +342,7 @@ function exportdeformation(modeldata::FDataDict)
 
     # Let's have a look at what's been specified
     postprocessing = get(modeldata, "postprocessing", nothing)
-    if (postprocessing != nothing)
+    if (postprocessing !== nothing)
         dcheck!(postprocessing, postprocessing_recognized_keys)
         boundary_only = get(postprocessing, "boundary_only", boundary_only)
         ffile = get(postprocessing, "file", ffile)
@@ -353,19 +353,19 @@ function exportdeformation(modeldata::FDataDict)
     u = get(modeldata, "u", nothing)
     UFT = eltype(u.values)
     us = get(modeldata, "us", nothing)
-    if us == nothing
+    if us === nothing
         us = [("u", u)]
     end
 
     # Export one file for each region
     modeldata["postprocessing"]["exported"] = Array{FDataDict,1}()
     regions = get(() -> error("Must get region!"), modeldata, "regions")
-    for i = 1:length(regions)
+    for i in eachindex(regions)
         region = regions[i]
         femm = region["femm"]
         rfile = ffile * "$i" * ".vtk"
         vectors = Tuple{String,Matrix{UFT}}[]
-        for ixxxx = 1:length(us)
+        for ixxxx in eachindex(us)
             push!(vectors, (us[ixxxx][1], us[ixxxx][2].values))
         end
         if boundary_only
@@ -449,7 +449,7 @@ function exportstress(modeldata::FDataDict)
     nodevalmethod = :invdistance
     # Let's have a look at what's been specified
     postprocessing = get(modeldata, "postprocessing", nothing)
-    if (postprocessing != nothing)
+    if (postprocessing !== nothing)
         dcheck!(postprocessing, postprocessing_recognized_keys)
         boundary_only = get(postprocessing, "boundary_only", boundary_only)
         ffile = get(postprocessing, "file", ffile)
@@ -466,20 +466,20 @@ function exportstress(modeldata::FDataDict)
     dT = get(modeldata, "dT", nothing)
 
     context = []
-    if (outputcsys != nothing)
+    if (outputcsys !== nothing)
         push!(context, (:outputcsys, outputcsys))
     end
-    if (nodevalmethod != nothing)
+    if (nodevalmethod !== nothing)
         push!(context, (:nodevalmethod, nodevalmethod))
     end
-    if (reportat != nothing)
+    if (reportat !== nothing)
         push!(context, (:reportat, reportat))
     end
 
     # Export a file for each region
     modeldata["postprocessing"]["exported"] = Array{FDataDict,1}()
     regions = get(() -> error("Must get region!"), modeldata, "regions")
-    for i = 1:length(regions)
+    for i in eachindex(regions)
         region = regions[i]
         femm = region["femm"]
         rfile = ffile * "-" * string(quantity) * string(component) * "-region $i" * ".vtk"
@@ -494,7 +494,7 @@ function exportstress(modeldata::FDataDict)
         # materials, or if they were of the same material but with different material
         # axes orientation, averaging across the material interface  would not make
         # sense.
-        if (dT != nothing)
+        if (dT !== nothing)
             fld =
                 fieldfromintegpoints(femm, geom, u, dT, quantity, componentnum; context...)
         else
@@ -586,7 +586,7 @@ function exportstresselementwise(modeldata::FDataDict)
     outputcsys = nothing
     # Let's have a look at what's been specified
     postprocessing = get(modeldata, "postprocessing", nothing)
-    if (postprocessing != nothing)
+    if (postprocessing !== nothing)
         dcheck!(postprocessing, postprocessing_recognized_keys)
         boundary_only = get(postprocessing, "boundary_only", boundary_only)
         ffile = get(postprocessing, "file", ffile)
@@ -601,14 +601,14 @@ function exportstresselementwise(modeldata::FDataDict)
     dT = get(modeldata, "dT", nothing)
 
     context = []
-    if (outputcsys != nothing)
+    if (outputcsys !== nothing)
         push!(context, (:outputcsys, outputcsys))
     end
 
     # Export a file for each region
     modeldata["postprocessing"]["exported"] = Array{FDataDict,1}()
     regions = get(() -> error("Must get region!"), modeldata, "regions")
-    for i = 1:length(regions)
+    for i in eachindex(regions)
         region = regions[i]
         femm = region["femm"]
         rfile = ffile * "-" * string(quantity) * string(component) * "-region $i" * ".vtk"
@@ -623,7 +623,7 @@ function exportstresselementwise(modeldata::FDataDict)
         # materials, or if they were of the same material but with different material
         # axes orientation, averaging across the material interface  would not make
         # sense.
-        if (dT != nothing)
+        if (dT !== nothing)
             fld = elemfieldfromintegpoints(
                 femm,
                 geom,
@@ -751,8 +751,8 @@ function modal(modeldata::FDataDict)
 
     # Apply the essential boundary conditions on the displacement field
     essential_bcs = get(modeldata, "essential_bcs", nothing)
-    if (essential_bcs != nothing)
-        for j = 1:length(essential_bcs)
+    if (essential_bcs !== nothing)
+        for j in eachindex(essential_bcs)
             ebc = essential_bcs[j]
             dcheck!(ebc, essential_bcs_recognized_keys)
             fenids = get(() -> error("Must get node list!"), ebc, "node_list")
@@ -770,7 +770,7 @@ function modal(modeldata::FDataDict)
     # Construct the system stiffness matrix
     K = spzeros(nalldofs(u), nalldofs(u)) # (all zeros, for the moment)
     regions = get(() -> error("Must get region list!"), modeldata, "regions")
-    for i = 1:length(regions)
+    for i in eachindex(regions)
         region = regions[i]
         dcheck!(region, regions_recognized_keys)
         if "femm_stiffness" in keys(region)
@@ -787,7 +787,7 @@ function modal(modeldata::FDataDict)
     # Construct the system mass matrix
     M = spzeros(nalldofs(u), nalldofs(u)) # (all zeros, for the moment)
     regions = get(() -> error("Must get region list!"), modeldata, "regions")
-    for i = 1:length(regions)
+    for i in eachindex(regions)
         region = regions[i]
         dcheck!(region, regions_recognized_keys)
         if "femm_mass" in keys(region)
@@ -897,7 +897,7 @@ function exportmode(modeldata::FDataDict)
 
     # Let's have a look at what's been specified
     postprocessing = get(modeldata, "postprocessing", nothing)
-    if (postprocessing != nothing)
+    if (postprocessing !== nothing)
         dcheck!(postprocessing, postprocessing_recognized_keys)
         mode = get(postprocessing, "mode", mode)
     end
