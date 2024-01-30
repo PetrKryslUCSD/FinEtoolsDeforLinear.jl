@@ -112,7 +112,7 @@ function TEST13H_hva()
     F_f = vector_blocked(F, nfreedofs(u))[:f]
 
     U_f = zeros(Complex{Flowat64}, nfreedofs(u), length(frequencies))
-    for k in 1:length(frequencies)
+    for k in eachindex(frequencies)
         frequency = frequencies[k]
         omega = 2 * pi * frequency
         U_f[:, k] = (-omega^2 * M_ff + 1im * omega * C_ff + K_ff) \ F_f

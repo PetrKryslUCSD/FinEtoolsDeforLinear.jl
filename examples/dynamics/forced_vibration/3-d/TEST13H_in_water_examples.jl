@@ -115,7 +115,7 @@ function TEST13H_hva()
     F = distribloads(el1femm, geom, u, fi, 2)
 
     U1 = zeros(FCplxFlt, u.nfreedofs, length(frequencies))
-    for k in 1:length(frequencies)
+    for k in eachindex(frequencies)
         frequency = frequencies[k]
         omega = 2 * pi * frequency
         U1[:, k] = (-omega^2 * M + 1im * omega * (C + D) + K) \ F
