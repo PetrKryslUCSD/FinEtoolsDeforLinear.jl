@@ -269,7 +269,7 @@ function patchconn(fes, gl, thisnn)
     # Generate patch connectivity for a given node (thisnn)
     # from the connectivities of the finite elements attached to it.
     return vcat(
-        collect(setdiff(Set([i for j = 1:length(gl) for i in fes.conn[gl[j]]]), thisnn)),
+        collect(setdiff(Set([i for j in eachindex(gl) for i in fes.conn[gl[j]]]), thisnn)),
         [thisnn],
     )
 end
@@ -292,7 +292,7 @@ function computenodalbfungrads(self, geom)
         fill(_NodalBasisFunctionGradients(fill(0.0, 0, 0), fill(0, 0), 0.0), nnodes(geom))
     # Now loop over all finite element nodes in the map
     lnmap = fill(0, length(fen2fe.map)) # Local node map: buffer to speed up operations
-    for nix = 1:length(fen2fe.map)
+    for nix in eachindex(fen2fe.map)
         gl = fen2fe.map[nix]
         thisnn = nix # We are at this node
         if !isempty(gl) # This node has an element patch in this block
@@ -304,13 +304,13 @@ function computenodalbfungrads(self, geom)
             updatecsmat!(self.mcsys, c, J, nix, 0)
             gradNavg = fill(0.0, np, ndofs(geom))# preallocate strain-displacement matrix
             Vpatch = 0.0
-            for k = 1:length(gl)
+            for k in eachindex(gl)
                 i = gl[k]
                 kconn = collect(fes.conn[i])
                 pci = findfirst(cx -> cx == thisnn, kconn)# at which node in the element are we with this quadrature point?
                 @assert 1 <= pci <= nodesperelem(fes)
                 # centered coordinates of nodes in the material coordinate system
-                for cn = 1:length(kconn)
+                for cn in eachindex(kconn)
                     xl[cn, :] =
                         (reshape(geom.values[kconn[cn], :], 1, ndofs(geom)) - c) *
                         csmat(self.mcsys)
@@ -389,7 +389,7 @@ function stiffness(
     stabDmod = mean(Dmod[1:2]; dims = 1)
     elmatsizeguess = 4 * nodesperelem(fes) * ndofs(u)
     startassembly!(assembler, elmatsizeguess^2 * nnodes(u), nalldofs(u), nalldofs(u))
-    for nix = 1:length(self.nodalbasisfunctiongrad)
+    for nix in eachindex(self.nodalbasisfunctiongrad)
         gradN = self.nodalbasisfunctiongrad[nix].gradN
         patchconn = self.nodalbasisfunctiongrad[nix].patchconn
         Vpatch = self.nodalbasisfunctiongrad[nix].Vpatch

@@ -304,8 +304,8 @@ function MatDeforElastIso(mr::Type{DeforModelRed2DStrain}, args::NTuple{4,FT}) w
         label::Int,
     )
         ix = [1, 2, 4]
-        for i = 1:length(ix)
-            for j = 1:length(ix)
+        for i in eachindex(ix)
+            for j in eachindex(ix)
                 D[j, i] = self.D[ix[j], ix[i]]
             end
         end

@@ -707,7 +707,7 @@ function _iip_extrapmean(
             rotstressvec!(self.mr, out, out1, csmat(outputcsys)) # To output coord sys
         end
         # Call the inspector for each node location
-        for nod = 1:size(ecoords, 1)
+        for nod in axes(ecoords, 1)
             idat = inspector(idat, i, fes.conn[i], ecoords, out, ecoords[nod, :])
         end
     end # Loop over elements
@@ -871,7 +871,7 @@ function _iip_extraptrend(
         #  Solve for the least-square fit parameters
         fact = qr(A)
         p = UpperTriangular(fact.R) \ (transpose(Array(fact.Q)) * sstoredout) # R \ (transpose(Q) * sstoredout)
-        for nod = 1:size(ecoords, 1)
+        for nod in axes(ecoords, 1)
             #  Predict the value  of the output quantity at the node
             xdel = vec(@view ecoords[nod, :]) - vec(loc)
             nout =
