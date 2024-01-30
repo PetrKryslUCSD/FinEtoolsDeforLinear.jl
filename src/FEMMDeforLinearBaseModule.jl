@@ -275,12 +275,12 @@ function inspectintegpoints(
     out1 = fill(zero(GFT), nstressstrain(self.mr)) # stress -- buffer
     out = fill(zero(GFT), nstressstrain(self.mr))# output -- buffer
     # Loop over  all the elements and all the quadrature points within them
-    for ilist = 1:length(felist) # Loop over elements
+    for ilist in eachindex(felist) # Loop over elements
         i = felist[ilist]
         gathervalues_asmat!(geom, ecoords, fes.conn[i])
         gathervalues_asvec!(u, ue, fes.conn[i])# retrieve element displacements
         gathervalues_asvec!(dT, dTe, fes.conn[i])# retrieve element temp. increments
-        for j = 1:npts # Loop over quadrature points
+        for j  in 1:npts # Loop over quadrature points
             locjac!(loc, J, ecoords, Ns[j], gradNparams[j])
             Jac = Jacobianvolume(self.integdomain, J, loc, fes.conn[i], Ns[j])
             updatecsmat!(self.mcsys, loc, J, i, j)
