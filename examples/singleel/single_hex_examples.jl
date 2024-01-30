@@ -64,7 +64,7 @@ function single_hex_full()
 
     femm = FEMMDeforLinear(MR, IntegDomain(fes, GaussRule(3, 2)), material)
 
-    @show vol = integratefunction(femm, geom, x -> 1.0, 3)
+    @show vol = integratefunction(femm, geom, x -> 1.0; m=3)
 
     associategeometry!(femm, geom)
     K = stiffness(femm, geom, u)
@@ -94,7 +94,7 @@ function single_hex_underintegrated()
 
     femm = FEMMDeforLinear(MR, IntegDomain(fes, GaussRule(3, 1)), material)
 
-    @show vol = integratefunction(femm, geom, x -> 1.0, 3)
+    @show vol = integratefunction(femm, geom, x -> 1.0; m=3)
 
     associategeometry!(femm, geom)
     K = stiffness(femm, geom, u)
@@ -124,7 +124,7 @@ function single_hex_ms()
 
     femm = FEMMDeforLinearMSH8(MR, IntegDomain(fes, GaussRule(3, 2)), material)
 
-    @show vol = integratefunction(femm, geom, x -> 1.0, 3)
+    @show vol = integratefunction(femm, geom, x -> 1.0; m=3)
 
     associategeometry!(femm, geom)
     fill!(femm.phis, 0.0)
@@ -155,7 +155,7 @@ function single_hex_full_scaling()
 
     femm = FEMMDeforLinear(MR, IntegDomain(fes, GaussRule(3, 2)), material)
 
-    # @show vol = integratefunction(femm, geom, x -> 1.0, 3)
+    # @show vol = integratefunction(femm, geom, x -> 1.0; m=3)
 
     associategeometry!(femm, geom)
     K = stiffness(femm, geom, u)

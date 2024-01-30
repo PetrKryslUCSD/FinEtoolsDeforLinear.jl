@@ -188,7 +188,7 @@ U1 = zeros(ComplexF64, nfreedofs(u), length(frequencies))
 
 print("Sweeping through $(length(frequencies)) frequencies\n")
 t0 = time()
-for k in 1:length(frequencies)
+for k in eachindex(frequencies)
     f = frequencies[k];
     omega = 2*pi*f;
     # Solve the reduced equations.

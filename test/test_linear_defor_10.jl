@@ -182,7 +182,7 @@ function TEST13H_hva()
     U_d = gathersysvec(u, :d)
 
     U1 = zeros(Complex{Float64}, nfreedofs(u), length(frequencies))
-    for k = 1:length(frequencies)
+    for k in eachindex(frequencies)
         frequency = frequencies[k]
         omega = 2 * pi * frequency
         U1[:, k] = (-omega^2 * M_ff + 1im * omega * (C_ff + D_ff) + K_ff) \ F_f

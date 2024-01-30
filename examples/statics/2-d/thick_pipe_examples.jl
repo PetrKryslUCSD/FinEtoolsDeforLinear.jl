@@ -443,7 +443,7 @@ function thick_pipe_ps()
     uv = u.values[internal_fenids, :]
     ur = zeros(FFlt, length(internal_fenids))
 
-    for j in 1:length(internal_fenids)
+    for j in eachindex(internal_fenids)
         n = fens.xyz[internal_fenids[j], :]
         n = n' / norm(n)# normal to the cylindrical internal surface
         ur[j] = dot(vec(uv[j, :]), vec(n))
@@ -678,7 +678,7 @@ function thick_pipe_ps_T6()
     uv = u.values[internal_fenids, :]
     ur = zeros(FFlt, length(internal_fenids))
 
-    for j in 1:length(internal_fenids)
+    for j in eachindex(internal_fenids)
         n = fens.xyz[internal_fenids[j], :]
         n = n' / norm(n)# normal to the cylindrical internal surface
         ur[j] = dot(vec(uv[j, :]), vec(n))

@@ -57,7 +57,7 @@ function comp_hex_spectrum_full()
 
         femm = FEMMDeforLinear(MR, IntegDomain(fes, GaussRule(3, 2)), material)
 
-        vol = integratefunction(femm, geom, x -> 1.0, 3)
+        vol = integratefunction(femm, geom, x -> 1.0; m=3)
 
         associategeometry!(femm, geom)
         K = stiffness(femm, geom, u)
@@ -102,7 +102,7 @@ function comp_hex_spectrum_underintegrated()
 
         femm = FEMMDeforLinear(MR, IntegDomain(fes, GaussRule(3, 1)), material)
 
-        vol = integratefunction(femm, geom, x -> 1.0, 3)
+        vol = integratefunction(femm, geom, x -> 1.0; m=3)
 
         associategeometry!(femm, geom)
         K = stiffness(femm, geom, u)
@@ -139,7 +139,7 @@ function comp_hex_spectrum_ms()
 
         femm = FEMMDeforLinearMSH8(MR, IntegDomain(fes, GaussRule(3, 2)), material)
 
-        vol = integratefunction(femm, geom, x -> 1.0, 3)
+        vol = integratefunction(femm, geom, x -> 1.0; m=3)
 
         associategeometry!(femm, geom)
 
@@ -176,7 +176,7 @@ function comp_hex_spectrum_im()
 
         femm = FEMMDeforLinearIMH8(MR, IntegDomain(fes, GaussRule(3, 2)), material)
 
-        vol = integratefunction(femm, geom, x -> 1.0, 3)
+        vol = integratefunction(femm, geom, x -> 1.0; m=3)
 
         associategeometry!(femm, geom)
 

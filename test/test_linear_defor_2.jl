@@ -1099,7 +1099,7 @@ function test()
     uv = u.values[internal_fenids, :]
     ur = zeros(Float64, length(internal_fenids))
 
-    for j = 1:length(internal_fenids)
+    for j in eachindex(internal_fenids)
         n = fens.xyz[internal_fenids[j], :]
         n = n' / norm(n)# normal to the cylindrical internal surface
         ur[j] = dot(vec(uv[j, :]), vec(n))

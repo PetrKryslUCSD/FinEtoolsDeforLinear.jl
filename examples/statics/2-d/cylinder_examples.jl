@@ -48,7 +48,7 @@ function cylinder_bend()
     setebc!(u, l1, true, 2, 0.0)
     # The other end
     l1 = selectnode(fens; box = [0 rex Length Length], inflate = tolerance)
-    for ixxxx in 1:length(l1)
+    for ixxxx in eachindex(l1)
         r = fens.xyz[l1[ixxxx], 1]
         setebc!(u, [l1[ixxxx]], true, 2, (r - (rex + rin) / 2) / ((rex + rin) / 2) * ua)
     end

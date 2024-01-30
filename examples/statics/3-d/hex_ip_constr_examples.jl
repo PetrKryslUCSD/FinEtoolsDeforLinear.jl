@@ -35,7 +35,7 @@ function hex_ip_constr_par()
     for j in 1:npts
         gradNpar = bfundpar(fes, vec(pc[j, :]))
         k = 1
-        for i in 1:size(gradNpar, 1)
+        for i in axes(gradNpar, 1)
             Q[j, k:(k + 2)] .= gradNpar[i, :]
             k = k + 3
         end
@@ -71,7 +71,7 @@ function hex_ip_constr_xyz()
         J = (transpose(fens.xyz) * gradNpar)
         gradN = gradNpar / J
         k = 1
-        for i in 1:size(gradN, 1)
+        for i in axes(gradN, 1)
             Q[j, k:(k + 2)] .= gradN[i, :]
             k = k + 3
         end

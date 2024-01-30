@@ -25,7 +25,7 @@ function test()
     fens, fes = T3block(width, height, n, n)
 
     # Reshape into a trapezoidal panel
-    for i = 1:count(fens)
+    for i in eachindex(fens)
         fens.xyz[i, 2] =
             fens.xyz[i, 2] +
             (fens.xyz[i, 1] / width) *
@@ -199,12 +199,12 @@ function test()
     COMMENT(AE, "Then the concentrated loads below will be correctly lumped.")
     nl = connectednodes(bfes)
     F = zeros(count(modeldata["fens"]))
-    for ix = 1:count(bfes)
+    for ix in eachindex(bfes)
         for jx = 1:2
             F[bfes.conn[ix][jx]] += 1.0 / n / 2 / thickness
         end
     end
-    for ixxxx = 1:length(F)
+    for ixxxx in eachindex(F)
         if F[ixxxx] != 0.0
             CLOAD(AE, "ASSEM1.INSTNC1.$(ixxxx)", 2, F[ixxxx])
         end
@@ -249,7 +249,7 @@ function test()
     fens, fes = T3block(width, height, n, n)
 
     # Reshape into a trapezoidal panel
-    for i = 1:count(fens)
+    for i in eachindex(fens)
         fens.xyz[i, 2] =
             fens.xyz[i, 2] +
             (fens.xyz[i, 1] / width) *
@@ -422,12 +422,12 @@ function test()
     COMMENT(AE, "Then the concentrated loads below will be correctly lumped.")
     nl = connectednodes(bfes)
     F = zeros(count(modeldata["fens"]))
-    for ix = 1:count(bfes)
+    for ix in eachindex(bfes)
         for jx = 1:2
             F[bfes.conn[ix][jx]] += 1.0 / n / 2 / thickness
         end
     end
-    for ixxxx = 1:length(F)
+    for ixxxx in eachindex(F)
         if F[ixxxx] != 0.0
             CLOAD(AE, "ASSEM1.INSTNC1.$(ixxxx)", 2, F[ixxxx])
         end
@@ -1096,7 +1096,7 @@ mmLE10expimpmm.test()
 #     fens,fes  = H8block(h,l,2*pi,nh,nl,nc)
 #     # Shape into a cylinder
 #     R = zeros(3, 3)
-#     for i = 1:count(fens)
+#     for i in eachindex(fens)
 #         x, y, z = fens.xyz[i,:];
 #         rotmat3!(R, [0, z, 0])
 #         Q = [cos(psi*pi/180) sin(psi*pi/180) 0;
@@ -1198,7 +1198,7 @@ function test()
     Reffs = [44.623 130.03 162.70 246.05 379.90 391.44]
 
     fens, fes = H20block(1.0, 2.0, 1.0, nL, nW, nH)
-    for i = 1:count(fens)
+    for i in eachindex(fens)
         xi, eta, theta = fens.xyz[i, :]
         eta = eta - 1.0
         fens.xyz[i, :] = [xi * L eta * (1.0 - 0.8 * xi) * W0 / 2 theta * H / 2]
@@ -1284,7 +1284,7 @@ mmFV32mm1.test()
 #     fens,fes  = H8block(h,l,2*pi,nh,nl,nc)
 #     # Shape into a cylinder
 #     R = zeros(3, 3)
-#     for i = 1:count(fens)
+#     for i in eachindex(fens)
 #         x, y, z = fens.xyz[i,:];
 #         rotmat3!(R, [0, z, 0])
 #         Q = [cos(psi*pi/180) sin(psi*pi/180) 0;

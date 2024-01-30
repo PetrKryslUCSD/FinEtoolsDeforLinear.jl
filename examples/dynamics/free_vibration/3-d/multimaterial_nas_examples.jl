@@ -36,7 +36,7 @@ function multimaterial_nas()
     K = spzeros(nalldofs(u), nalldofs(u))
     M = spzeros(nalldofs(u), nalldofs(u))
     allfes = nothing
-    for i in 1:length(fesets)
+    for i in eachindex(fesets)
         pid = pids[i]
         @show E, nu, rho = materials[pid].E, materials[pid].nu, materials[pid].rho
         material = MatDeforElastIso(MR, rho, E, nu, 0.0)
@@ -46,7 +46,7 @@ function multimaterial_nas()
         femm = associategeometry!(femm, geom)
         K += stiffness(femm, geom, u)
         M += mass(femm, geom, u)
-        if allfes == nothing
+        if allfes === nothing
             allfes = fesets[i]
         else
             allfes = cat(allfes, fesets[i])

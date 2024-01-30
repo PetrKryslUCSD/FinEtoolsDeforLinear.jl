@@ -30,7 +30,7 @@ function cookstress()
     fens, fes = T3block(width, height, n, n)
 
     # Reshape into a trapezoidal panel
-    for i in 1:count(fens)
+    for i in eachindex(fens)
         fens.xyz[i, 2] = fens.xyz[i, 2] +
                          (fens.xyz[i, 1] / width) *
                          (height - fens.xyz[i, 2] / height * (height - free_height))
@@ -40,8 +40,8 @@ function cookstress()
     u = NodalField(zeros(size(fens.xyz, 1), 2)) # displacement field
 
     l1 = selectnode(fens; box = [0, 0, -Inf, Inf], inflate = tolerance)
-    setebc!(u, l1, 1, val = 0.0)
-    setebc!(u, l1, 2, val = 0.0)
+    setebc!(u, l1, 1, 0.0)
+    setebc!(u, l1, 2, 0.0)
     applyebc!(u)
     numberdofs!(u)
 
@@ -94,7 +94,7 @@ function cookstress_algo()
     fens, fes = T3block(width, height, n, n)
 
     # Reshape into a trapezoidal panel
-    for i in 1:count(fens)
+    for i in eachindex(fens)
         fens.xyz[i, 2] = fens.xyz[i, 2] +
                          (fens.xyz[i, 1] / width) *
                          (height - fens.xyz[i, 2] / height * (height - free_height))
@@ -161,7 +161,7 @@ function cookstress_algo_export()
     fens, fes = T3block(width, height, n, n)
 
     # Reshape into a trapezoidal panel
-    for i in 1:count(fens)
+    for i in eachindex(fens)
         fens.xyz[i, 2] = fens.xyz[i, 2] +
                          (fens.xyz[i, 1] / width) *
                          (height - fens.xyz[i, 2] / height * (height - free_height))
@@ -277,12 +277,12 @@ function cookstress_algo_export()
     COMMENT(AE, "Then the concentrated loads below will be correctly lumped.")
     nl = connectednodes(bfes)
     F = zeros(count(modeldata["fens"]))
-    for ix in 1:count(bfes)
+    for ix in eachindex(bfes)
         for jx in 1:2
             F[bfes.conn[ix][jx]] += 1.0 / n / 2 / thickness
         end
     end
-    for ixxxx in 1:length(F)
+    for ixxxx in eachindex(F)
         if F[ixxxx] != 0.0
             CLOAD(AE, "ASSEM1.INSTNC1.$(ixxxx)", 2, F[ixxxx])
         end
@@ -309,7 +309,7 @@ function cookstress_algo_export_ortho()
     fens, fes = T3block(width, height, n, n)
 
     # Reshape into a trapezoidal panel
-    for i in 1:count(fens)
+    for i in eachindex(fens)
         fens.xyz[i, 2] = fens.xyz[i, 2] +
                          (fens.xyz[i, 1] / width) *
                          (height - fens.xyz[i, 2] / height * (height - free_height))
@@ -426,12 +426,12 @@ function cookstress_algo_export_ortho()
     COMMENT(AE, "Then the concentrated loads below will be correctly lumped.")
     nl = connectednodes(bfes)
     F = zeros(count(modeldata["fens"]))
-    for ix in 1:count(bfes)
+    for ix in eachindex(bfes)
         for jx in 1:2
             F[bfes.conn[ix][jx]] += 1.0 / n / 2 / thickness
         end
     end
-    for ixxxx in 1:length(F)
+    for ixxxx in eachindex(F)
         if F[ixxxx] != 0.0
             CLOAD(AE, "ASSEM1.INSTNC1.$(ixxxx)", 2, F[ixxxx])
         end
@@ -459,7 +459,7 @@ function cookstress_t6_algo()
     fens, fes = T6block(width, height, n, n)
 
     # Reshape into a trapezoidal panel
-    for i in 1:count(fens)
+    for i in eachindex(fens)
         fens.xyz[i, 2] = fens.xyz[i, 2] +
                          (fens.xyz[i, 1] / width) *
                          (height - fens.xyz[i, 2] / height * (height - free_height))
@@ -533,7 +533,7 @@ function cookstress_t6_ortho2iso_algo()
     fens, fes = T6block(width, height, n, n)
 
     # Reshape into a trapezoidal panel
-    for i in 1:count(fens)
+    for i in eachindex(fens)
         fens.xyz[i, 2] = fens.xyz[i, 2] +
                          (fens.xyz[i, 1] / width) *
                          (height - fens.xyz[i, 2] / height * (height - free_height))
@@ -609,7 +609,7 @@ function cookstress_big(n = 10, solver = :suitesparse)
     fens, fes = T3block(width, height, n, n)
 
     # Reshape into a trapezoidal panel
-    for i in 1:count(fens)
+    for i in eachindex(fens)
         fens.xyz[i, 2] = fens.xyz[i, 2] +
                          (fens.xyz[i, 1] / width) *
                          (height - fens.xyz[i, 2] / height * (height - free_height))

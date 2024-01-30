@@ -35,8 +35,8 @@ function q4_stress()
 
     # Apply prescribed displacements to exterior nodes
     for i in 1:4
-        setebc!(u, [i], 1, val = ux(fens.xyz[i, :]...))
-        setebc!(u, [i], 2, val = uy(fens.xyz[i, :]...))
+        setebc!(u, [i], 1, ux(fens.xyz[i, :]...))
+        setebc!(u, [i], 2, uy(fens.xyz[i, :]...))
     end
 
     applyebc!(u)
@@ -94,8 +94,8 @@ function q4_stress_export()
 
     # Apply prescribed displacements to exterior nodes
     for i in 1:4
-        setebc!(u, [i], 1, val = ux(fens.xyz[i, :]...))
-        setebc!(u, [i], 2, val = uy(fens.xyz[i, :]...))
+        setebc!(u, [i], 1, ux(fens.xyz[i, :]...))
+        setebc!(u, [i], 2, uy(fens.xyz[i, :]...))
     end
 
     applyebc!(u)

@@ -1136,12 +1136,12 @@ function test()
     COMMENT(AE, "Then the concentrated loads below will be correctly lumped.")
     nl = connectednodes(bfes)
     F = zeros(count(modeldata["fens"]))
-    for ix = 1:count(bfes)
+    for ix  in eachindex(bfes)
         for jx = 1:2
             F[bfes.conn[ix][jx]] += 1.0 / n / 2 / thickness
         end
     end
-    for ixxxx = 1:length(F)
+    for ixxxx in eachindex(F)
         if F[ixxxx] != 0.0
             CLOAD(AE, "ASSEM1.INSTNC1.$(ixxxx)", 2, F[ixxxx])
         end
@@ -1364,7 +1364,7 @@ function test()
             F[bfes.conn[ix][jx]] += 1.0 / n / 2 / thickness
         end
     end
-    for ixxxx = 1:length(F)
+    for ixxxx in eachindex(F)
         if F[ixxxx] != 0.0
             CLOAD(AE, "ASSEM1.INSTNC1.$(ixxxx)", 2, F[ixxxx])
         end

@@ -2,7 +2,7 @@ module unit_cube_tet_examples
 using FinEtools
 using FinEtools.MeshExportModule
 using FinEtoolsDeforLinear
-using FinEtoolsDeforLinear.AlgoDeforLinearModule: ssit
+using SubSIt: ssit
 using LinearAlgebra
 using Arpack
 using DataDrop
@@ -44,13 +44,14 @@ function unit_cube_esnice()
     K = stiffness(femm, geom, u)
     M = mass(femm, geom, u)
 
-    # DataDrop.store_matrix("unit_cube_8.h5", "/K", K)
-    # DataDrop.store_matrix("unit_cube_8.h5", "/M", M)
+    DataDrop.store_matrix("unit_cube_tet-$n1.h5", "/K", K)
+    DataDrop.store_matrix("unit_cube_tet-$n1.h5", "/M", M)
 
     @time d, v, nconv = eigs(K + OmegaShift * M, M; nev = neigvs, which = :SM)
     d = d .- OmegaShift
     fs = real(sqrt.(complex(d))) / (2 * pi)
     println("Eigenvalues: $fs [Hz]")
+    DataDrop.store_matrix("unit_cube_tet-$n1.h5", "frequencies", fs)
 
     mode = 17
     scattersysvec!(u, v[:, mode])
