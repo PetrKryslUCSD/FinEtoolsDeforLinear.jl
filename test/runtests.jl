@@ -1,4 +1,5 @@
 using Test
+
 @time @testset "Linear deformation 1" begin
     include("test_linear_defor_1.jl")
 end
@@ -32,4 +33,8 @@ end
 @time @testset "Linear deformation 11" begin
     include("test_linear_defor_11.jl")
 end
+@time @testset "Linear deformation 12" begin
+    include("test_linear_defor_12.jl")
+end
+
 true

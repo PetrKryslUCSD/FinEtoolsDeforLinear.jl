@@ -687,7 +687,7 @@ function inspectintegpoints(
     out = fill(zero(GFT), nstressstrain(self.mr))# output -- buffer
     outtot = fill(zero(GFT), nstressstrain(self.mr))# output -- buffer
     xe = fill(0.0, nodesperelem(fes), ndofs(geom))
-    eue = fill(zero(T), nodesperelem(fes) * ndofs(u))
+    eue = fill(zero(UFT), nodesperelem(fes) * ndofs(u))
     gradN = fill(zero(GFT), nodesperelem(fes), ndofs(u))
     B = fill(zero(GFT), nstressstrain(self.mr), nodesperelem(fes) * ndofs(u))
     # Loop over  all the elements and all the quadrature points within them
@@ -698,14 +698,14 @@ function inspectintegpoints(
             nodalgradN = self.nodalbasisfunctiongrad[nix].gradN
             patchconn = self.nodalbasisfunctiongrad[nix].patchconn
             Vpatch = self.nodalbasisfunctiongrad[nix].Vpatch
-            ue = fill(zero(T), length(patchconn) * ndofs(u))
+            ue = fill(zero(UFT), length(patchconn) * ndofs(u))
             gathervalues_asvec!(u, ue, patchconn)# retrieve element displacements
             loc = reshape(geom.values[nix, :], 1, ndofs(geom))
-            updatecsmat!(self.mcsys, loc, J, nix)
+            updatecsmat!(self.mcsys, loc, J, nix, 1)
             nd = length(patchconn) * ndofs(u)
             Bnodal = fill(0.0, size(D, 1), nd)
             blmat!(self.mr, Bnodal, Ns[1], nodalgradN, loc, csmat(self.mcsys))
-            updatecsmat!(outputcsys, loc, J, nix) # Update output coordinate system
+            updatecsmat!(outputcsys, loc, J, nix, 1) # Update output coordinate system
             # Quadrature point quantities
             A_mul_B!(qpstrain, Bnodal, ue) # strain in material coordinates
             qpdT = dT.values[nix] # Quadrature point temperature increment
@@ -739,8 +739,8 @@ function inspectintegpoints(
             )
             outtot .+= -self.nphis[nix] .* out
             pci = findfirst(cx -> cx == nix, fes.conn[i])# at which node are we?
-            locjac!(loc, J, geom.values, fes.conn[i], Ns[pci], gradNparams[pci])
-            updatecsmat!(self.mcsys, loc, J, i, j)
+            locjac!(loc, J, ecoords, Ns[pci], gradNparams[pci])
+            updatecsmat!(self.mcsys, loc, J, i, 1)
             At_mul_B!(csmatTJ, csmat(self.mcsys), J) # local Jacobian matrix
             gradN!(fes, gradN, gradNparams[pci], csmatTJ)
             blmat!(self.mr, B, Ns[pci], gradN, loc, csmat(self.mcsys))
