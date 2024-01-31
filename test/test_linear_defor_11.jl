@@ -307,4 +307,89 @@ end
 bend_hex_spectrum_im()
 end
 
+module imspectrum02
+using FinEtools
+using FinEtools.MeshExportModule
+using FinEtoolsDeforLinear
+using LinearAlgebra
+using Arpack
+using Test
+
+mesh() = (
+    FinEtools.FENodeSetModule.FENodeSet(
+        [
+            0.0 0.0 0.0
+            1.0 0.0 0.0
+            1.0 1.0 0.0
+            0.0 1.0 0.0
+            0.0 0.0 1.0
+            1.0 0.0 1.0
+            1.0 1.0 1.0
+            0.0 1.0 1.0
+        ],
+    ),
+    FinEtools.FESetModule.FESetH8(reshape([1, 2, 3, 4, 5, 6, 7, 8], 1, 8)),
+)
+
+xyzperturbation =
+    [
+        0.0767656 -0.983206 -0.14343
+        0.45767 0.981479 0.450997
+        -0.295854 0.542922 0.321333
+        -0.85204 -0.97824 -0.772874
+        -0.0539756 0.994907 0.822798
+        0.447173 0.528742 0.0445352
+        -0.468417 0.00673427 0.953151
+        -0.898513 -0.915871 0.933237
+    ] ./ 15.0
+
+function bend_hex_spectrum_im()
+    aspect = 1.0
+    fens, fes = mesh()
+    fens.xyz += xyzperturbation
+    fens.xyz[:, 1] .*= aspect
+    E = 1.0
+    nu = 0.3
+    MR = DeforModelRed3D
+    material = MatDeforElastIso(MR, E, nu)
+
+    geom = NodalField(fens.xyz)
+    u = NodalField(zeros(size(fens.xyz, 1), 3)) # displacement field
+    applyebc!(u)
+    numberdofs!(u)
+
+    femm = FEMMDeforLinearIMH8(MR, IntegDomain(fes, GaussRule(3, 2)), material, 12)
+
+    vol = integratefunction(femm, geom, x -> 1.0; m = 3)
+
+    associategeometry!(femm, geom)
+
+    K = stiffness(femm, geom, u)
+
+    D = eigen(Matrix(K))
+    
+    @test norm(
+        vec(D.values) - [-8.326672702176305e-17, -4.827453520116361e-17, -1.669460991334037e-17, -1.182337629536069e-17, 2.3661775396745044e-17, 5.210781206461985e-17, 0.05749523439988823, 0.07128305296214138, 0.07191559703272292, 0.07315367873032953, 0.07333313907279299, 0.1223734319272974, 0.13068791550072423, 0.13331802429413253, 0.2262389176079041, 0.24875817318694218, 0.251966284583263, 0.2612677200531636, 0.36679163524535935, 0.3670788597997576, 0.3994995351214447, 0.40671458702548835, 0.41188960354553344, 1.2735924014816593],
+    ) < 0.001
+    # savecsv("bend_hex_spectrum_im-aspect=$(aspect).csv", eigenvalues = vec(D.values))
+    # @pgf _a = SemiLogYAxis({
+    #     xlabel = "Mode [ND]",
+    #     ylabel = "Generalized stiffness [N/m]",
+    #     grid="major",
+    #     legend_pos  = "south east",
+    #     title = "Hexahedron spectrum, aspect=$(aspect)"
+    # },
+    # Plot({"red", mark="triangle"}, Table([:x => vec(7:size(K, 1)), :y => vec(D.values[7:end])])), LegendEntry("IM"))
+    # display(_a)
+    # File =  "bend_hex_spectrum_im.vtk"
+    # vectors = [("ev_$(idx)_$(round(D.values[idx] * 10000) / 10000)", deepcopy(scattersysvec!(u, D.vectors[:,idx]).values)) for idx in 1:length(D.values)]
+    # vtkexportmesh(File, fens, fes;  vectors=vectors)
+    # @async run(`"paraview.exe" $File`)
+
+    true
+end
+
+bend_hex_spectrum_im()
+end
+
 nothing

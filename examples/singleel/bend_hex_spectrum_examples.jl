@@ -175,7 +175,7 @@ function bend_hex_spectrum_ms()
     end
 end # bend_hex_spectrum_ms
 
-function bend_hex_spectrum_im()
+function bend_hex_spectrum_im_9()
     function sim(aspect)
         fens, fes = mesh()
         fens.xyz += xyzperturbation
@@ -208,7 +208,54 @@ function bend_hex_spectrum_im()
                 title = "Hexahedron spectrum, aspect=$(aspect)",
             },
             Plot({"red", mark = "triangle"},
-                Table([:x => vec(7:size(K, 1)), :y => vec(D.values[7:end])])), LegendEntry("IM"))
+                Table([:x => vec(7:size(K, 1)), :y => vec(D.values[7:end])])), LegendEntry("IM 9"))
+        display(_a)
+        # File =  "bend_hex_spectrum_im.vtk"
+        # vectors = [("ev_$(idx)_$(round(D.values[idx] * 10000) / 10000)", deepcopy(scattersysvec!(u, D.vectors[:,idx]).values)) for idx in 1:length(D.values)] 
+        # vtkexportmesh(File, fens, fes;  vectors=vectors)
+        # @async run(`"paraview.exe" $File`)
+
+        true
+    end
+    for aspect in aspects
+        sim(aspect)
+    end
+end # bend_hex_spectrum_im
+
+function bend_hex_spectrum_im_12()
+    function sim(aspect)
+        fens, fes = mesh()
+        fens.xyz += xyzperturbation
+        fens.xyz[:, 1] .*= aspect
+
+        MR = DeforModelRed3D
+        material = MatDeforElastIso(MR, E, nu)
+
+        geom = NodalField(fens.xyz)
+        u = NodalField(zeros(size(fens.xyz, 1), 3)) # displacement field
+        applyebc!(u)
+        numberdofs!(u)
+
+        femm = FEMMDeforLinearIMH8(MR, IntegDomain(fes, GaussRule(3, 2)), material, 12)
+
+        vol = integratefunction(femm, geom, x -> 1.0; m = 3)
+
+        associategeometry!(femm, geom)
+
+        K = stiffness(femm, geom, u)
+
+        D = eigen(Matrix(K))
+
+        savecsv("bend_hex_spectrum_im-aspect=$(aspect).csv", eigenvalues = vec(D.values))
+        @pgf _a = SemiLogYAxis({
+                xlabel = "Mode [ND]",
+                ylabel = "Generalized stiffness [N/m]",
+                grid = "major",
+                legend_pos = "south east",
+                title = "Hexahedron spectrum, aspect=$(aspect)",
+            },
+            Plot({"red", mark = "triangle"},
+                Table([:x => vec(7:size(K, 1)), :y => vec(D.values[7:end])])), LegendEntry("IM 12"))
         display(_a)
         # File =  "bend_hex_spectrum_im.vtk"
         # vectors = [("ev_$(idx)_$(round(D.values[idx] * 10000) / 10000)", deepcopy(scattersysvec!(u, D.vectors[:,idx]).values)) for idx in 1:length(D.values)] 
@@ -233,8 +280,11 @@ function allrun()
     println("# bend_hex_spectrum_ms ")
     bend_hex_spectrum_ms()
     println("#####################################################")
-    println("# bend_hex_spectrum_im ")
-    bend_hex_spectrum_im()
+    println("# bend_hex_spectrum_im_9 ")
+    bend_hex_spectrum_im_9()
+    println("#####################################################")
+    println("# bend_hex_spectrum_im_12 ")
+    bend_hex_spectrum_im_12()
     return true
 end # function allrun
 
