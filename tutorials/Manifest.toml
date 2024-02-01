@@ -154,9 +154,9 @@ version = "0.1.5"
 
 [[deps.DataStructures]]
 deps = ["Compat", "InteractiveUtils", "OrderedCollections"]
-git-tree-sha1 = "3dbd312d370723b6bb43ba9d02fc36abade4518d"
+git-tree-sha1 = "ac67408d9ddf207de5cfa9a97e114352430f01ed"
 uuid = "864edb3b-99cc-5e75-8d2d-829cb0a9cfe8"
-version = "0.18.15"
+version = "0.18.16"
 
 [[deps.Dates]]
 deps = ["Printf"]
@@ -206,9 +206,9 @@ version = "7.3.0"
 
 [[deps.FinEtoolsDeforLinear]]
 deps = ["Arpack", "FinEtools", "LinearAlgebra", "SparseArrays", "Statistics", "SuiteSparse", "Test"]
-git-tree-sha1 = "f98acaa2b92416d3fae4240a7dd77b7c56bd7102"
+git-tree-sha1 = "d0ea8a4c422570f29044d8ed243276236194e468"
 uuid = "e9187c00-8bdd-11e9-1e70-7ba8303116a2"
-version = "2.1.0"
+version = "2.1.2"
 
 [[deps.FixedPointNumbers]]
 deps = ["Statistics"]
@@ -218,9 +218,9 @@ version = "0.8.4"
 
 [[deps.Gnuplot]]
 deps = ["ColorSchemes", "ColorTypes", "Colors", "DataStructures", "PrecompileTools", "REPL", "ReplMaker", "StatsBase", "StructC14N", "Test"]
-git-tree-sha1 = "d381a1afef7b3caab017b533cddab8293e6f0d67"
+git-tree-sha1 = "698a1a523dc19e731df5350784700fc44485ad27"
 uuid = "dc211083-a33a-5b79-959f-2ff34033469d"
-version = "1.6.1"
+version = "1.6.2"
 
 [[deps.HDF5]]
 deps = ["Compat", "HDF5_jll", "Libdl", "MPIPreferences", "Mmap", "Preferences", "Printf", "Random", "Requires", "UUIDs"]
@@ -345,9 +345,9 @@ uuid = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 
 [[deps.Literate]]
 deps = ["Base64", "IOCapture", "JSON", "REPL"]
-git-tree-sha1 = "7cf4b8ca67b6a86a2ad7526bfe514ecd00d944f9"
+git-tree-sha1 = "bad26f1ccd99c553886ec0725e99a509589dcd11"
 uuid = "98b081ad-f1c9-55d3-8b20-4c87d4299306"
-version = "2.16.0"
+version = "2.16.1"
 
 [[deps.LogExpFunctions]]
 deps = ["DocStringExtensions", "IrrationalConstants", "LinearAlgebra"]
