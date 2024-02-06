@@ -54,7 +54,8 @@ using Statistics: mean
 
 Type for mean-strain linear deformation FEMM based on eight-node hexahedral elements with incompatible modes.
 
-Default number of incompatible modes is 12.
+Default number of incompatible modes is 12 (Simo formulation).
+Alternative is 9 incompatible modes (Wilson formulation).
 """
 mutable struct FEMMDeforLinearIMH8{
     MR<:AbstractDeforModelRed,
