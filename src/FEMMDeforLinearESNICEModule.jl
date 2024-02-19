@@ -568,7 +568,7 @@ function stiffness(
     tangentmoduli!(self.material, D, 0.0, 0.0, loc, 0)
     tangentmoduli!(self.stabilization_material, Dstab, 0.0, 0.0, loc, 0)
     elmatsizeguess = 4 * nodesperelem(fes) * ndofs(u)
-    startassembly!(assembler, elmatsizeguess^2 * nnodes(u), nalldofs(u), nalldofs(u))
+    startassembly!(assembler, elmatsizeguess, elmatsizeguess, nnodes(u), nalldofs(u), nalldofs(u))
     for nix = 1:length(self.nodalbasisfunctiongrad)
         gradN = self.nodalbasisfunctiongrad[nix].gradN
         patchconn = self.nodalbasisfunctiongrad[nix].patchconn
@@ -592,7 +592,9 @@ function stiffness(
     # OPTIMIZATION: switch to a single-point quadrature rule here
     startassembly!(
         assembler,
-        (nodesperelem(fes) * ndofs(u))^2 * count(fes),
+        nodesperelem(fes) * ndofs(u),
+        nodesperelem(fes) * ndofs(u),
+        count(fes),
         nalldofs(u),
         nalldofs(u),
     )

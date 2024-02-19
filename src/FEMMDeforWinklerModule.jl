@@ -70,7 +70,7 @@ function surfacenormalspringstiffness(
     loc = zeros(GFT, 1, sdim) # quadrature point location -- used as a buffer
     J = fill(zero(GFT), sdim, mdim) # Jacobian matrix -- used as a buffer
     Nn = zeros(GFT, Kedim) # column vector
-    startassembly!(assembler, Kedim^2 * nfes, nalldofs(u), nalldofs(u))
+    startassembly!(assembler, Kedim, Kedim, nfes, nalldofs(u), nalldofs(u))
     for i = 1:nfes # Loop over elements
         gathervalues_asmat!(geom, ecoords, integdomain.fes.conn[i])
         fill!(Ke, zero(UFT)) # Initialize element matrix

@@ -69,7 +69,7 @@ function dampingABC(
     Nn = zeros(GFT, Cedim) # column vector
     dofnums = zeros(eltype(u.dofnums), Cedim) # degree of freedom array -- used as a buffer
     # Prepare assembler and temporaries
-    startassembly!(assembler, Cedim^2 * nfes, nalldofs(u), nalldofs(u))
+    startassembly!(assembler, Cedim, Cedim, nfes, nalldofs(u), nalldofs(u))
     for i in eachindex(fes)  # loop over finite elements
         gathervalues_asmat!(geom, ecoords, fes.conn[i])
         fill!(Ce, 0.0) # Initialize element damping matrix

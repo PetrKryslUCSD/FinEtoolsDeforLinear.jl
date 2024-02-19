@@ -464,7 +464,7 @@ function stiffness(
     stabmat = self.stabilization_material
     tangentmoduli!(realmat, D, 0.0, 0.0, loc, 0)
     tangentmoduli!(stabmat, Dstab, 0.0, 0.0, loc, 0)
-    startassembly!(assembler, prod(size(elmat)) * count(fes), nalldofs(u), nalldofs(u))
+    startassembly!(assembler, size(elmat)..., count(fes), nalldofs(u), nalldofs(u))
     for i = 1:count(fes) # Loop over elements
         gathervalues_asmat!(geom, ecoords, fes.conn[i])
         # NOTE: the coordinate system should be evaluated at a single point within the

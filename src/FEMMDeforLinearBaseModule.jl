@@ -388,7 +388,7 @@ function infsup_gh(
     fes = self.integdomain.fes
     npts, Ns, gradNparams, w, pc = integrationdata(self.integdomain)
     ecoords, dofnums, loc, J, csmatTJ, gradN, elmat = _buffers2(self, geom, u)
-    startassembly!(assembler, prod(size(elmat)) * count(fes), nalldofs(u), nalldofs(u))
+    startassembly!(assembler, size(elmat)..., count(fes), nalldofs(u), nalldofs(u))
     for i in eachindex(fes) # Loop over elements
         gathervalues_asmat!(geom, ecoords, fes.conn[i])
         fill!(elmat, 0.0) # Initialize element matrix
@@ -464,7 +464,7 @@ function infsup_sh(
     fes = self.integdomain.fes
     npts, Ns, gradNparams, w, pc = integrationdata(self.integdomain)
     ecoords, dofnums, loc, J, csmatTJ, gradN, elmat = _buffers3(self, geom, u)
-    startassembly!(assembler, prod(size(elmat)) * count(fes), nalldofs(u), nalldofs(u))
+    startassembly!(assembler, size(elmat)..., count(fes), nalldofs(u), nalldofs(u))
     for i in eachindex(fes) # Loop over elements
         gathervalues_asmat!(geom, ecoords, fes.conn[i])
         fill!(elmat, 0.0) # Initialize element matrix

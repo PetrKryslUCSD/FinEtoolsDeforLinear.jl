@@ -338,7 +338,7 @@ function stiffness(
     tangentmoduli!(self.material, D, 0.0, 0.0, loc, 0)
     startassembly!(
         assembler,
-        size(elmatc, 1) * size(elmatc, 2) * count(fes),
+        size(elmatc)..., count(fes),
         nalldofs(u),
         nalldofs(u),
     )

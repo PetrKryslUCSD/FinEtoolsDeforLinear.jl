@@ -388,7 +388,7 @@ function stiffness(
     Dmod = sort(eigvals(D))
     stabDmod = mean(Dmod[1:2]; dims = 1)
     elmatsizeguess = 4 * nodesperelem(fes) * ndofs(u)
-    startassembly!(assembler, elmatsizeguess^2 * nnodes(u), nalldofs(u), nalldofs(u))
+    startassembly!(assembler, elmatsizeguess, elmatsizeguess, nnodes(u), nalldofs(u), nalldofs(u))
     for nix in eachindex(self.nodalbasisfunctiongrad)
         gradN = self.nodalbasisfunctiongrad[nix].gradN
         patchconn = self.nodalbasisfunctiongrad[nix].patchconn
