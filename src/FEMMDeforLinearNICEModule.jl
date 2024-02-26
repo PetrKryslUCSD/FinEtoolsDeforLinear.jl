@@ -1,6 +1,4 @@
 """
-    FEMMDeforLinearNICEModule
-
 Formulation for the small displacement, small strain deformation
 model for Nodally-Integrated Continuum Elements (NICE).
 
@@ -9,6 +7,8 @@ The formulation was subsequently developed in Krysl, P. and Zhu, B.
 Locking-free continuum displacement finite elements with nodal
 integration, International Journal for Numerical Methods in Engineering,
 76,7,1020-1043,2008.
+
+This formulation is at this point obsolete (replaced with ESNICE).
 """
 module FEMMDeforLinearNICEModule
 

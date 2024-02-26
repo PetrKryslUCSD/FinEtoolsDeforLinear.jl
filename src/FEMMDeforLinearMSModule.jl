@@ -1,6 +1,4 @@
 """
-    FEMMDeforLinearMSModule
-
 Module for operations on interiors of domains to construct system matrices and
 system vectors for linear deformation models:  mean-strain  formulation.
 """
@@ -329,7 +327,7 @@ function _buffers2(
     elvecfix
 end
 
-function centroid!(self::F, loc, ecoords) where {F<:FEMMDeforLinearMSH8}
+function __centroid!(self::F, loc, ecoords) where {F<:FEMMDeforLinearMSH8}
     weights = [
         0.125
         0.125
@@ -343,7 +341,7 @@ function centroid!(self::F, loc, ecoords) where {F<:FEMMDeforLinearMSH8}
     return loc!(loc, ecoords, reshape(weights, 8, 1))
 end
 
-function centroid!(self::F, loc, ecoords) where {F<:FEMMDeforLinearMST10}
+function __centroid!(self::F, loc, ecoords) where {F<:FEMMDeforLinearMST10}
     weights = [
         -0.125
         -0.125
@@ -360,16 +358,19 @@ function centroid!(self::F, loc, ecoords) where {F<:FEMMDeforLinearMST10}
 end
 
 """
-    associategeometry!(self::F,  geom::NodalField{GFT}) where {F<:FEMMDeforLinearMSH8, GFT}
+    associategeometry!(
+        self::FEMMDeforLinearMSH8,
+        geom::NodalField{GFT},
+    ) where {GFT}
 
 Associate geometry field with the FEMM.
 
 Compute the  correction factors to account for  the shape of the  elements.
 """
 function associategeometry!(
-    self::F,
+    self::FEMMDeforLinearMSH8,
     geom::NodalField{GFT},
-) where {F<:FEMMDeforLinearMSH8,GFT}
+) where {GFT}
     fes = self.integdomain.fes
     npts, Ns, gradNparams, w, pc = integrationdata(self.integdomain)
     ecoords, loc, J, csmatTJ, gradN = _buffers1(self, geom, npts)
@@ -378,7 +379,7 @@ function associategeometry!(
         gathervalues_asmat!(geom, ecoords, fes.conn[i])
         # NOTE: the coordinate system should be evaluated at a single point within the
         # element in order for the derivatives to be consistent at all quadrature points
-        loc = centroid!(self, loc, ecoords)
+        loc = __centroid!(self, loc, ecoords)
         updatecsmat!(self.mcsys, loc, J, i, 0)
         for j = 1:npts # Loop over quadrature points
             jac!(J, ecoords, gradNparams[j])
@@ -395,16 +396,19 @@ function associategeometry!(
 end
 
 """
-    associategeometry!(self::F,  geom::NodalField{GFT}) where {F<:FEMMDeforLinearMST10, GFT}
+    associategeometry!(
+        self::FEMMDeforLinearMST10,
+        geom::NodalField{GFT},
+    ) where {GFT}
 
 Associate geometry field with the FEMM.
 
 Compute the  correction factors to account for  the shape of the  elements.
 """
 function associategeometry!(
-    self::F,
+    self::FEMMDeforLinearMST10,
     geom::NodalField{GFT},
-) where {F<:FEMMDeforLinearMST10,GFT}
+) where {GFT}
     gamma = 2.6
     C = 1e4
     fes = self.integdomain.fes
@@ -415,7 +419,7 @@ function associategeometry!(
         gathervalues_asmat!(geom, ecoords, fes.conn[i])
         # NOTE: the coordinate system should be evaluated at a single point within the
         # element in order for the derivatives to be consistent at all quadrature points
-        loc = centroid!(self, loc, ecoords)
+        loc = __centroid!(self, loc, ecoords)
         updatecsmat!(self.mcsys, loc, J, i, 0)
         for j = 1:npts # Loop over quadrature points
             jac!(J, ecoords, gradNparams[j])
@@ -430,18 +434,21 @@ function associategeometry!(
 end
 
 """
-    stiffness(self::AbstractFEMMDeforLinearMS, assembler::A,
-    geom::NodalField{GFT},
-    u::NodalField{UFT}) where {A<:AbstractSysmatAssembler, GFT<:Number, UFT<:Number}
+    stiffness(
+        self::FEMM,
+        assembler::A,
+        geom::NodalField{GFT},
+        u::NodalField{UFT},
+    ) where {FEMM<:AbstractFEMMDeforLinearMS,A<:AbstractSysmatAssembler,GFT<:Number,UFT<:Number}
 
 Compute and assemble  stiffness matrix.
 """
 function stiffness(
-    self::AbstractFEMMDeforLinearMS,
+    self::FEMM,
     assembler::A,
     geom::NodalField{GFT},
     u::NodalField{UFT},
-) where {A<:AbstractSysmatAssembler,GFT<:Number,UFT<:Number}
+) where {FEMM<:AbstractFEMMDeforLinearMS,A<:AbstractSysmatAssembler,GFT<:Number,UFT<:Number}
     fes = self.integdomain.fes
     npts, Ns, gradNparams, w, pc = integrationdata(self.integdomain)
     ecoords,
@@ -469,7 +476,7 @@ function stiffness(
         gathervalues_asmat!(geom, ecoords, fes.conn[i])
         # NOTE: the coordinate system should be evaluated at a single point within the
         # element in order for the derivatives to be consistent at all quadrature points
-        loc = centroid!(self, loc, ecoords)
+        loc = __centroid!(self, loc, ecoords)
         updatecsmat!(self.mcsys, loc, J, i, 0)
         vol = 0.0 # volume of the element
         fill!(MeangradN, 0.0) # mean basis function gradients
@@ -558,7 +565,7 @@ function _iip_meanonly(
         gathervalues_asvec!(dT, dTe, fes.conn[i])# retrieve element temperature increments
         # NOTE: the coordinate system should be evaluated at a single point within the
         # element in order for the derivatives to be consistent at all quadrature points
-        loc = centroid!(self, loc, ecoords)
+        loc = __centroid!(self, loc, ecoords)
         updatecsmat!(self.mcsys, loc, J, i, 0)
         updatecsmat!(outputcsys, loc, J, i, 0)
         vol = 0.0 # volume of the element
@@ -665,7 +672,7 @@ function _iip_extrapmean(
         gathervalues_asvec!(dT, dTe, fes.conn[i])# retrieve element temperature increments
         # NOTE: the coordinate system should be evaluated at a single point within the
         # element in order for the derivatives to be consistent at all quadrature points
-        loc = centroid!(self, loc, ecoords)
+        loc = __centroid!(self, loc, ecoords)
         updatecsmat!(self.mcsys, loc, J, i, 0)
         updatecsmat!(outputcsys, loc, J, i, 0)
         vol = 0.0 # volume of the element
@@ -781,7 +788,7 @@ function _iip_extraptrend(
         gathervalues_asvec!(dT, dTe, fes.conn[i])# retrieve element temperature increments
         # NOTE: the coordinate system should be evaluated at a single point within the
         # element in order for the derivatives to be consistent at all quadrature points
-        loc = centroid!(self, loc, ecoords)
+        loc = __centroid!(self, loc, ecoords)
         updatecsmat!(self.mcsys, loc, J, i, 0)
         updatecsmat!(outputcsys, loc, J, i, 0)
         vol = 0.0 # volume of the element
@@ -886,7 +893,7 @@ end
 
 """
     inspectintegpoints(
-        self::AbstractFEMMDeforLinearMS,
+        self::FEMM,
         geom::NodalField{GFT},
         u::NodalField{UFT},
         dT::NodalField{TFT},
@@ -895,7 +902,7 @@ end
         idat,
         quantity = :Cauchy;
         context...,
-    ) where {GFT<:Number,UFT<:Number,TFT<:Number,IT,F<:Function}
+    ) where {FEMM<:AbstractFEMMDeforLinearMS,GFT<:Number,UFT<:Number,TFT<:Number,IT,F<:Function}
 
 Inspect integration point quantities.
 
@@ -921,7 +928,7 @@ Inspect integration point quantities.
 The updated inspector data is returned.
 """
 function inspectintegpoints(
-    self::AbstractFEMMDeforLinearMS,
+    self::FEMM,
     geom::NodalField{GFT},
     u::NodalField{UFT},
     dT::NodalField{TFT},
@@ -930,7 +937,7 @@ function inspectintegpoints(
     idat,
     quantity = :Cauchy;
     context...,
-) where {GFT<:Number,UFT<:Number,TFT<:Number,IT,F<:Function}
+) where {FEMM<:AbstractFEMMDeforLinearMS,GFT<:Number,UFT<:Number,TFT<:Number,IT,F<:Function}
     reportat = :meanonly
     for apair in pairs(context)
         sy, val = apair
@@ -979,7 +986,7 @@ function inspectintegpoints(
 end
 
 function inspectintegpoints(
-    self::AbstractFEMMDeforLinearMS,
+    self::FEMM,
     geom::NodalField{GFT},
     u::NodalField{UFT},
     felist::Vector{IT},
@@ -987,7 +994,7 @@ function inspectintegpoints(
     idat,
     quantity = :Cauchy;
     context...,
-) where {GFT<:Number,UFT<:Number,IT,F<:Function}
+) where {FEMM<:AbstractFEMMDeforLinearMS,GFT<:Number,UFT<:Number,IT,F<:Function}
     dT = NodalField(fill(zero(GFT), nnodes(geom), 1)) # zero difference in temperature
     return inspectintegpoints(
         self,
@@ -1003,7 +1010,12 @@ function inspectintegpoints(
 end
 
 """
-    infsup_gh(self::AbstractFEMMDeforLinearMS, assembler::A, geom::NodalField{GFT}, u::NodalField{UFT}) where {A<:AbstractSysmatAssembler, GFT<:Number, UFT<:Number}
+    infsup_gh(
+        self::FEMM,
+        assembler::A,
+        geom::NodalField{GFT},
+        u::NodalField{UFT},
+    ) where {FEMM<:AbstractFEMMDeforLinearMS,A<:AbstractSysmatAssembler,GFT<:Number,UFT<:Number}
 
 Compute the matrix to produce the norm of the divergence of the displacement.
 
@@ -1012,17 +1024,14 @@ inf-sup condition and its evaluation for mixed finite element methods,
 Computers and Structures 79 (2001) 243-252.)
 
 !!! note
-
-
-This computation has not been optimized in any way. It can be expected to be
-inefficient.
+    This computation has not been optimized in any way. It can be expected to be inefficient.
 """
 function infsup_gh(
-    self::AbstractFEMMDeforLinearMS,
+    self::FEMM,
     assembler::A,
     geom::NodalField{GFT},
     u::NodalField{UFT},
-) where {A<:AbstractSysmatAssembler,GFT<:Number,UFT<:Number}
+) where {FEMM<:AbstractFEMMDeforLinearMS,A<:AbstractSysmatAssembler,GFT<:Number,UFT<:Number}
     fes = self.integdomain.fes
     npts, Ns, gradNparams, w, pc = integrationdata(self.integdomain)
     ecoords,
@@ -1053,7 +1062,7 @@ function infsup_gh(
         gathervalues_asmat!(geom, ecoords, fes.conn[i])
         # NOTE: the coordinate system should be evaluated at a single point within the
         # element in order for the derivatives to be consistent at all quadrature points
-        loc = centroid!(self, loc, ecoords)
+        loc = __centroid!(self, loc, ecoords)
         updatecsmat!(self.mcsys, loc, J, i, 0)
         vol = 0.0 # volume of the element
         fill!(MeangradN, 0.0) # mean basis function gradients
@@ -1077,16 +1086,21 @@ function infsup_gh(
 end
 
 function infsup_gh(
-    self::AbstractFEMMDeforLinearMS,
+    self::FEMM,
     geom::NodalField{GFT},
     u::NodalField{UFT},
-) where {GFT<:Number,UFT<:Number}
+) where {FEMM<:AbstractFEMMDeforLinearMS,GFT<:Number,UFT<:Number}
     assembler = SysmatAssemblerSparseSymm()
     return infsup_gh(self, assembler, geom, u)
 end
 
 """
-    infsup_sh(self::AbstractFEMMDeforLinearMS, assembler::A, geom::NodalField{GFT}, u::NodalField{UFT}) where {A<:AbstractSysmatAssembler, GFT<:Number, UFT<:Number}
+    infsup_sh(
+        self::FEMM,
+        assembler::A,
+        geom::NodalField{GFT},
+        u::NodalField{UFT},
+    ) where {FEMM<:AbstractFEMMDeforLinearMS,A<:AbstractSysmatAssembler,GFT<:Number,UFT<:Number}
 
 Compute the matrix to produce the seminorm of the displacement (square root of
 the sum of the squares of the derivatives of the components of displacement).
@@ -1097,16 +1111,14 @@ Computers and Structures 79 (2001) 243-252.)
 
 !!! note
 
-
-This computation has not been optimized in any way. It can be expected to be
-inefficient.
+    This computation has not been optimized in any way. It can be expected to be inefficient.
 """
 function infsup_sh(
-    self::AbstractFEMMDeforLinearMS,
+    self::FEMM,
     assembler::A,
     geom::NodalField{GFT},
     u::NodalField{UFT},
-) where {A<:AbstractSysmatAssembler,GFT<:Number,UFT<:Number}
+) where {FEMM<:AbstractFEMMDeforLinearMS,A<:AbstractSysmatAssembler,GFT<:Number,UFT<:Number}
     fes = self.integdomain.fes
     npts, Ns, gradNparams, w, pc = integrationdata(self.integdomain)
     ecoords,
@@ -1137,7 +1149,7 @@ function infsup_sh(
         gathervalues_asmat!(geom, ecoords, fes.conn[i])
         # NOTE: the coordinate system should be evaluated at a single point within the
         # element in order for the derivatives to be consistent at all quadrature points
-        loc = centroid!(self, loc, ecoords)
+        loc = __centroid!(self, loc, ecoords)
         updatecsmat!(self.mcsys, loc, J, i, 0)
         vol = 0.0 # volume of the element
         fill!(MeangradN, 0.0) # mean basis function gradients
@@ -1161,10 +1173,10 @@ function infsup_sh(
 end
 
 function infsup_sh(
-    self::AbstractFEMMDeforLinearMS,
+    self::FEMM,
     geom::NodalField{GFT},
     u::NodalField{UFT},
-) where {GFT<:Number,UFT<:Number}
+) where {FEMM<:AbstractFEMMDeforLinearMS,GFT<:Number,UFT<:Number}
     assembler = SysmatAssemblerSparseSymm()
     return infsup_sh(self, assembler, geom, u)
 end

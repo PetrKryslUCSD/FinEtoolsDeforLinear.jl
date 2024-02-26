@@ -25,7 +25,7 @@ using FinEtools.SurfaceNormalModule: SurfaceNormal, updatenormal!
 using LinearAlgebra: norm, cross
 
 """
-    FEMMDeforSurfaceDamping{S<:AbstractFESet, F<:Function} <: AbstractFEMM
+    mutable struct FEMMDeforSurfaceDamping{ID<:IntegDomain} <: AbstractFEMM 
 
 Type for surface damping model.
 """
@@ -34,7 +34,14 @@ mutable struct FEMMDeforSurfaceDamping{ID<:IntegDomain} <: AbstractFEMM
 end
 
 """
-    dampingABC(self::FEMMDeforSurfaceDamping, assembler::A, geom::NodalField{GFT}, u::NodalField{UFT}, impedance::UFT, surfacenormal::SurfaceNormal) where {A<:AbstractSysmatAssembler, GFT<:Number, UFT<:Number}
+    dampingABC(
+        self::FEMMDeforSurfaceDamping,
+        assembler::A,
+        geom::NodalField{GFT},
+        u::NodalField{UFT},
+        impedance::FT,
+        surfacenormal::SurfaceNormal,
+    ) where {A<:AbstractSysmatAssembler,GFT<:Number,UFT<:Number,FT<:Number}
 
 Compute the damping matrix associated with absorbing boundary conditions (ABC).
 
