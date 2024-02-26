@@ -1,3 +1,6 @@
+"""
+Module for linear isotropic elastic response.    
+"""
 module MatDeforElastIsoModule
 
 __precompile__(true)
@@ -20,7 +23,13 @@ A_mul_B!(C, A, B) = mul!(C, A, B)
 using LinearAlgebra: eigen, eigvals, norm, cholesky, cross, dot
 
 """
-	MatDeforElastIso{MR<:AbstractDeforModelRed, MTAN<:Function, MUPD<:Function, MTHS<:Function} <: AbstractMatDeforLinearElastic
+    struct MatDeforElastIso{
+        MR<:AbstractDeforModelRed,
+        FT,
+        MTAN<:Function,
+        MUPD<:Function,
+        MTHS<:Function,
+    } <: AbstractMatDeforLinearElastic
 
 Linear isotropic elasticity  material.
 
@@ -53,7 +62,13 @@ function _threedD(E, nu)
 end
 
 """
-    MatDeforElastIso(mr::Type{MR}, mass_density, E, nu, CTE) where {MR<:AbstractDeforModelRed}
+    MatDeforElastIso(
+        mr::Type{MR},
+        mass_density::N,
+        E::N,
+        nu::N,
+        CTE::N,
+    ) where {MR<:AbstractDeforModelRed,N<:Number}
 
 Create an isotropic elastic material providing all material parameters.
 """
@@ -69,7 +84,11 @@ function MatDeforElastIso(
 end
 
 """
-    MatDeforElastIso(mr::Type{MR}, E, nu) where {MR}
+    MatDeforElastIso(
+        mr::Type{MR},
+        E::N,
+        nu::N,
+    ) where {MR<:AbstractDeforModelRed,N<:Number}
 
 Create isotropic elastic material with default mass density and thermal expansion.
 """

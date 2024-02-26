@@ -1,7 +1,5 @@
 """
-    MatDeforElastOrthoModule
-
-Module for  orthotropic elastic material.
+Module for linear orthotropic elastic response.    
 """
 module MatDeforElastOrthoModule
 
@@ -24,7 +22,13 @@ A_mul_B!(C, A, B) = mul!(C, A, B)
 using LinearAlgebra: eigen, eigvals, rank, dot
 
 """
-    MatDeforElastOrtho{MR<:AbstractDeforModelRed,  MTAN<:Function, MUPD<:Function, MTHS<:Function} <: AbstractMatDeforLinearElastic
+    struct MatDeforElastOrtho{
+        MR<:AbstractDeforModelRed,
+        FT,
+        MTAN<:Function,
+        MUPD<:Function,
+        MTHS<:Function,
+    } <: AbstractMatDeforLinearElastic
 
 Linear orthotropic elasticity  material.
 """
@@ -237,7 +241,6 @@ end
 """
 	MatDeforElastOrtho(
         mr::Type{MR},
-        mass_density::N,
         E::N,
         nu::N,
         CTE::N,
@@ -249,7 +252,6 @@ Convenience version with only the specification of the elastic and thermal expan
 """
 function MatDeforElastOrtho(
     mr::Type{MR},
-    mass_density::N,
     E::N,
     nu::N,
     CTE::N,

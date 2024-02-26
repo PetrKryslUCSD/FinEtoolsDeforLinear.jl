@@ -25,7 +25,7 @@ import FinEtools.SurfaceNormalModule: SurfaceNormal, updatenormal!
 import LinearAlgebra: norm, cross
 
 """
-    FEMMDeforWinkler{S<:AbstractFESet, F<:Function} <: AbstractFEMM
+    mutable struct FEMMDeforWinkler{ID<:IntegDomain} <: AbstractFEMM
 
 Type for normal spring support  (Winkler).
 """
@@ -34,7 +34,14 @@ mutable struct FEMMDeforWinkler{ID<:IntegDomain} <: AbstractFEMM
 end
 
 """
-    surfacenormalspringstiffness(self::FEMMDeforWinkler, assembler::A, geom::NodalField{GFT}, u::NodalField{UFT}, springconstant::UFT, surfacenormal::SurfaceNormal) where {A<:AbstractSysmatAssembler, GFT<:Number, UFT<:Number}
+    surfacenormalspringstiffness(
+        self::FEMMDeforWinkler,
+        assembler::A,
+        geom::NodalField{GFT},
+        u::NodalField{UFT},
+        springconstant::UFT,
+        surfacenormal::SurfaceNormal,
+    ) where {A<:AbstractSysmatAssembler,GFT<:Number,UFT<:Number}
 
 Compute the stiffness matrix of surface normal spring.
 

@@ -1,3 +1,6 @@
+"""
+Basic functionality for linearly elastic materials.
+"""
 module MatDeforLinearElasticModule
 
 __precompile__(true)
@@ -14,7 +17,14 @@ Abstract Linear Elasticity  material.
 abstract type AbstractMatDeforLinearElastic <: AbstractMatDefor end
 
 """
-    tangentmoduli!(self::AbstractMatDeforLinearElastic,  D::Matrix{FT},  t::FT, dt::FT, loc::Matrix{FT}, label::Int) where {FT}
+    tangentmoduli!(
+        self::AbstractMatDeforLinearElastic,
+        D::Matrix{FT},
+        t::FT,
+        dt::FT,
+        loc::Matrix{FT},
+        label::Int,
+    ) where {FT}
 
 Calculate the material stiffness matrix.
 
@@ -33,7 +43,18 @@ function tangentmoduli!(
 end
 
 """
-    update!(self::AbstractMatDeforLinearElastic,  stress::Vector{FT}, output::Vector{FT},  strain::Vector{FT}, thstrain::Vector{FT}=zeros(6), t::FT= 0.0, dt::FT= 0.0,  loc::Matrix{FT}=zeros(3,1), label::Int=0, quantity=:nothing) where {FT}
+    update!(
+        self::AbstractMatDeforLinearElastic,
+        stress::Vector{FT},
+        output::Vector{FT},
+        strain::Vector{FT},
+        thstrain::Vector{FT} = zeros(6),
+        t::FT = 0.0,
+        dt::FT = 0.0,
+        loc::Matrix{FT} = zeros(3, 1),
+        label::Int = 0,
+        quantity = :nothing,
+    ) where {FT}
 
 Update material state.
 
@@ -67,7 +88,11 @@ function update!(
 end
 
 """
-    thermalstrain!(self::AbstractMatDeforLinearElastic, thstrain::Vector{FT}, dT= 0.0) where {FT}
+    thermalstrain!(
+        self::AbstractMatDeforLinearElastic,
+        thstrain::Vector{FT},
+        dT = 0.0,
+    ) where {FT}
 
 Compute thermal strain from the supplied temperature increment.
 

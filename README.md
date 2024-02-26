@@ -14,6 +14,7 @@ statics and dynamics (modal analysis, steady-state vibration).
 
 ## News
 
+- 02/25/2024: Update documentation.
 - 02/01/2024: Improve test coverage of IM and ESNICE elements.
 - 01/08/2024: Fix bug in the modal analysis algorithm.
 - 12/31/2023: Update for Julia 1.10.
