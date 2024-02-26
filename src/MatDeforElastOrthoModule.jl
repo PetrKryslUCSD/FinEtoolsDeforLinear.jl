@@ -239,6 +239,54 @@ function MatDeforElastOrtho(
 end
 
 """
+    MatDeforElastOrtho(
+        mr::Type{MR},
+        mass_density::N,
+        E::N,
+        nu::N,
+        CTE::N,
+    ) where {MR<:AbstractDeforModelRed,N<:Number}
+
+Create elastic orthotropic material which is really isotropic.
+
+Convenience version with only the specification of the mass density, and
+the elastic and thermal expansion properties.
+"""
+function MatDeforElastOrtho(
+    mr::Type{MR},
+    mass_density::N,
+    E::N,
+    nu::N,
+    CTE::N,
+) where {MR<:AbstractDeforModelRed,N<:Number}
+    E1 = E2 = E3 = E
+    nu12 = nu13 = nu23 = nu
+    CTE1 = CTE2 = CTE3 = CTE
+    G = E / 2.0 / (1 + nu)
+    G12 = G13 = G23 = G
+    return MatDeforElastOrtho(
+        mr,
+        float.(
+            promote(
+                mass_density,
+                E1,
+                E2,
+                E3,
+                nu12,
+                nu13,
+                nu23,
+                G12,
+                G13,
+                G23,
+                CTE1,
+                CTE2,
+                CTE3,
+            )
+        ),
+    )
+end
+
+"""
 	MatDeforElastOrtho(
         mr::Type{MR},
         E::N,
@@ -283,6 +331,7 @@ function MatDeforElastOrtho(
         ),
     )
 end
+
 
 ################################################################################
 # 3-D solid model
