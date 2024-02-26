@@ -1,6 +1,4 @@
 """
-    FEMMDeforSurfaceDampingModule
-
 Module for operations on the damping associated with absorbing boundary 
 conditions (ABC) representation of the effect of infinite extent 
 of inviscid fluid next to the surface.

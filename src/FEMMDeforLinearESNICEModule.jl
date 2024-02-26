@@ -1,6 +1,4 @@
 """
-    FEMMDeforLinearESNICEModule
-
 Formulation for the small displacement, small strain deformation
 model for Nodally-Integrated Continuum Elements (NICE).
 
@@ -11,7 +9,7 @@ integration, International Journal for Numerical Methods in Engineering,
 76,7,1020-1043,2008.
 
 The stabilization scheme comes from papers on energy-sampling stabilization
-for mean-strain elements (Krysl).
+for mean-strain elements (Krysl and coauthors).
 """
 module FEMMDeforLinearESNICEModule
 
@@ -63,7 +61,8 @@ const StabParamFloat = Float64
 """
     AbstractFEMMDeforLinearESNICE <: AbstractFEMMDeforLinear
 
-Abstract FEMM type for Nodally Integrated Continuum Elements (NICE) with energy-sampling stabilization.
+Abstract FEMM type for Nodally Integrated Continuum Elements (NICE) with
+energy-sampling stabilization (ESNICE).
 """
 abstract type AbstractFEMMDeforLinearESNICE <: AbstractFEMMDeforLinear end
 
@@ -112,7 +111,7 @@ end
     } <: AbstractFEMMDeforLinearESNICE
 
 FEMM type for Energy-sampling Stabilized Nodally Integrated Continuum Elements
-(NICE) based on the 4-node tetrahedron.
+(ESNICE) based on the 4-node tetrahedron.
 """
 mutable struct FEMMDeforLinearESNICET4{
     MR<:AbstractDeforModelRed,
@@ -141,7 +140,7 @@ end
     } <: AbstractFEMMDeforLinearESNICE
 
 FEMM type for Energy-sampling Stabilized Nodally Integrated Continuum Elements
-(NICE) based on the p-node hexahedron.
+(ESNICE) based on the 8-node hexahedron.
 """
 mutable struct FEMMDeforLinearESNICEH8{
     MR<:AbstractDeforModelRed,
@@ -166,7 +165,12 @@ end
         integdomain::ID,
         mcsys::CS,
         material::M,
-    ) where {MR<:AbstractDeforModelRed, ID<:IntegDomain{S} where {S<:FESetT4}, M<:AbstractMatDeforLinearElastic}
+    ) where {
+        MR<:AbstractDeforModelRed,
+        ID<:IntegDomain{S} where {S<:FESetT4},
+        CS<:CSys,
+        M<:AbstractMatDeforLinearElastic,
+    }
 
 Constructor.
 """
@@ -198,10 +202,14 @@ end
 
 """
     FEMMDeforLinearESNICET4(
-            mr::Type{MR},
-            integdomain::ID,
-            material::M,
-        ) where {MR<:AbstractDeforModelRed, ID<:IntegDomain{S} where {S<:FESetT4}, M<:AbstractMatDeforLinearElastic}
+        mr::Type{MR},
+        integdomain::ID,
+        material::M,
+    ) where {
+        MR<:AbstractDeforModelRed,
+        ID<:IntegDomain{S} where {S<:FESetT4},
+        M<:AbstractMatDeforLinearElastic,
+    }
 
 Constructor.
 """
@@ -231,11 +239,16 @@ end
 
 """
     FEMMDeforLinearESNICEH8(
-            mr::Type{MR},
-            integdomain::ID,
-            mcsys::CS,
-            material::M,
-        ) where {MR<:AbstractDeforModelRed, ID<:IntegDomain{S} where {S<:FESetH8}, M<:AbstractMatDeforLinearElastic}
+        mr::Type{MR},
+        integdomain::ID,
+        mcsys::CS,
+        material::M,
+    ) where {
+        MR<:AbstractDeforModelRed,
+        ID<:IntegDomain{S} where {S<:FESetH8},
+        CS<:CSys,
+        M<:AbstractMatDeforLinearElastic,
+    }
 
 Constructor.
 """
@@ -267,10 +280,14 @@ end
 
 """
     FEMMDeforLinearESNICEH8(
-            mr::Type{MR},
-            integdomain::ID,
-            material::M,
-        ) where {MR<:AbstractDeforModelRed, ID<:IntegDomain{S} where {S<:FESetH8}, M<:AbstractMatDeforLinearElastic}
+        mr::Type{MR},
+        integdomain::ID,
+        material::M,
+    ) where {
+        MR<:AbstractDeforModelRed,
+        ID<:IntegDomain{S} where {S<:FESetH8},
+        M<:AbstractMatDeforLinearElastic,
+    }
 
 Constructor.
 """
@@ -552,7 +569,12 @@ function associategeometry!(
 end
 
 """
-    stiffness(self::AbstractFEMMDeforLinearESNICE, assembler::A, geom::NodalField{GFT}, u::NodalField{T}) where {A<:AbstractSysmatAssembler, GFT<:Number, T<:Number}
+    stiffness(
+        self::AbstractFEMMDeforLinearESNICE,
+        assembler::A,
+        geom::NodalField{GFT},
+        u::NodalField{T},
+    ) where {A<:AbstractSysmatAssembler,GFT<:Number,T<:Number}
 
 Compute and assemble  stiffness matrix.
 """
@@ -632,7 +654,17 @@ function stiffness(
 end
 
 """
-inspectintegpoints(self::AbstractFEMMDeforLinearESNICE, geom::NodalField{GFT},  u::NodalField{UFT}, dT::NodalField{TFT}, felist::Vector{IT}, inspector::F,  idat, quantity=:Cauchy; context...) where {GFT<:Number, UFT<:Number, TFT<:Number, IT<:Integer, F<:Function}
+    inspectintegpoints(
+        self::AbstractFEMMDeforLinearESNICE,
+        geom::NodalField{GFT},
+        u::NodalField{UFT},
+        dT::NodalField{TFT},
+        felist::Vector{IT},
+        inspector::F,
+        idat,
+        quantity = :Cauchy;
+        context...,
+    ) where {GFT<:Number,UFT<:Number,TFT<:Number,IT<:Integer,F<:Function}
 
 Inspect integration point quantities.
 
@@ -804,14 +836,12 @@ end
 Compute the matrix to produce the norm of the divergence of the displacement.
 
 This matrix is used in the numerical infsup test (Klaus-Jurgen Bathe, The
-inf-sup condition and its evaluation for mixed finite element methods,
-Computers and Structures 79 (2001) 243-252.)
+inf-sup condition and its evaluation for mixed finite element methods, Computers
+and Structures 79 (2001) 243-252.)
 
-!!! note
-
-
-This computation has not been optimized in any way. It can be expected to be
-inefficient.
+!!! note 
+    This computation has not been optimized in any way. It can be expected
+    to be inefficient.
 """
 function infsup_gh(
     self::AbstractFEMMDeforLinearESNICE,
@@ -865,10 +895,7 @@ inf-sup condition and its evaluation for mixed finite element methods,
 Computers and Structures 79 (2001) 243-252.)
 
 !!! note
-
-
-This computation has not been optimized in any way. It can be expected to be
-inefficient.
+    This computation has not been optimized in any way. It can be expected to be inefficient.
 """
 function infsup_sh(
     self::AbstractFEMMDeforLinearESNICE,

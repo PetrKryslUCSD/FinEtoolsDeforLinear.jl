@@ -1,6 +1,4 @@
 """
-    FEMMDeforLinearModule
-
 Module for operations on interiors of domains to construct system matrices and
 system vectors for linear deformation models.
 """
@@ -17,9 +15,14 @@ import FinEtoolsDeforLinear.MatDeforLinearElasticModule: AbstractMatDeforLinearE
 import FinEtools.CSysModule: CSys
 
 """
-    FEMMDeforLinear{MR<:AbstractDeforModelRed,  S<:AbstractFESet, F<:Function, M<:AbstractMatDeforLinearElastic} <: AbstractFEMMDeforLinear
+    mutable struct FEMMDeforLinear{
+        MR<:AbstractDeforModelRed,
+        ID<:IntegDomain,
+        CS<:CSys,
+        M<:AbstractMatDeforLinearElastic,
+    } <: AbstractFEMMDeforLinear
 
-Class for linear deformation finite element modeling machine.
+Type for linear deformation finite element modeling machine.
 """
 mutable struct FEMMDeforLinear{
     MR<:AbstractDeforModelRed,
@@ -32,8 +35,18 @@ mutable struct FEMMDeforLinear{
     mcsys::CS # updater of the material orientation matrix
     material::M # material object
 end
+
 """
-    FEMMDeforLinear(mr::Type{MR}, integdomain::IntegDomain{S, F}, material::M) where {MR<:AbstractDeforModelRed, S<:AbstractFESet, F<:Function, M<:AbstractMatDeforLinearElastic}
+    FEMMDeforLinear(
+        mr::Type{MR},
+        integdomain::IntegDomain{S,F},
+        material::M,
+    ) where {
+        MR<:AbstractDeforModelRed,
+        S<:AbstractFESet,
+        F<:Function,
+        M<:AbstractMatDeforLinearElastic,
+    }
 
 Constructor of linear deformation finite element modeling machine.
 """

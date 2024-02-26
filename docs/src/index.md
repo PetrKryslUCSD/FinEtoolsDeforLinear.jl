@@ -1,19 +1,11 @@
 # FinEtoolsDeforLinear Documentation
 
-## Tutorials
 
-The [tutorials](https://github.com/PetrKryslUCSD/FinEtoolsDeforLinearTutorials.jl) are provided in the form of Julia scripts and Markdown files in a separate [package](https://github.com/PetrKryslUCSD/FinEtoolsDeforLinearTutorials.jl). 
+The [`FinEtools`](https://petrkryslucsd.github.io/FinEtools.jl/latest/index.html) package is used here to solve linear deformation static and dynamic problems.
 
-## Manual
-
-The description of the types and the functions, organized by module and/or other logical principle.
+Tutorials  are provided in the form of Julia scripts and Markdown files in a dedicated folder: [`index of tutorials`](https://github.com/PetrKryslUCSD/FinEtoolsDeforLinear.jl/blob/main/tutorials/index.md). 
 
 ```@contents
-Pages = [
-    "man/types.md",
-    "man/functions.md",
-]
-Depth = 2
 ```
 
 ## Conceptual guide
@@ -26,3 +18,18 @@ Pages = [
 ]
 Depth = 1
 ```
+
+## Manual
+
+The description of the types and the functions, organized by module and/or other logical principle.
+
+```@contents
+Pages = [
+    "man/man.md",
+]
+Depth = 2
+```
+
+## Tutorials
+
+The [tutorials](https://github.com/PetrKryslUCSD/FinEtoolsDeforLinear.jl) are provided in the form of Julia scripts and Markdown files in the `tutorials` folder. 

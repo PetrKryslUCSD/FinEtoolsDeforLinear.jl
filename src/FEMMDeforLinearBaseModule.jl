@@ -1,6 +1,4 @@
 """
-    AbstractFEMMDeforLinearBaseModule
-
 Base module for operations on interiors of domains to construct system matrices and
 system vectors for linear deformation models.
 """
@@ -82,7 +80,12 @@ function _buffers(
 end
 
 """
-    mass(self::AbstractFEMMDeforLinear,  assembler::A,  geom::NodalField{GFT}, u::NodalField{UFT}) where {A<:AbstractSysmatAssembler, GFT<:Number, UFT<:Number}
+    mass(
+        self::AbstractFEMMDeforLinear,
+        assembler::A,
+        geom::NodalField{GFT},
+        u::NodalField{UFT},
+    ) where {A<:AbstractSysmatAssembler,GFT<:Number,UFT<:Number}
 
 Compute the consistent mass matrix
 
@@ -108,12 +111,16 @@ function mass(
 end
 
 """
-    stiffness(self::FEMM, assembler::A, geom::NodalField{GFT}, u::NodalField{UFT}) where {FEMM<:AbstractFEMMDeforLinear, A<:AbstractSysmatAssembler, GFT<:Number, UFT<:Number}
+    stiffness(
+        self::FEMM,
+        assembler::A,
+        geom::NodalField{GFT},
+        u::NodalField{UFT},
+    ) where {FEMM<:AbstractFEMMDeforLinear,A<:AbstractSysmatAssembler,GFT<:Number,UFT<:Number}
 
-Compute and assemble  stiffness matrix.
+Compute and assemble stiffness matrix.
 
-!!! note
-
+!!! note "Only for homogeneous materials" 
     The material stiffness matrix is assumed to be the same at all the points of
     the domain (homogeneous material).
 """
@@ -141,7 +148,13 @@ function stiffness(
 end
 
 """
-    thermalstrainloads(self::AbstractFEMMDeforLinear, assembler::A, geom::NodalField{GFT}, u::NodalField{UFT}, dT::NodalField{TFT}) where {A<:AbstractSysvecAssembler, GFT<:Number, UFT<:Number, TFT<:Number}
+    thermalstrainloads(
+        self::AbstractFEMMDeforLinear,
+        assembler::A,
+        geom::NodalField{GFT},
+        u::NodalField{UFT},
+        dT::NodalField{TFT},
+    ) where {A<:AbstractSysvecAssembler,GFT<:Number,UFT<:Number,TFT<:Number}
 
 Compute the thermal-strain load vector.
 """
@@ -208,10 +221,28 @@ function thermalstrainloads(
 end
 
 """
-    inspectintegpoints(self::FEMM, geom::NodalField{GFT},  u::NodalField{UFT}, dT::NodalField{TFT}, felist::AbstractVector{IT}, inspector::F, idat, quantity=:Cauchy; context...) where {FEMM<:AbstractFEMMDeforLinear, GFT<:Number, UFT<:Number, TFT<:Number, IT<:Integer, F<:Function}
+    inspectintegpoints(
+        self::FEMM,
+        geom::NodalField{GFT},
+        u::NodalField{UFT},
+        dT::NodalField{TFT},
+        felist::AbstractVector{IT},
+        inspector::F,
+        idat,
+        quantity = :Cauchy;
+        context...,
+    ) where {
+        FEMM<:AbstractFEMMDeforLinear,
+        GFT<:Number,
+        UFT<:Number,
+        TFT<:Number,
+        IT<:Integer,
+        F<:Function,
+    }
 
 Inspect integration point quantities.
 
+# Arguments
   - `geom` - reference geometry field
   - `u` - displacement field
   - `dT` - temperature difference field
@@ -227,7 +258,7 @@ Inspect integration point quantities.
     `out` is the output of the update!() method,  `loc` is the location
     of the integration point in the *reference* configuration.
 
-### Return
+# Return
 
 The updated inspector data is returned.
 """
@@ -365,19 +396,24 @@ function _buffers2(
 end
 
 """
-    infsup_gh(self::AbstractFEMMDeforLinear, assembler::A, geom::NodalField{GFT}, u::NodalField{UFT}) where {A<:AbstractSysmatAssembler, GFT, UFT}
+    infsup_gh(
+        self::AbstractFEMMDeforLinear,
+        assembler::A,
+        geom::NodalField{GFT},
+        u::NodalField{UFT},
+    ) where {A<:AbstractSysmatAssembler,GFT,UFT}
 
 Compute the matrix to produce the norm of the divergence of the displacement.
 
 This matrix is used in the numerical infsup test (Klaus-Jurgen Bathe, The
-inf-sup condition and its evaluation for mixed finite element methods,
-Computers and Structures 79 (2001) 243-252.)
+inf-sup condition and its evaluation for mixed finite element methods, Computers
+and Structures 79 (2001) 243-252.)
 
 !!! note
 
+    This computation has not been optimized in any way. 
+    It can be expected to be inefficient.
 
-This computation has not been optimized in any way. It can be expected to be
-inefficient.
 """
 function infsup_gh(
     self::AbstractFEMMDeforLinear,
@@ -440,20 +476,23 @@ function _buffers3(
 end
 
 """
-    infsup_sh(self::AbstractFEMMDeforLinear, assembler::A, geom::NodalField{GFT}, u::NodalField{UFT}) where {A<:AbstractSysmatAssembler, GFT<:Number, UFT<:Number}
+    infsup_sh(
+        self::AbstractFEMMDeforLinear,
+        assembler::A,
+        geom::NodalField{GFT},
+        u::NodalField{UFT},
+    ) where {A<:AbstractSysmatAssembler,GFT<:Number,UFT<:Number}
 
 Compute the matrix to produce the seminorm of the displacement (square root of
 the sum of the squares of the derivatives of the components of displacement).
 
 This matrix is used in the numerical infsup test (Klaus-Jurgen Bathe, The
-inf-sup condition and its evaluation for mixed finite element methods,
-Computers and Structures 79 (2001) 243-252.)
+inf-sup condition and its evaluation for mixed finite element methods, Computers
+and Structures 79 (2001) 243-252.)
 
 !!! note
+    This computation has not been optimized in any way. It can be expected to be inefficient.
 
-
-This computation has not been optimized in any way. It can be expected to be
-inefficient.
 """
 function infsup_sh(
     self::AbstractFEMMDeforLinear,

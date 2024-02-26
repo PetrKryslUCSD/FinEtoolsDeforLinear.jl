@@ -1,6 +1,4 @@
 """
-    AlgoDeforLinearModule
-
 Module for algorithms used in linear deformation models.
 """
 module AlgoDeforLinearModule
@@ -80,27 +78,11 @@ would hold key-value pairs
 
   - `"geom"` = the nodal field that is the geometry
   - `"u"` = the nodal field that is the computed displacement
-  - `"temp"` = the nodal field that is the temperature change    # For body loads (optional):
-  - `"work"` = work of the applied loads    # model_data.body_load = cell array of struct,
-  - `"timing"` = dictionary with timing results    #          each piece of the domain can have each its own body load
+  - `"temp"` = the nodal field that is the temperature change   
+  - `"work"` = work of the applied loads    
+  - `"timing"` = dictionary with timing results    
 """
 function linearstatics(modeldata::FDataDict)
-
-    # For body loads (optional):
-    # model_data.body_load = cell array of struct,
-    #          each piece of the domain can have each its own body load
-    #     force  = force density vector
-    #     fes = finite element set to which the load applies
-    #     integration_rule= integration rule
-    #
-    # For multi point constraints (MPC) (optional):
-    # model_data.mpc= cell array of structs, each for one MPC.
-    #      node_list = list of node numbers involved in the MPC,
-    #      dof_list= numbers of degrees of freedom for the nodes above,
-    #      umultipliers=multipliers for the nodes above,
-    #      pe1act=the penalty factor to multiply  the constraint matrix,
-    #          The MPC looks like this: sum_i m_i u_{dof(i),node(i)} =0
-    #          where m_i is the multiplier.
 
     # Lists of recognized keys for the data dictionaries:
     modeldata_recognized_keys = [
@@ -329,7 +311,7 @@ mandatory, the  region dictionary  contains values for keys:
   - `modeldata["postprocessing"]["exported"]` = array of data dictionaries, one for
     each exported file. The data is stored with the keys:
 
-      + `"file"` - names of exported file    # Defaults
+      + `"file"` - names of exported file  
       + `"field"` - nodal or elemental field
 """
 function exportdeformation(modeldata::FDataDict)

@@ -1,6 +1,4 @@
 """
-    FEMMDeforWinklerModule
-
 Module for operations on boundaries of domains to construct system matrices and
 system vectors for linear deformation models with distributed-spring supports
 (Winkler foundation model).
