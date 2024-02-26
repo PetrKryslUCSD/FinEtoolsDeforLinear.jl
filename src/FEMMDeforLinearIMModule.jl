@@ -1,6 +1,4 @@
 """
-    FEMMDeforLinearIMModule
-
 Module for operations on interiors of domains to construct system matrices and
 system vectors for linear deformation models: incompatible-mode formulation.
 """
@@ -50,7 +48,12 @@ using LinearAlgebra: norm, qr, diag, dot, cond
 using Statistics: mean
 
 """
-    FEMMDeforLinearIMH8{MR<:AbstractDeforModelRed, S<:FESetH8, F<:Function, M<:AbstractMatDeforLinearElastic} 
+    mutable struct FEMMDeforLinearIMH8{
+        MR<:AbstractDeforModelRed,
+        ID<:IntegDomain{S,F} where {S<:FESetH8,F<:Function},
+        CS<:CSys,
+        M<:AbstractMatDeforLinearElastic,
+    } <: AbstractFEMMDeforLinear
 
 Type for mean-strain linear deformation FEMM based on eight-node hexahedral elements with incompatible modes.
 
@@ -76,9 +79,14 @@ end
         integdomain::ID,
         mcsys::CS,
         material::M,
-    ) where {MR<:AbstractDeforModelRed, ID<:IntegDomain{S,F} where {S<:FESetH8,F<:Function}, CS<:CSys, M<:AbstractMatDeforLinearElastic}
+    ) where {
+        MR<:AbstractDeforModelRed,
+        ID<:IntegDomain{S,F} where {S<:FESetH8,F<:Function},
+        CS<:CSys,
+        M<:AbstractMatDeforLinearElastic,
+    }
 
-Constructor.
+Constructor. Default number of incompatible modes.
 """
 function FEMMDeforLinearIMH8(
     mr::Type{MR},
@@ -101,9 +109,13 @@ end
         mr::Type{MR},
         integdomain::ID,
         material::M,
-    ) where {MR<:AbstractDeforModelRed, ID<:IntegDomain{S,F} where {S<:FESetH8,F<:Function}, M<:AbstractMatDeforLinearElastic}
+    ) where {
+        MR<:AbstractDeforModelRed,
+        ID<:IntegDomain{S,F} where {S<:FESetH8,F<:Function},
+        M<:AbstractMatDeforLinearElastic,
+    }
 
-Constructor.
+Constructor. Default number of incompatible modes.
 """
 function FEMMDeforLinearIMH8(
     mr::Type{MR},
@@ -156,7 +168,7 @@ function FEMMDeforLinearIMH8(
     )
 end
 
-function centroidintegrationdata(self)
+function __centroidintegrationdata(self)
     integration_rule = GaussRule(3, 1)
     pc = integration_rule.param_coords
     w = integration_rule.weights
@@ -173,7 +185,7 @@ function centroidintegrationdata(self)
     return npts, reshape(Ns, 1, npts), reshape(gradNparams, 1, npts), w, pc
 end
 
-function imintegrationdata(nmodes, integration_rule)
+function __imintegrationdata(nmodes, integration_rule)
     pc = integration_rule.param_coords
     w = integration_rule.weights
     npts = integration_rule.npts
@@ -222,7 +234,7 @@ function imintegrationdata(nmodes, integration_rule)
     return reshape(Ns, 1, npts), reshape(gradNparams, 1, npts)
 end
 
-function imblmat!(mr, imB, imNs, imgradN, loc0, csmat, nmodes)
+function __imblmat!(mr, imB, imNs, imgradN, loc0, csmat, nmodes)
     blmat!(mr, imB, imNs, imgradN, loc0, csmat)
     if nmodes == 12
         imB[1:3, 10] .= imgradN[4, 1]
@@ -301,9 +313,12 @@ function associategeometry!(
 end
 
 """
-stiffness(self::AbstractFEMMDeforLinearIM, assembler::A,
-geom::NodalField{FFlt},
-u::NodalField{T}) where {A<:AbstractSysmatAssembler, T<:Number}
+    stiffness(
+        self::FEMMDeforLinearIMH8,
+        assembler::A,
+        geom::NodalField{GFT},
+        u::NodalField{UFT},
+    ) where {A<:AbstractSysmatAssembler,GFT<:Number,UFT<:Number}
 
 Compute and assemble  stiffness matrix.
 """
@@ -315,8 +330,8 @@ function stiffness(
 ) where {A<:AbstractSysmatAssembler,GFT<:Number,UFT<:Number}
     fes = self.integdomain.fes
     npts, Ns, gradNparams, w, pc = integrationdata(self.integdomain)
-    npts0, Ns0, gradNparams0, w0, pc0 = centroidintegrationdata(self.integdomain)
-    imNs, imgradNparams = imintegrationdata(self.nmodes, self.integdomain.integration_rule)
+    npts0, Ns0, gradNparams0, w0, pc0 = __centroidintegrationdata(self.integdomain)
+    imNs, imgradNparams = __imintegrationdata(self.nmodes, self.integdomain.integration_rule)
     ecoords,
     dofnums,
     loc,
@@ -361,7 +376,7 @@ function stiffness(
             blmat!(self.mr, Bc, Ns[j], gradN, loc, csmat(self.mcsys))
             B[:, 1:24] .= sqrt(Jac * w[j]) .* Bc
             gradN!(fes, imgradN, imgradNparams[j], csmatTJ0)
-            imblmat!(self.mr, imB, imNs[j], imgradN, loc0, csmat(self.mcsys), self.nmodes)
+            __imblmat!(self.mr, imB, imNs[j], imgradN, loc0, csmat(self.mcsys), self.nmodes)
             B[:, 25:end] .= sqrt(Jac0 * w[j]) .* imB
             add_btdb_ut_only!(elmat, B, 1.0, D, DB)
         end # Loop over quadrature points
