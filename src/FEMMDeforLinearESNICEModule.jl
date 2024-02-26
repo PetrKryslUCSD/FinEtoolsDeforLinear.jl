@@ -315,7 +315,7 @@ function FEMMDeforLinearESNICEH8(
     )
 end
 
-function _buffers1(self::AbstractFEMMDeforLinearESNICE, geom::NodalField{GFT}) where {GFT}
+function _buffers1(self::FEMM, geom::NodalField{GFT}) where {FEMM<:AbstractFEMMDeforLinearESNICE,GFT}
     fes = self.integdomain.fes
     nne = nodesperelem(fes) # number of nodes for element
     sdim = ndofs(geom)            # number of space dimensions
@@ -331,11 +331,11 @@ function _buffers1(self::AbstractFEMMDeforLinearESNICE, geom::NodalField{GFT}) w
 end
 
 function _buffers2(
-    self::AbstractFEMMDeforLinearESNICE,
+    self::FEMM,
     geom::NodalField{GFT},
     u::NodalField,
     npts::Int,
-) where {GFT}
+) where {FEMM<:AbstractFEMMDeforLinearESNICE,GFT}
     fes = self.integdomain.fes
     ndn = ndofs(u) # number of degrees of freedom per node
     nne = nodesperelem(fes) # number of nodes for element
@@ -358,10 +358,10 @@ function _buffers2(
 end
 
 function _buffers3(
-    self::AbstractFEMMDeforLinearESNICE,
+    self::FEMM,
     geom::NodalField{GFT},
     u::NodalField,
-) where {GFT}
+) where {FEMM<:AbstractFEMMDeforLinearESNICE,GFT}
     fes = self.integdomain.fes
     ndn = ndofs(u) # number of degrees of freedom per node
     nne = nodesperelem(fes) # number of nodes for element
@@ -476,17 +476,21 @@ function _tetaspectratiovol(X)
 end
 
 """
-    associategeometry!(self::F,  geom::NodalField{GFT}; stabilization_parameters = _T4_stabilization_parameters) where {F<:FEMMDeforLinearESNICET4, GFT}
+    associategeometry!(
+        self::FEMM,
+        geom::NodalField{GFT};
+        stabilization_parameters = _T4_stabilization_parameters,
+    ) where {FEMM<:FEMMDeforLinearESNICET4,GFT}
 
 Associate geometry field with the FEMM.
 
 Compute the  correction factors to account for  the shape of the  elements.
 """
 function associategeometry!(
-    self::F,
+    self::FEMM,
     geom::NodalField{GFT};
     stabilization_parameters = _T4_stabilization_parameters,
-) where {F<:FEMMDeforLinearESNICET4,GFT}
+) where {FEMM<:FEMMDeforLinearESNICET4,GFT}
     (a, b) = stabilization_parameters
     fes = self.integdomain.fes
     self.ephis = fill(zero(StabParamFloat), count(fes))
@@ -524,16 +528,19 @@ function associategeometry!(
 end
 
 """
-    associategeometry!(self::F,  geom::NodalField{GFT}) where {F<:FEMMDeforLinearESNICEH8, GFT}
+    associategeometry!(
+        self::FEMM,
+        geom::NodalField{GFT},
+    ) where {FEMM<:FEMMDeforLinearESNICEH8,GFT}
 
 Associate geometry field with the FEMM.
 
 Compute the  correction factors to account for  the shape of the  elements.
 """
 function associategeometry!(
-    self::F,
+    self::FEMM,
     geom::NodalField{GFT},
-) where {F<:FEMMDeforLinearESNICEH8,GFT}
+) where {FEMM<:FEMMDeforLinearESNICEH8,GFT}
     fes = self.integdomain.fes
     self.ephis = fill(zero(StabParamFloat), count(fes))
     evols = fill(zero(StabParamFloat), count(fes))
@@ -570,20 +577,20 @@ end
 
 """
     stiffness(
-        self::AbstractFEMMDeforLinearESNICE,
+        self::FEMM,
         assembler::A,
         geom::NodalField{GFT},
         u::NodalField{T},
-    ) where {A<:AbstractSysmatAssembler,GFT<:Number,T<:Number}
+    ) where {FEMM<:AbstractFEMMDeforLinearESNICE,A<:AbstractSysmatAssembler,GFT<:Number,T<:Number}
 
 Compute and assemble  stiffness matrix.
 """
 function stiffness(
-    self::AbstractFEMMDeforLinearESNICE,
+    self::FEMM,
     assembler::A,
     geom::NodalField{GFT},
     u::NodalField{T},
-) where {A<:AbstractSysmatAssembler,GFT<:Number,T<:Number}
+) where {FEMM<:AbstractFEMMDeforLinearESNICE,A<:AbstractSysmatAssembler,GFT<:Number,T<:Number}
     fes = self.integdomain.fes
     npts, Ns, gradNparams, w, pc = integrationdata(self.integdomain)
     ecoords, dofnums, loc, J, csmatTJ, Jac, D, Dstab = _buffers2(self, geom, u, npts)
@@ -645,17 +652,17 @@ function stiffness(
 end
 
 function stiffness(
-    self::AbstractFEMMDeforLinearESNICE,
+    self::FEMM,
     geom::NodalField{GFT},
-    u::NodalField{UFT},
-) where {GFT<:Number,UFT<:Number}
+    u::NodalField{T},
+) where {FEMM<:AbstractFEMMDeforLinearESNICE,GFT<:Number,T<:Number}
     assembler = SysmatAssemblerSparseSymm()
     return stiffness(self, assembler, geom, u)
 end
 
 """
     inspectintegpoints(
-        self::AbstractFEMMDeforLinearESNICE,
+        self::FEMM,
         geom::NodalField{GFT},
         u::NodalField{UFT},
         dT::NodalField{TFT},
@@ -664,7 +671,7 @@ end
         idat,
         quantity = :Cauchy;
         context...,
-    ) where {GFT<:Number,UFT<:Number,TFT<:Number,IT<:Integer,F<:Function}
+    ) where {FEMM<:AbstractFEMMDeforLinearESNICE,GFT<:Number,UFT<:Number,TFT<:Number,IT<:Integer,F<:Function}
 
 Inspect integration point quantities.
 
@@ -690,7 +697,7 @@ Inspect integration point quantities.
 The updated inspector data is returned.
 """
 function inspectintegpoints(
-    self::AbstractFEMMDeforLinearESNICE,
+    self::FEMM,
     geom::NodalField{GFT},
     u::NodalField{UFT},
     dT::NodalField{TFT},
@@ -699,7 +706,7 @@ function inspectintegpoints(
     idat,
     quantity = :Cauchy;
     context...,
-) where {GFT<:Number,UFT<:Number,TFT<:Number,IT<:Integer,F<:Function}
+) where {FEMM<:AbstractFEMMDeforLinearESNICE,GFT<:Number,UFT<:Number,TFT<:Number,IT<:Integer,F<:Function}
     fes = self.integdomain.fes
     npts, Ns, gradNparams, w, pc = integrationdata(self.integdomain)
     ecoords, dofnums, loc, J, csmatTJ, Jac, D, Dstab = _buffers2(self, geom, u, npts)
@@ -807,7 +814,7 @@ function inspectintegpoints(
 end
 
 function inspectintegpoints(
-    self::AbstractFEMMDeforLinearESNICE,
+    self::FEMM,
     geom::NodalField{GFT},
     u::NodalField{UFT},
     felist::Vector{IT},
@@ -815,7 +822,7 @@ function inspectintegpoints(
     idat,
     quantity = :Cauchy;
     context...,
-) where {GFT<:Number,UFT<:Number,IT<:Integer,F<:Function}
+) where {FEMM<:AbstractFEMMDeforLinearESNICE,GFT<:Number,UFT<:Number,IT<:Integer,F<:Function}
     dT = NodalField(fill(zero(GFT), nnodes(geom), 1)) # zero difference in temperature
     return inspectintegpoints(
         self,
@@ -831,7 +838,12 @@ function inspectintegpoints(
 end
 
 """
-    infsup_gh(self::AbstractFEMMDeforLinearESNICE, assembler::A, geom::NodalField{GFT}, u::NodalField{UFT}) where {A<:AbstractSysmatAssembler, GFT<:Number, UFT<:Number}
+    infsup_gh(
+        self::FEMM,
+        assembler::A,
+        geom::NodalField{GFT},
+        u::NodalField{UFT},
+    ) where {FEMM<:AbstractFEMMDeforLinearESNICE,A<:AbstractSysmatAssembler,GFT<:Number,UFT<:Number}
 
 Compute the matrix to produce the norm of the divergence of the displacement.
 
@@ -844,11 +856,11 @@ and Structures 79 (2001) 243-252.)
     to be inefficient.
 """
 function infsup_gh(
-    self::AbstractFEMMDeforLinearESNICE,
+    self::FEMM,
     assembler::A,
     geom::NodalField{GFT},
     u::NodalField{UFT},
-) where {A<:AbstractSysmatAssembler,GFT<:Number,UFT<:Number}
+) where {FEMM<:AbstractFEMMDeforLinearESNICE,A<:AbstractSysmatAssembler,GFT<:Number,UFT<:Number}
     fes = self.integdomain.fes
     npts, Ns, gradNparams, w, pc = integrationdata(self.integdomain)
     elmatsizeguess = 4 * nodesperelem(fes) * ndofs(u)
@@ -885,7 +897,12 @@ function infsup_gh(
 end
 
 """
-    infsup_sh(self::AbstractFEMMDeforLinearESNICE, assembler::A, geom::NodalField{GFT}, u::NodalField{UFT}) where {A<:AbstractSysmatAssembler, GFT<:Number, UFT<:Number}
+    infsup_sh(
+        self::AbstractFEMMDeforLinearESNICE,
+        assembler::A,
+        geom::NodalField{GFT},
+        u::NodalField{UFT},
+    ) where {A<:AbstractSysmatAssembler,GFT<:Number,UFT<:Number}
 
 Compute the matrix to produce the seminorm of the displacement (square root of
 the sum of the squares of the derivatives of the components of displacement).
@@ -898,11 +915,11 @@ Computers and Structures 79 (2001) 243-252.)
     This computation has not been optimized in any way. It can be expected to be inefficient.
 """
 function infsup_sh(
-    self::AbstractFEMMDeforLinearESNICE,
+    self::FEMM,
     assembler::A,
     geom::NodalField{GFT},
     u::NodalField{UFT},
-) where {A<:AbstractSysmatAssembler,GFT<:Number,UFT<:Number}
+) where {FEMM<:AbstractFEMMDeforLinearESNICE,A<:AbstractSysmatAssembler,GFT<:Number,UFT<:Number}
     fes = self.integdomain.fes
     npts, Ns, gradNparams, w, pc = integrationdata(self.integdomain)
     elmatsizeguess = 4 * nodesperelem(fes) * ndofs(u)
@@ -930,10 +947,10 @@ function infsup_sh(
 end
 
 function infsup_sh(
-    self::AbstractFEMMDeforLinearESNICE,
+    self::FEMM,
     geom::NodalField{GFT},
     u::NodalField{UFT},
-) where {GFT<:Number,UFT<:Number}
+) where {FEMM<:AbstractFEMMDeforLinearESNICE,GFT<:Number,UFT<:Number}
     assembler = SysmatAssemblerSparseSymm()
     return infsup_sh(self, assembler, geom, u)
 end
