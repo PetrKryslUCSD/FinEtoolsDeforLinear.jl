@@ -35,7 +35,7 @@ function getfrcL!(forceout, XYZ, tangents, feid, qpid)
     copyto!(forceout, [0.0; 0.0; magn])
 end
 
-function example(n = 10, precond = :ilu, alg = :cg)
+function example(n = 10; precond = :ilu, alg = :cg, other...)
     elementtag = "H8"
     println("""
     Stubby corbel example. Element: $(elementtag)
@@ -98,9 +98,9 @@ function example(n = 10, precond = :ilu, alg = :cg)
 
     if precond == :ilu
         mK_ffd = mean(diag(K_ff))
-        PRECND = ilu(K_ff, τ = mK_ffd / 100.0)
+        PRECOND = ilu(K_ff, τ = mK_ffd / 100.0)
     elseif precond == :kdiag
-        PRECND = Diagonal(diag(K_ff))
+        PRECOND = Diagonal(diag(K_ff))
     end
 
     if alg == :cg
@@ -109,8 +109,10 @@ function example(n = 10, precond = :ilu, alg = :cg)
         ALG = KrylovJL_GMRES
     end
 
-    @time prob = LinearProblem(K_ff, F_f)
-    @time sol = solve(prob, ALG(), Pl=PRECND)
+    verbose = haskey(other, :verbose) ? other[:verbose] : false
+
+    prob = LinearProblem(K_ff, F_f)
+    @time sol = solve(prob, ALG(), Pl=PRECOND, verbose=verbose)
     scattersysvec!(u, sol.u[:])
 
     utip = mean(u.values[Tipl, 3], dims = 1)
@@ -123,10 +125,10 @@ function example(n = 10, precond = :ilu, alg = :cg)
     true
 end # example
 
-function allrun(args...)
+function allrun(n = 10; args...)
     println("#####################################################")
     println("# example ")
-    example(args...)
+    example(n; args...)
     return true
 end # function allrun
 
