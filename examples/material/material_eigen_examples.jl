@@ -35,11 +35,22 @@ function ortho()
     CTE3 = 0.0
 
     MR = DeforModelRed3D
-    material = MatDeforElastOrtho(MR,
-        0.0, E1s, E2s, E3s,
-        nu12s, nu13s, nu23s,
-        G12s, G13s, G23s,
-        CTE1, CTE2, CTE3)
+    material = MatDeforElastOrtho(
+        MR,
+        0.0,
+        E1s,
+        E2s,
+        E3s,
+        nu12s,
+        nu13s,
+        nu23s,
+        G12s,
+        G13s,
+        G23s,
+        CTE1,
+        CTE2,
+        CTE3,
+    )
     D = fill(0.0, 6, 6)
     t::FFlt, dt::FFlt, loc::FFltMat, label::FInt = 0.0, 0.0, [0.0 0.0 0.0], 0
     tangentmoduli!(material, D, t, dt, loc, label)

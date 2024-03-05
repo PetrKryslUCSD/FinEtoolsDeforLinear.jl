@@ -48,16 +48,18 @@ function FV12_plate_esnice()
     println("f/f_analytical % = $(fs[7:10]  ./ f_analytical[7:10] .* 100) %")
 
     vectors = []
-    for i in 7:length(fs)
+    for i = 7:length(fs)
         scattersysvec!(u, v[:, i])
         push!(vectors, ("Mode_$i", deepcopy(u.values)))
     end
     File = "rectangular_plate_esnice.vtk"
-    vtkexportmesh(File,
+    vtkexportmesh(
+        File,
         connasarray(fes),
         fens.xyz,
         FinEtools.MeshExportModule.VTK.T4;
-        vectors = vectors)
+        vectors = vectors,
+    )
     @async run(`"paraview.exe" $File`)
 
     d, v, nconv = SubSIt.ssit(K + OmegaShift * M, M; nev = neigvs)

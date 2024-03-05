@@ -109,7 +109,7 @@ function thick_pipe_axi()
     bcl = selectelem(fens, bdryfes, box = [0.0, 0.0, -Inf, Inf], inflate = tolerance)
     internal_fenids = connectednodes(subset(bdryfes, bcl))
     # Now  shape the block  into  the actual wedge piece of the pipe.
-    for i in 1:count(fens)
+    for i = 1:count(fens)
         fens.xyz[i, :] = fens.xyz[i, :] + [a; 0.0]
     end
 
@@ -148,7 +148,9 @@ function thick_pipe_axi()
     # cylindrical-coordinate displacements there.
     uv = u.values[internal_fenids, :]
     # Report the  relative displacement on the internal surface:
-    println("(Approximate/true displacement) at the internal surface: $( mean(uv[:,1])/urex*100  ) %")
+    println(
+        "(Approximate/true displacement) at the internal surface: $( mean(uv[:,1])/urex*100  ) %",
+    )
 
     # Produce a plot of the radial stress component in the cylindrical
     # coordinate system. Note that this is the usual representation of
@@ -169,17 +171,13 @@ function thick_pipe_axi()
     end
 
     idat = MyIData(1, FFltVec[], FFltVec[])
-    idat = inspectintegpoints(femm,
-        geom,
-        u,
-        collect(1:count(fes)),
-        inspector,
-        idat,
-        :Cauchy)
+    idat =
+        inspectintegpoints(femm, geom, u, collect(1:count(fes)), inspector, idat, :Cauchy)
 
     # Plot the analytical solution.
     r = linearspace(a, b, 100)
-    @pgf a = Axis({
+    @pgf a = Axis(
+        {
             xlabel = "Radial distance",
             ylabel = "Radial stress",
             grid = "major",
@@ -187,8 +185,12 @@ function thick_pipe_axi()
         },
         Plot({mark = "dot"}, Table([:x => vec(r), :y => vec(radial_stress.(r))])),
         LegendEntry("Analytical"),
-        Plot({"only marks", "red", mark = "triangle"},
-            Table([:x => vec(idat.r), :y => vec(idat.s)])), LegendEntry("FEA"))
+        Plot(
+            {"only marks", "red", mark = "triangle"},
+            Table([:x => vec(idat.r), :y => vec(idat.s)]),
+        ),
+        LegendEntry("FEA"),
+    )
     display(a)
     # print_tex(a)
 
@@ -391,7 +393,7 @@ function thick_pipe_ps()
     internal_fenids = connectednodes(subset(bdryfes, bcl))
     # Now  shape the block  into  the actual wedge piece of the pipe.
     ayr = fens.xyz
-    for i in 1:count(fens)
+    for i = 1:count(fens)
         angl = ayr[i, 1]
         r = a + ayr[i, 2]
         fens.xyz[i, :] = [r * sin(angl), (r * cos(angl))]
@@ -417,11 +419,13 @@ function thick_pipe_ps()
     # direction.
 
     el1femm = FEMMBase(IntegDomain(subset(bdryfes, bcl), GaussRule(1, 3)))
-    function pressureloading!(forceout::FFltVec,
+    function pressureloading!(
+        forceout::FFltVec,
         XYZ::FFltMat,
         tangents::FFltMat,
         feid::FInt,
-        qpid::FInt)
+        qpid::FInt,
+    )
         copyto!(forceout, XYZ / norm(XYZ) * press)
         return forceout
     end
@@ -450,7 +454,9 @@ function thick_pipe_ps()
     end
 
     # Report the  relative displacement on the internal surface:
-    println("(Approximate/true displacement) at the internal surface: $( mean(ur)/urex*100  ) %")
+    println(
+        "(Approximate/true displacement) at the internal surface: $( mean(ur)/urex*100  ) %",
+    )
 
     # Produce a plot of the radial stress component in the cylindrical
     # coordinate system. Note that this is the usual representation of
@@ -488,13 +494,14 @@ function thick_pipe_ps()
     end
 
     idat = MyIData(1, FFltVec[], FFltVec[])
-    idat = inspectintegpoints(femm, geom, u, collect(1:count(fes)),
-        inspector, idat, :Cauchy)
+    idat =
+        inspectintegpoints(femm, geom, u, collect(1:count(fes)), inspector, idat, :Cauchy)
     # show(idat)
 
     # Plot the analytical solution.
     r = linearspace(a, b, 100)
-    @pgf a = Axis({
+    @pgf a = Axis(
+        {
             xlabel = "Radial distance",
             ylabel = "Radial stress",
             grid = "major",
@@ -502,8 +509,12 @@ function thick_pipe_ps()
         },
         Plot({mark = "dot"}, Table([:x => vec(r), :y => vec(radial_stress.(r))])),
         LegendEntry("Analytical"),
-        Plot({"only marks", "red", mark = "triangle"},
-            Table([:x => vec(idat.r), :y => vec(idat.s)])), LegendEntry("FEA"))
+        Plot(
+            {"only marks", "red", mark = "triangle"},
+            Table([:x => vec(idat.r), :y => vec(idat.s)]),
+        ),
+        LegendEntry("FEA"),
+    )
     display(a)
 end # thick_pipe_ps
 
@@ -626,7 +637,7 @@ function thick_pipe_ps_T6()
     internal_fenids = connectednodes(subset(bdryfes, bcl))
     # Now  shape the block  into  the actual wedge piece of the pipe.
     ayr = fens.xyz
-    for i in 1:count(fens)
+    for i = 1:count(fens)
         angl = ayr[i, 1]
         r = a + ayr[i, 2]
         fens.xyz[i, :] = [r * sin(angl), (r * cos(angl))]
@@ -652,11 +663,13 @@ function thick_pipe_ps_T6()
     # direction.
 
     el1femm = FEMMBase(IntegDomain(subset(bdryfes, bcl), GaussRule(1, 3)))
-    function pressureloading!(forceout::FFltVec,
+    function pressureloading!(
+        forceout::FFltVec,
         XYZ::FFltMat,
         tangents::FFltMat,
         feid::FInt,
-        qpid::FInt)
+        qpid::FInt,
+    )
         copyto!(forceout, XYZ / norm(XYZ) * press)
         return forceout
     end
@@ -685,7 +698,9 @@ function thick_pipe_ps_T6()
     end
 
     # Report the  relative displacement on the internal surface:
-    println("(Approximate/true displacement) at the internal surface: $( mean(ur)/urex*100  ) %")
+    println(
+        "(Approximate/true displacement) at the internal surface: $( mean(ur)/urex*100  ) %",
+    )
 
     # Produce a plot of the radial stress component in the cylindrical
     # coordinate system. Note that this is the usual representation of
@@ -723,13 +738,14 @@ function thick_pipe_ps_T6()
     end
 
     idat = MyIData(1, FFltVec[], FFltVec[])
-    idat = inspectintegpoints(femm, geom, u, collect(1:count(fes)),
-        inspector, idat, :Cauchy)
+    idat =
+        inspectintegpoints(femm, geom, u, collect(1:count(fes)), inspector, idat, :Cauchy)
     # show(idat)
 
     # Plot the analytical solution.
     r = linearspace(a, b, 100)
-    @pgf a = Axis({
+    @pgf a = Axis(
+        {
             xlabel = "Radial distance",
             ylabel = "Radial stress",
             grid = "major",
@@ -737,8 +753,12 @@ function thick_pipe_ps_T6()
         },
         Plot({mark = "dot"}, Table([:x => vec(r), :y => vec(radial_stress.(r))])),
         LegendEntry("Analytical"),
-        Plot({"only marks", "red", mark = "triangle"},
-            Table([:x => vec(idat.r), :y => vec(idat.s)])), LegendEntry("FEA"))
+        Plot(
+            {"only marks", "red", mark = "triangle"},
+            Table([:x => vec(idat.r), :y => vec(idat.s)]),
+        ),
+        LegendEntry("FEA"),
+    )
     display(a)
 
     #pub_thick_pipe_ps()

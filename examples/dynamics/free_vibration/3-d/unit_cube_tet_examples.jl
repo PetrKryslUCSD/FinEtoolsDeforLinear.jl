@@ -121,14 +121,19 @@ function unit_cube_esnice_helpers()
     associategeometry!(femm, geom)
     K = stiffness(femm, geom, u)
     M = mass(femm, geom, u)
-    @time d, v, nconv = VibrationGEPHelpers.gep_smallest(K + OmegaShift * M, M, neigvs; method=:ArnoldiMethod)
+    @time d, v, nconv = VibrationGEPHelpers.gep_smallest(
+        K + OmegaShift * M,
+        M,
+        neigvs;
+        method = :ArnoldiMethod,
+    )
     d = d .- OmegaShift
     fs = real(sqrt.(complex(d))) / (2 * pi)
     println("Eigenvalues: $fs [Hz]")
-    
+
     @show VibrationGEPHelpers.check_K_orthogonality(d, v, K)
     @show VibrationGEPHelpers.check_M_orthogonality(v, M)
-    
+
     File = "unit_cube_esnice_helpers-ArnoldiMethod.vtk"
     vectors = []
     for mode in eachindex(fs)

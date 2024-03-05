@@ -91,8 +91,13 @@ function NAFEMS_R0031_1_msh8()
     # Each layer is modeled with a single element.
     nts = Refinement * ones(Int, length(angles))# number of elements per layer
 
-    xs = unique(vcat(collect(linearspace(0.0, AB / 2, nL + 1)), [CD],
-        collect(linearspace(AB / 2, AB / 2 + OH, nO + 1))))
+    xs = unique(
+        vcat(
+            collect(linearspace(0.0, AB / 2, nL + 1)),
+            [CD],
+            collect(linearspace(AB / 2, AB / 2 + OH, nO + 1)),
+        ),
+    )
     xs = xs[sortperm(xs)]
     ys = collect(linearspace(0.0, W / 2, nW + 1))
 
@@ -100,11 +105,22 @@ function NAFEMS_R0031_1_msh8()
 
     # This is the material  model
     MR = DeforModelRed3D
-    material = MatDeforElastOrtho(MR,
-        0.0, E1s, E2s, E3s,
-        nu12s, nu13s, nu23s,
-        G12s, G13s, G23s,
-        CTE1, CTE2, CTE3)
+    material = MatDeforElastOrtho(
+        MR,
+        0.0,
+        E1s,
+        E2s,
+        E3s,
+        nu12s,
+        nu13s,
+        nu23s,
+        G12s,
+        G13s,
+        G23s,
+        CTE1,
+        CTE2,
+        CTE3,
+    )
 
     # The material coordinate system function is defined as:
     function _updatecs!(csmatout, feid, labels)
@@ -117,31 +133,45 @@ function NAFEMS_R0031_1_msh8()
 
     # We will create two regions, one for the layers with 0°  orientation,
     # and one for the layers with 90° orientation.
-    rl1 = vcat(selectelem(fens, fes, label = 1),
+    rl1 = vcat(
+        selectelem(fens, fes, label = 1),
         selectelem(fens, fes, label = 3),
         selectelem(fens, fes, label = 5),
-        selectelem(fens, fes, label = 7))
+        selectelem(fens, fes, label = 7),
+    )
     rfes1 = subset(fes, rl1)
-    region1 = FDataDict("femm" => FEMMDeforLinearMSH8(MR,
-        IntegDomain(rfes1, gr),
-        CSys(3,
-            3,
-            (csmatout, XYZ, tangents, feid, qpid) -> _updatecs!(csmatout,
-                feid,
-                rfes1.label)),
-        material))
-    rl2 = vcat(selectelem(fens, fes, label = 2),
+    region1 = FDataDict(
+        "femm" => FEMMDeforLinearMSH8(
+            MR,
+            IntegDomain(rfes1, gr),
+            CSys(
+                3,
+                3,
+                (csmatout, XYZ, tangents, feid, qpid) ->
+                    _updatecs!(csmatout, feid, rfes1.label),
+            ),
+            material,
+        ),
+    )
+    rl2 = vcat(
+        selectelem(fens, fes, label = 2),
         selectelem(fens, fes, label = 4),
-        selectelem(fens, fes, label = 6))
+        selectelem(fens, fes, label = 6),
+    )
     rfes2 = subset(fes, rl2)
-    region2 = FDataDict("femm" => FEMMDeforLinearMSH8(MR,
-        IntegDomain(rfes2, gr),
-        CSys(3,
-            3,
-            (csmatout, XYZ, tangents, feid, qpid) -> _updatecs!(csmatout,
-                feid,
-                rfes2.label)),
-        material))
+    region2 = FDataDict(
+        "femm" => FEMMDeforLinearMSH8(
+            MR,
+            IntegDomain(rfes2, gr),
+            CSys(
+                3,
+                3,
+                (csmatout, XYZ, tangents, feid, qpid) ->
+                    _updatecs!(csmatout, feid, rfes2.label),
+            ),
+            material,
+        ),
+    )
 
     # File =  "NAFEMS-R0031-1-plate-r1.vtk"
     # vtkexportmesh(File, region1["femm"].integdomain.fes.conn, fens.xyz, FinEtools.MeshExportModule.H8)
@@ -179,13 +209,17 @@ function NAFEMS_R0031_1_msh8()
     # the line load  with the symmetry plane X=0. Also note that the
     # quadrature rule is one-dimensional  since we are integrating along
     # a curve.
-    Trac = FDataDict("traction_vector" => vec([0.0; 0.0; -q0 / 2]),
-        "femm" => FEMMBase(IntegDomain(subset(bbfes, zl), GaussRule(1, 3))))
+    Trac = FDataDict(
+        "traction_vector" => vec([0.0; 0.0; -q0 / 2]),
+        "femm" => FEMMBase(IntegDomain(subset(bbfes, zl), GaussRule(1, 3))),
+    )
 
-    modeldata = FDataDict("fens" => fens,
+    modeldata = FDataDict(
+        "fens" => fens,
         "regions" => [region1, region2],
         "essential_bcs" => [ex0, ey0, ez0],
-        "traction_bcs" => [Trac])
+        "traction_bcs" => [Trac],
+    )
     modeldata = AlgoDeforLinearModule.linearstatics(modeldata)
 
     modeldata["postprocessing"] = FDataDict("file" => "NAFEMS_R0031_1_msh8-plate")
@@ -213,17 +247,27 @@ function NAFEMS_R0031_1_msh8()
     # extrap = :default
     # inspectormeth = :invdistance
 
-    modeldata["postprocessing"] = FDataDict("file" => "NAFEMS_R0031_1_msh8-plate-sx",
-        "quantity" => :Cauchy, "component" => 1, "outputcsys" => CSys(3),
-        "nodevalmethod" => inspectormeth, "reportat" => extrap)
+    modeldata["postprocessing"] = FDataDict(
+        "file" => "NAFEMS_R0031_1_msh8-plate-sx",
+        "quantity" => :Cauchy,
+        "component" => 1,
+        "outputcsys" => CSys(3),
+        "nodevalmethod" => inspectormeth,
+        "reportat" => extrap,
+    )
     modeldata = AlgoDeforLinearModule.exportstress(modeldata)
     s = modeldata["postprocessing"]["exported"][1]["field"]
     println("sx@E = $(s.values[nE]/phun("MPa")) [MPa]")
     println("Reference sx@E = $(sigma11Eref/phun("MPa")) [MPa]")
 
-    modeldata["postprocessing"] = FDataDict("file" => "NAFEMS_R0031_1_msh8-plate-sxz",
-        "quantity" => :Cauchy, "component" => 5, "outputcsys" => CSys(3),
-        "nodevalmethod" => inspectormeth, "reportat" => extrap)
+    modeldata["postprocessing"] = FDataDict(
+        "file" => "NAFEMS_R0031_1_msh8-plate-sxz",
+        "quantity" => :Cauchy,
+        "component" => 5,
+        "outputcsys" => CSys(3),
+        "nodevalmethod" => inspectormeth,
+        "reportat" => extrap,
+    )
     modeldata = AlgoDeforLinearModule.exportstress(modeldata)
     s = modeldata["postprocessing"]["exported"][1]["field"]
     println("sxz@D_1 = $(s.values[nD]/phun("MPa")) [MPa]")
@@ -316,8 +360,13 @@ function NAFEMS_R0031_1_esnice_h8()
     # Each layer is modeled with a single element.
     nts = Refinement * ones(Int, length(ts))# number of elements per layer
 
-    xs = unique(vcat(collect(linearspace(0.0, AB / 2, nL + 1)), [CD],
-        collect(linearspace(AB / 2, AB / 2 + OH, nO + 1))))
+    xs = unique(
+        vcat(
+            collect(linearspace(0.0, AB / 2, nL + 1)),
+            [CD],
+            collect(linearspace(AB / 2, AB / 2 + OH, nO + 1)),
+        ),
+    )
     xs = xs[sortperm(xs)]
     ys = collect(linearspace(0.0, W / 2, nW + 1))
 
@@ -325,11 +374,22 @@ function NAFEMS_R0031_1_esnice_h8()
 
     # This is the material  model
     MR = DeforModelRed3D
-    material = MatDeforElastOrtho(MR,
-        0.0, E1s, E2s, E3s,
-        nu12s, nu13s, nu23s,
-        G12s, G13s, G23s,
-        CTE1, CTE2, CTE3)
+    material = MatDeforElastOrtho(
+        MR,
+        0.0,
+        E1s,
+        E2s,
+        E3s,
+        nu12s,
+        nu13s,
+        nu23s,
+        G12s,
+        G13s,
+        G23s,
+        CTE1,
+        CTE2,
+        CTE3,
+    )
 
     # The material coordinate system function is defined as:
     function _updatecs!(csmatout, feid, labels)
@@ -342,27 +402,43 @@ function NAFEMS_R0031_1_esnice_h8()
 
     # We will create two regions, one for the layers with 0°  orientation,
     # and one for the layers with 90° orientation.
-    rl1 = vcat(selectelem(fens, fes, label = 1),
+    rl1 = vcat(
+        selectelem(fens, fes, label = 1),
         selectelem(fens, fes, label = 3),
         selectelem(fens, fes, label = 5),
-        selectelem(fens, fes, label = 7))
+        selectelem(fens, fes, label = 7),
+    )
     rfes1 = subset(fes, rl1)
-    region1 = FDataDict("femm" => FEMMDeforLinearESNICEH8(MR,
-        IntegDomain(rfes1, gr),
-        CSys(3,
-            3,
-            (csmatout, XYZ, tangents, feid, qpid) -> _updatecs!(csmatout, 1, [])),
-        material))
-    rl2 = vcat(selectelem(fens, fes, label = 2),
+    region1 = FDataDict(
+        "femm" => FEMMDeforLinearESNICEH8(
+            MR,
+            IntegDomain(rfes1, gr),
+            CSys(
+                3,
+                3,
+                (csmatout, XYZ, tangents, feid, qpid) -> _updatecs!(csmatout, 1, []),
+            ),
+            material,
+        ),
+    )
+    rl2 = vcat(
+        selectelem(fens, fes, label = 2),
         selectelem(fens, fes, label = 4),
-        selectelem(fens, fes, label = 6))
+        selectelem(fens, fes, label = 6),
+    )
     rfes2 = subset(fes, rl2)
-    region2 = FDataDict("femm" => FEMMDeforLinearESNICEH8(MR,
-        IntegDomain(rfes2, gr),
-        CSys(3,
-            3,
-            (csmatout, XYZ, tangents, feid, qpid) -> _updatecs!(csmatout, 2, [])),
-        material))
+    region2 = FDataDict(
+        "femm" => FEMMDeforLinearESNICEH8(
+            MR,
+            IntegDomain(rfes2, gr),
+            CSys(
+                3,
+                3,
+                (csmatout, XYZ, tangents, feid, qpid) -> _updatecs!(csmatout, 2, []),
+            ),
+            material,
+        ),
+    )
 
     # File =  "NAFEMS-R0031-1-plate-r1.vtk"
     # vtkexportmesh(File, region1["femm"].integdomain.fes.conn, fens.xyz, FinEtools.MeshExportModule.H8)
@@ -400,13 +476,17 @@ function NAFEMS_R0031_1_esnice_h8()
     # the line load  with the symmetry plane X=0. Also note that the
     # quadrature rule is one-dimensional  since we are integrating along
     # a curve.
-    Trac = FDataDict("traction_vector" => vec([0.0; 0.0; -q0 / 2]),
-        "femm" => FEMMBase(IntegDomain(subset(bbfes, zl), TrapezoidalRule(1))))
+    Trac = FDataDict(
+        "traction_vector" => vec([0.0; 0.0; -q0 / 2]),
+        "femm" => FEMMBase(IntegDomain(subset(bbfes, zl), TrapezoidalRule(1))),
+    )
 
-    modeldata = FDataDict("fens" => fens,
+    modeldata = FDataDict(
+        "fens" => fens,
         "regions" => [region1, region2],
         "essential_bcs" => [ex0, ey0, ez0],
-        "traction_bcs" => [Trac])
+        "traction_bcs" => [Trac],
+    )
     modeldata = AlgoDeforLinearModule.linearstatics(modeldata)
 
     modeldata["postprocessing"] = FDataDict("file" => "NAFEMS-R0031-1-plate-esnice-h8")
@@ -434,17 +514,27 @@ function NAFEMS_R0031_1_esnice_h8()
     # extrap = :default
     # inspectormeth = :invdistance
 
-    modeldata["postprocessing"] = FDataDict("file" => "NAFEMS-R0031-1-plate-esnice-h8-sx",
-        "quantity" => :Cauchy, "component" => 1, "outputcsys" => CSys(3),
-        "nodevalmethod" => inspectormeth, "reportat" => extrap)
+    modeldata["postprocessing"] = FDataDict(
+        "file" => "NAFEMS-R0031-1-plate-esnice-h8-sx",
+        "quantity" => :Cauchy,
+        "component" => 1,
+        "outputcsys" => CSys(3),
+        "nodevalmethod" => inspectormeth,
+        "reportat" => extrap,
+    )
     modeldata = AlgoDeforLinearModule.exportstress(modeldata)
     s = modeldata["postprocessing"]["exported"][1]["field"]
     println("sx@E = $(s.values[nE]/phun("MPa")) [MPa]")
     println("Reference sx@E = $(sigma11Eref/phun("MPa")) [MPa]")
 
-    modeldata["postprocessing"] = FDataDict("file" => "NAFEMS-R0031-1-plate-esnice-h8-sxz",
-        "quantity" => :Cauchy, "component" => 5, "outputcsys" => CSys(3),
-        "nodevalmethod" => inspectormeth, "reportat" => extrap)
+    modeldata["postprocessing"] = FDataDict(
+        "file" => "NAFEMS-R0031-1-plate-esnice-h8-sxz",
+        "quantity" => :Cauchy,
+        "component" => 5,
+        "outputcsys" => CSys(3),
+        "nodevalmethod" => inspectormeth,
+        "reportat" => extrap,
+    )
     modeldata = AlgoDeforLinearModule.exportstress(modeldata)
     s = modeldata["postprocessing"]["exported"][1]["field"]
     println("sxz@D_1 = $(s.values[nD]/phun("MPa")) [MPa]")
@@ -580,8 +670,13 @@ function NAFEMS_R0031_1_H20()
     # Each layer is modeled with a single element.
     nts = Refinement * ones(Int, length(angles))# number of elements per layer
 
-    xs = unique(vcat(collect(linearspace(0.0, AB / 2, nL + 1)), [CD],
-        collect(linearspace(AB / 2, AB / 2 + OH, nO + 1))))
+    xs = unique(
+        vcat(
+            collect(linearspace(0.0, AB / 2, nL + 1)),
+            [CD],
+            collect(linearspace(AB / 2, AB / 2 + OH, nO + 1)),
+        ),
+    )
     xs = xs[sortperm(xs)]
     ys = collect(linearspace(0.0, W / 2, nW + 1))
 
@@ -590,11 +685,22 @@ function NAFEMS_R0031_1_H20()
 
     # This is the material  model
     MR = DeforModelRed3D
-    material = MatDeforElastOrtho(MR,
-        0.0, E1s, E2s, E3s,
-        nu12s, nu13s, nu23s,
-        G12s, G13s, G23s,
-        CTE1, CTE2, CTE3)
+    material = MatDeforElastOrtho(
+        MR,
+        0.0,
+        E1s,
+        E2s,
+        E3s,
+        nu12s,
+        nu13s,
+        nu23s,
+        G12s,
+        G13s,
+        G23s,
+        CTE1,
+        CTE2,
+        CTE3,
+    )
 
     # The material coordinate system function is defined as:
     function _updatecs!(csmatout, feid, labels)
@@ -607,31 +713,45 @@ function NAFEMS_R0031_1_H20()
 
     # We will create two regions, one for the layers with 0°  orientation,
     # and one for the layers with 90° orientation.
-    rl1 = vcat(selectelem(fens, fes, label = 1),
+    rl1 = vcat(
+        selectelem(fens, fes, label = 1),
         selectelem(fens, fes, label = 3),
         selectelem(fens, fes, label = 5),
-        selectelem(fens, fes, label = 7))
+        selectelem(fens, fes, label = 7),
+    )
     rfes1 = subset(fes, rl1)
-    region1 = FDataDict("femm" => FEMMDeforLinear(MR,
-        IntegDomain(rfes1, gr),
-        CSys(3,
-            3,
-            (csmatout, XYZ, tangents, feid, qpid) -> _updatecs!(csmatout,
-                feid,
-                rfes1.label)),
-        material))
-    rl2 = vcat(selectelem(fens, fes, label = 2),
+    region1 = FDataDict(
+        "femm" => FEMMDeforLinear(
+            MR,
+            IntegDomain(rfes1, gr),
+            CSys(
+                3,
+                3,
+                (csmatout, XYZ, tangents, feid, qpid) ->
+                    _updatecs!(csmatout, feid, rfes1.label),
+            ),
+            material,
+        ),
+    )
+    rl2 = vcat(
+        selectelem(fens, fes, label = 2),
         selectelem(fens, fes, label = 4),
-        selectelem(fens, fes, label = 6))
+        selectelem(fens, fes, label = 6),
+    )
     rfes2 = subset(fes, rl2)
-    region2 = FDataDict("femm" => FEMMDeforLinear(MR,
-        IntegDomain(rfes2, gr),
-        CSys(3,
-            3,
-            (csmatout, XYZ, tangents, feid, qpid) -> _updatecs!(csmatout,
-                feid,
-                rfes2.label)),
-        material))
+    region2 = FDataDict(
+        "femm" => FEMMDeforLinear(
+            MR,
+            IntegDomain(rfes2, gr),
+            CSys(
+                3,
+                3,
+                (csmatout, XYZ, tangents, feid, qpid) ->
+                    _updatecs!(csmatout, feid, rfes2.label),
+            ),
+            material,
+        ),
+    )
 
     # File =  "NAFEMS-R0031-1-plate-r1.vtk"
     # vtkexportmesh(File, region1["femm"].integdomain.fes.conn, fens.xyz, FinEtools.MeshExportModule.H8)
@@ -669,13 +789,17 @@ function NAFEMS_R0031_1_H20()
     # the line load  with the symmetry plane X=0. Also note that the
     # quadrature rule is one-dimensional  since we are integrating along
     # a curve.
-    Trac = FDataDict("traction_vector" => vec([0.0; 0.0; -q0 / 2]),
-        "femm" => FEMMBase(IntegDomain(subset(bbfes, zl), GaussRule(1, 3))))
+    Trac = FDataDict(
+        "traction_vector" => vec([0.0; 0.0; -q0 / 2]),
+        "femm" => FEMMBase(IntegDomain(subset(bbfes, zl), GaussRule(1, 3))),
+    )
 
-    modeldata = FDataDict("fens" => fens,
+    modeldata = FDataDict(
+        "fens" => fens,
         "regions" => [region1, region2],
         "essential_bcs" => [ex0, ey0, ez0],
-        "traction_bcs" => [Trac])
+        "traction_bcs" => [Trac],
+    )
     modeldata = AlgoDeforLinearModule.linearstatics(modeldata)
 
     modeldata["postprocessing"] = FDataDict("file" => "NAFEMS_R0031_1_H20-plate")
@@ -694,15 +818,23 @@ function NAFEMS_R0031_1_H20()
     println("")
     println("Normalized Center deflection: $(cdis/wEref)")
 
-    modeldata["postprocessing"] = FDataDict("file" => "NAFEMS_R0031_1_H20-plate-sx",
-        "quantity" => :Cauchy, "component" => 1, "outputcsys" => CSys(3))
+    modeldata["postprocessing"] = FDataDict(
+        "file" => "NAFEMS_R0031_1_H20-plate-sx",
+        "quantity" => :Cauchy,
+        "component" => 1,
+        "outputcsys" => CSys(3),
+    )
     modeldata = AlgoDeforLinearModule.exportstress(modeldata)
     s = modeldata["postprocessing"]["exported"][1]["field"]
     println("sx@E = $(s.values[nE]/phun("MPa")) [MPa]")
     println("Reference sx@E = $(sigma11Eref/phun("MPa")) [MPa]")
 
-    modeldata["postprocessing"] = FDataDict("file" => "NAFEMS_R0031_1_H20-plate-sxz",
-        "quantity" => :Cauchy, "component" => 5, "outputcsys" => CSys(3))
+    modeldata["postprocessing"] = FDataDict(
+        "file" => "NAFEMS_R0031_1_H20-plate-sxz",
+        "quantity" => :Cauchy,
+        "component" => 5,
+        "outputcsys" => CSys(3),
+    )
     modeldata = AlgoDeforLinearModule.exportstress(modeldata)
     s = modeldata["postprocessing"]["exported"][1]["field"]
     println("sxz@D = $(s.values[nD]/phun("MPa")) [MPa]")
@@ -760,7 +892,7 @@ function NAFEMS_R0031_2_thermal_and_pressure()
     # inner surface  for the pressure loading
     intl = selectelem(fens, bfes; facing = true, direction = [0.0 0.0 -1.0])
     # Shape into a cylinder
-    for i in 1:count(fens)
+    for i = 1:count(fens)
         z = fens.xyz[i, 1]
         a = fens.xyz[i, 2]
         t = fens.xyz[i, 3]
@@ -768,13 +900,23 @@ function NAFEMS_R0031_2_thermal_and_pressure()
     end
 
     MR = DeforModelRed3D
-    outermaterial = MatDeforElastOrtho(MR,
-        0.0, E1s, E2s, E3s,
-        nu12s, nu13s, nu23s,
-        G12s, G13s, G23s,
-        CTE1, CTE2, CTE3)
-    innermaterial = MatDeforElastIso(MR,
-        0.0, E, nu, CTE)
+    outermaterial = MatDeforElastOrtho(
+        MR,
+        0.0,
+        E1s,
+        E2s,
+        E3s,
+        nu12s,
+        nu13s,
+        nu23s,
+        G12s,
+        G13s,
+        G23s,
+        CTE1,
+        CTE2,
+        CTE3,
+    )
+    innermaterial = MatDeforElastIso(MR, 0.0, E, nu, CTE)
 
     function cylcs!(csmatout, XYZ)
         csmatout[:, 2] = [0.0 0.0 1.0]
@@ -784,11 +926,7 @@ function NAFEMS_R0031_2_thermal_and_pressure()
         csmatout[:, 1] = cross(csmatout[:, 2], csmatout[:, 3])
     end
 
-    function updatecs!(csmatout,
-        XYZ,
-        tangents,
-        feid,
-        qpid)
+    function updatecs!(csmatout, XYZ, tangents, feid, qpid)
         cylcs!(csmatout, XYZ)
         csmatout
     end
@@ -796,14 +934,18 @@ function NAFEMS_R0031_2_thermal_and_pressure()
     gr = GaussRule(3, 3)
 
     rli = selectelem(fens, fes, label = 1)
-    innerregion = FDataDict("femm" => FEMMDeforLinear(MR,
-        IntegDomain(subset(fes, rli), gr),
-        innermaterial))
+    innerregion = FDataDict(
+        "femm" => FEMMDeforLinear(MR, IntegDomain(subset(fes, rli), gr), innermaterial),
+    )
     rle = selectelem(fens, fes, label = 2)
-    outerregion = FDataDict("femm" => FEMMDeforLinear(MR,
-        IntegDomain(subset(fes, rle), gr),
-        CSys(3, 3, updatecs!),
-        outermaterial))
+    outerregion = FDataDict(
+        "femm" => FEMMDeforLinear(
+            MR,
+            IntegDomain(subset(fes, rle), gr),
+            CSys(3, 3, updatecs!),
+            outermaterial,
+        ),
+    )
 
     lx0 = selectnode(fens, box = [0.0 0.0 -Inf Inf -Inf Inf], inflate = tolerance)
     ly0 = selectnode(fens, box = [-Inf Inf 0.0 0.0 -Inf Inf], inflate = tolerance)
@@ -813,25 +955,25 @@ function NAFEMS_R0031_2_thermal_and_pressure()
     ey0 = FDataDict("displacement" => 0.0, "component" => 2, "node_list" => ly0)
     ez0 = FDataDict("displacement" => 0.0, "component" => 3, "node_list" => lz0)
 
-    function getpr!(forceout,
-        XYZ,
-        tangents,
-        feid,
-        qpid)
+    function getpr!(forceout, XYZ, tangents, feid, qpid)
         csmatout = zeros(3, 3)
         cylcs!(csmatout, XYZ)
         copy!(forceout, q0 * csmatout[:, 3])
         return forceout
     end
 
-    Trac = FDataDict("traction_vector" => getpr!,
-        "femm" => FEMMBase(IntegDomain(subset(bfes, intl), GaussRule(2, 3))))
+    Trac = FDataDict(
+        "traction_vector" => getpr!,
+        "femm" => FEMMBase(IntegDomain(subset(bfes, intl), GaussRule(2, 3))),
+    )
 
-    modeldata = FDataDict("fens" => fens,
+    modeldata = FDataDict(
+        "fens" => fens,
         "regions" => [innerregion, outerregion],
         "essential_bcs" => [ex0, ey0, ez0],
         "traction_bcs" => [Trac],
-        "temperature_change" => FDataDict("temperature" => dT))
+        "temperature_change" => FDataDict("temperature" => dT),
+    )
     modeldata = AlgoDeforLinearModule.linearstatics(modeldata)
 
     u = modeldata["u"]
@@ -841,15 +983,19 @@ function NAFEMS_R0031_2_thermal_and_pressure()
     #     scalars = [("Layer", fes.label)], vectors = [("displacement", u.values)])
     # @async run(`"paraview.exe" $File`)
 
-    modeldata["postprocessing"] = FDataDict("file" => "NAFEMS-R0031-2",
+    modeldata["postprocessing"] = FDataDict(
+        "file" => "NAFEMS-R0031-2",
         "outputcsys" => CSys(3, 3, updatecs!),
         "quantity" => :Cauchy,
-        "component" => 6)
+        "component" => 6,
+    )
     modeldata = AlgoDeforLinearModule.exportstress(modeldata)
-    modeldata["postprocessing"] = FDataDict("file" => "NAFEMS-R0031-2-elem",
+    modeldata["postprocessing"] = FDataDict(
+        "file" => "NAFEMS-R0031-2-elem",
         "outputcsys" => CSys(3, 3, updatecs!),
         "quantity" => :Cauchy,
-        "component" => 6)
+        "component" => 6,
+    )
     modeldata = AlgoDeforLinearModule.exportstresselementwise(modeldata)
 
     println("Done")
@@ -901,7 +1047,7 @@ function NAFEMS_R0031_2_pressure()
     # inner surface  for the pressure loading
     intl = selectelem(fens, bfes; facing = true, direction = [0.0 0.0 -1.0])
     # Shape into a cylinder
-    for i in 1:count(fens)
+    for i = 1:count(fens)
         z = fens.xyz[i, 1]
         a = fens.xyz[i, 2]
         t = fens.xyz[i, 3]
@@ -909,13 +1055,23 @@ function NAFEMS_R0031_2_pressure()
     end
 
     MR = DeforModelRed3D
-    outermaterial = MatDeforElastOrtho(MR,
-        0.0, E1s, E2s, E3s,
-        nu12s, nu13s, nu23s,
-        G12s, G13s, G23s,
-        CTE1, CTE2, CTE3)
-    innermaterial = MatDeforElastIso(MR,
-        0.0, E, nu, CTE)
+    outermaterial = MatDeforElastOrtho(
+        MR,
+        0.0,
+        E1s,
+        E2s,
+        E3s,
+        nu12s,
+        nu13s,
+        nu23s,
+        G12s,
+        G13s,
+        G23s,
+        CTE1,
+        CTE2,
+        CTE3,
+    )
+    innermaterial = MatDeforElastIso(MR, 0.0, E, nu, CTE)
 
     function _cylcs!(csmatout, XYZ)
         csmatout[:, 2] = [0.0 0.0 1.0]
@@ -926,25 +1082,25 @@ function NAFEMS_R0031_2_pressure()
         return csmatout
     end
 
-    function updatecs!(csmatout,
-        XYZ,
-        tangents,
-        feid,
-        qpid)
+    function updatecs!(csmatout, XYZ, tangents, feid, qpid)
         return _cylcs!(csmatout, XYZ)
     end
 
     gr = GaussRule(3, 3)
 
     rli = selectelem(fens, fes, label = 1)
-    innerregion = FDataDict("femm" => FEMMDeforLinear(MR,
-        IntegDomain(subset(fes, rli), gr),
-        innermaterial))
+    innerregion = FDataDict(
+        "femm" => FEMMDeforLinear(MR, IntegDomain(subset(fes, rli), gr), innermaterial),
+    )
     rle = selectelem(fens, fes, label = 2)
-    outerregion = FDataDict("femm" => FEMMDeforLinear(MR,
-        IntegDomain(subset(fes, rle), gr),
-        CSys(3, 3, updatecs!),
-        outermaterial))
+    outerregion = FDataDict(
+        "femm" => FEMMDeforLinear(
+            MR,
+            IntegDomain(subset(fes, rle), gr),
+            CSys(3, 3, updatecs!),
+            outermaterial,
+        ),
+    )
 
     lx0 = selectnode(fens, box = [0.0 0.0 -Inf Inf -Inf Inf], inflate = tolerance)
     ly0 = selectnode(fens, box = [-Inf Inf 0.0 0.0 -Inf Inf], inflate = tolerance)
@@ -954,25 +1110,25 @@ function NAFEMS_R0031_2_pressure()
     ey0 = FDataDict("displacement" => 0.0, "component" => 2, "node_list" => ly0)
     ez0 = FDataDict("displacement" => 0.0, "component" => 3, "node_list" => lz0)
 
-    function getpr!(forceout,
-        XYZ,
-        tangents,
-        feid,
-        qpid)
+    function getpr!(forceout, XYZ, tangents, feid, qpid)
         csmatout = zeros(3, 3)
         _cylcs!(csmatout, XYZ)
         copy!(forceout, q0 * csmatout[:, 3])
         return forceout
     end
 
-    Trac = FDataDict("traction_vector" => getpr!,
-        "femm" => FEMMBase(IntegDomain(subset(bfes, intl), GaussRule(2, 3))))
+    Trac = FDataDict(
+        "traction_vector" => getpr!,
+        "femm" => FEMMBase(IntegDomain(subset(bfes, intl), GaussRule(2, 3))),
+    )
 
-    modeldata = FDataDict("fens" => fens,
+    modeldata = FDataDict(
+        "fens" => fens,
         "regions" => [innerregion, outerregion],
         "essential_bcs" => [ex0, ey0, ez0],
         "traction_bcs" => [Trac],
-        "temperature_change" => FDataDict("temperature" => dT))
+        "temperature_change" => FDataDict("temperature" => dT),
+    )
     modeldata = AlgoDeforLinearModule.linearstatics(modeldata)
 
     u = modeldata["u"]
@@ -983,12 +1139,14 @@ function NAFEMS_R0031_2_pressure()
     # println("Normalized Center deflection: $(cdis/wc_analytical)")
 
     File = "NAFEMS-R0031-2-plate.vtk"
-    vtkexportmesh(File,
+    vtkexportmesh(
+        File,
         fes.conn,
         geom.values,
         FinEtools.MeshExportModule.VTK.H20;
         scalars = [("Layer", fes.label)],
-        vectors = [("displacement", u.values)])
+        vectors = [("displacement", u.values)],
+    )
     @async run(`"paraview.exe" $File`)
 
     println("Done")
@@ -1040,33 +1198,55 @@ function NAFEMS_R0031_3()
     fens, fes = H8toH20(fens, fes)
 
     MR = DeforModelRed3D
-    skinmaterial = MatDeforElastOrtho(MR,
-        0.0, E1s, E2s, E3s,
-        nu12s, nu13s, nu23s,
-        G12s, G13s, G23s,
-        0.0, 0.0, 0.0)
-    corematerial = MatDeforElastOrtho(MR,
-        0.0, E1c, E2c, E3c,
-        nu12c, nu13c, nu23c,
-        G12c, G13c, G23c,
-        0.0, 0.0, 0.0)
+    skinmaterial = MatDeforElastOrtho(
+        MR,
+        0.0,
+        E1s,
+        E2s,
+        E3s,
+        nu12s,
+        nu13s,
+        nu23s,
+        G12s,
+        G13s,
+        G23s,
+        0.0,
+        0.0,
+        0.0,
+    )
+    corematerial = MatDeforElastOrtho(
+        MR,
+        0.0,
+        E1c,
+        E2c,
+        E3c,
+        nu12c,
+        nu13c,
+        nu23c,
+        G12c,
+        G13c,
+        G23c,
+        0.0,
+        0.0,
+        0.0,
+    )
 
     gr = GaussRule(3, 3)
 
     rl1 = selectelem(fens, fes, label = 1)
-    skinbot = FDataDict("femm" => FEMMDeforLinear(MR,
-        IntegDomain(subset(fes, rl1), gr),
-        skinmaterial))
+    skinbot = FDataDict(
+        "femm" => FEMMDeforLinear(MR, IntegDomain(subset(fes, rl1), gr), skinmaterial),
+    )
 
     rl3 = selectelem(fens, fes, label = 3)
-    skintop = FDataDict("femm" => FEMMDeforLinear(MR,
-        IntegDomain(subset(fes, rl3), gr),
-        skinmaterial))
+    skintop = FDataDict(
+        "femm" => FEMMDeforLinear(MR, IntegDomain(subset(fes, rl3), gr), skinmaterial),
+    )
 
     rl2 = selectelem(fens, fes, label = 2)
-    core = FDataDict("femm" => FEMMDeforLinear(MR,
-        IntegDomain(subset(fes, rl2), gr),
-        corematerial))
+    core = FDataDict(
+        "femm" => FEMMDeforLinear(MR, IntegDomain(subset(fes, rl2), gr), corematerial),
+    )
 
     lx0 = selectnode(fens, box = [0.0 0.0 -Inf Inf -Inf Inf], inflate = tolerance)
     lxL2 = selectnode(fens, box = [L / 2 L / 2 -Inf Inf -Inf Inf], inflate = tolerance)
@@ -1080,31 +1260,36 @@ function NAFEMS_R0031_3()
 
     bfes = meshboundary(fes)
     ttopl = selectelem(fens, bfes; facing = true, direction = [0.0 0.0 1.0])
-    Trac = FDataDict("traction_vector" => [0.0; 0.0; -tmag],
-        "femm" => FEMMBase(IntegDomain(subset(bfes, ttopl), GaussRule(2, 3))))
+    Trac = FDataDict(
+        "traction_vector" => [0.0; 0.0; -tmag],
+        "femm" => FEMMBase(IntegDomain(subset(bfes, ttopl), GaussRule(2, 3))),
+    )
 
-    modeldata = FDataDict("fens" => fens,
+    modeldata = FDataDict(
+        "fens" => fens,
         "regions" => [skinbot, core, skintop],
         "essential_bcs" => [ex0, exL2, ey0, eyL2],
-        "traction_bcs" => [Trac])
+        "traction_bcs" => [Trac],
+    )
     modeldata = AlgoDeforLinearModule.linearstatics(modeldata)
 
     u = modeldata["u"]
     geom = modeldata["geom"]
-    lcenter = selectnode(fens,
-        box = [L / 2 L / 2 L / 2 L / 2 -Inf Inf],
-        inflate = tolerance)
+    lcenter =
+        selectnode(fens, box = [L / 2 L / 2 L / 2 L / 2 -Inf Inf], inflate = tolerance)
     cdis = mean(u.values[lcenter, 3]) / phun("in")
     println("Center node displacements $(cdis) [in]; NAFEMS-R0031-3 lists –0.123	[in]")
     println("")
 
     File = "NAFEMS-R0031-3-plate.vtk"
-    vtkexportmesh(File,
+    vtkexportmesh(
+        File,
         fes.conn,
         geom.values,
         FinEtools.MeshExportModule.VTK.H20;
         scalars = [("Layer", fes.label)],
-        vectors = [("displacement", u.values)])
+        vectors = [("displacement", u.values)],
+    )
     @async run(`"paraview.exe" $File`)
 
     println("Done")

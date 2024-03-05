@@ -20,13 +20,12 @@ function pinchcyl_h8_full()
     let (n, nt) = (ref, 2)
         fens, fes = H8block(90 / 360 * 2 * pi, L / 2, thickness, n, n, nt)
 
-        for i in 1:count(fens)
+        for i = 1:count(fens)
             a = fens.xyz[i, 1]
             y = fens.xyz[i, 2]
             z = fens.xyz[i, 3]
-            fens.xyz[i, :] .= ((R - thickness / 2 + z) * sin(a),
-                y,
-                (R - thickness / 2 + z) * cos(a))
+            fens.xyz[i, :] .=
+                ((R - thickness / 2 + z) * sin(a), y, (R - thickness / 2 + z) * cos(a))
         end
 
         MR = DeforModelRed3D
@@ -34,22 +33,30 @@ function pinchcyl_h8_full()
         femm = FEMMDeforLinear(MR, IntegDomain(fes, GaussRule(3, 2)), material)
 
         boundaryfes = meshboundary(fes)
-        topl = selectelem(fens,
+        topl = selectelem(
+            fens,
             boundaryfes,
             box = [-Inf Inf -Inf Inf thickness thickness],
-            inflate = tolerance)
-        botl = selectelem(fens,
+            inflate = tolerance,
+        )
+        botl = selectelem(
+            fens,
             boundaryfes,
             box = [-Inf Inf -Inf Inf 0.0 0.0],
-            inflate = tolerance)
-        x0l = selectelem(fens,
+            inflate = tolerance,
+        )
+        x0l = selectelem(
+            fens,
             boundaryfes,
             box = [0.0 0.0 -Inf Inf 0.0 thickness],
-            inflate = tolerance)
-        y0l = selectelem(fens,
+            inflate = tolerance,
+        )
+        y0l = selectelem(
+            fens,
             boundaryfes,
             box = [-Inf Inf 0.0 0.0 0.0 thickness],
-            inflate = tolerance)
+            inflate = tolerance,
+        )
         cyll = setdiff(1:count(boundaryfes), topl, botl, x0l, y0l)
 
         geom = NodalField(fens.xyz)
@@ -69,13 +76,15 @@ function pinchcyl_h8_full()
 
         loadnl = selectnode(fens; box = [0 0 L / 2 L / 2 -Inf Inf], inflate = tolerance)
 
-        nfemm = FEMMBase(IntegDomain(FESetP1(reshape(loadnl, length(loadnl), 1)),
-            PointRule()))
-        F = distribloads(nfemm,
+        nfemm =
+            FEMMBase(IntegDomain(FESetP1(reshape(loadnl, length(loadnl), 1)), PointRule()))
+        F = distribloads(
+            nfemm,
             geom,
             u,
             ForceIntensity([0; 0; -1.0 / 4 / length(loadnl)]),
-            3)
+            3,
+        )
 
         associategeometry!(femm, geom)
 
@@ -106,22 +115,30 @@ function pinchcyl_h8_uri()
         femm = FEMMDeforLinear(MR, IntegDomain(fes, GaussRule(3, 1)), material)
 
         boundaryfes = meshboundary(fes)
-        topl = selectelem(fens,
+        topl = selectelem(
+            fens,
             boundaryfes,
             box = [-Inf Inf -Inf Inf thickness thickness],
-            inflate = tolerance)
-        botl = selectelem(fens,
+            inflate = tolerance,
+        )
+        botl = selectelem(
+            fens,
             boundaryfes,
             box = [-Inf Inf -Inf Inf 0.0 0.0],
-            inflate = tolerance)
-        x0l = selectelem(fens,
+            inflate = tolerance,
+        )
+        x0l = selectelem(
+            fens,
             boundaryfes,
             box = [0.0 0.0 -Inf Inf 0.0 thickness],
-            inflate = tolerance)
-        y0l = selectelem(fens,
+            inflate = tolerance,
+        )
+        y0l = selectelem(
+            fens,
             boundaryfes,
             box = [-Inf Inf 0.0 0.0 0.0 thickness],
-            inflate = tolerance)
+            inflate = tolerance,
+        )
         cyll = setdiff(1:count(boundaryfes), topl, botl, x0l, y0l)
 
         geom = NodalField(fens.xyz)
@@ -144,11 +161,13 @@ function pinchcyl_h8_uri()
         cnl = selectnode(fens; box = [0 0 0 0 0 thickness], inflate = tolerance)
 
         nfemm = FEMMBase(IntegDomain(FESetP1(reshape(cnl, length(cnl), 1)), PointRule()))
-        F = distribloads(nfemm,
+        F = distribloads(
+            nfemm,
             geom,
             u,
             ForceIntensity([0; 0; Magnitude / 4 / length(cnl)]),
-            3)
+            3,
+        )
 
         associategeometry!(femm, geom)
 
@@ -157,7 +176,9 @@ function pinchcyl_h8_uri()
         u = solve_blocked!(u, K, F)
 
         u0z = mean(u.values[cnl, 3])
-        println("Deflection under the load: $(round((u0z / analyt_sol)* 100000)/100000*100) %")
+        println(
+            "Deflection under the load: $(round((u0z / analyt_sol)* 100000)/100000*100) %",
+        )
 
         # File =  "pinchcyl_1_$(nperradius).vtk"
         # vtkexportmesh(File, fens, fes; vectors = [("u", u.values)])
@@ -172,13 +193,12 @@ function pinchcyl_h8_ms()
     let (n, nt) = (ref, 4)
         fens, fes = H8block(90 / 360 * 2 * pi, L / 2, thickness, n, n, nt)
 
-        for i in 1:count(fens)
+        for i = 1:count(fens)
             a = fens.xyz[i, 1]
             y = fens.xyz[i, 2]
             z = fens.xyz[i, 3]
-            fens.xyz[i, :] .= ((R - thickness / 2 + z) * sin(a),
-                y,
-                (R - thickness / 2 + z) * cos(a))
+            fens.xyz[i, :] .=
+                ((R - thickness / 2 + z) * sin(a), y, (R - thickness / 2 + z) * cos(a))
         end
 
         MR = DeforModelRed3D
@@ -186,22 +206,30 @@ function pinchcyl_h8_ms()
         femm = FEMMDeforLinearMSH8(MR, IntegDomain(fes, GaussRule(3, 2)), material)
 
         boundaryfes = meshboundary(fes)
-        topl = selectelem(fens,
+        topl = selectelem(
+            fens,
             boundaryfes,
             box = [-Inf Inf -Inf Inf thickness thickness],
-            inflate = tolerance)
-        botl = selectelem(fens,
+            inflate = tolerance,
+        )
+        botl = selectelem(
+            fens,
             boundaryfes,
             box = [-Inf Inf -Inf Inf 0.0 0.0],
-            inflate = tolerance)
-        x0l = selectelem(fens,
+            inflate = tolerance,
+        )
+        x0l = selectelem(
+            fens,
             boundaryfes,
             box = [0.0 0.0 -Inf Inf 0.0 thickness],
-            inflate = tolerance)
-        y0l = selectelem(fens,
+            inflate = tolerance,
+        )
+        y0l = selectelem(
+            fens,
             boundaryfes,
             box = [-Inf Inf 0.0 0.0 0.0 thickness],
-            inflate = tolerance)
+            inflate = tolerance,
+        )
         cyll = setdiff(1:count(boundaryfes), topl, botl, x0l, y0l)
 
         geom = NodalField(fens.xyz)
@@ -221,13 +249,15 @@ function pinchcyl_h8_ms()
 
         loadnl = selectnode(fens; box = [0 0 L / 2 L / 2 -Inf Inf], inflate = tolerance)
 
-        nfemm = FEMMBase(IntegDomain(FESetP1(reshape(loadnl, length(loadnl), 1)),
-            PointRule()))
-        F = distribloads(nfemm,
+        nfemm =
+            FEMMBase(IntegDomain(FESetP1(reshape(loadnl, length(loadnl), 1)), PointRule()))
+        F = distribloads(
+            nfemm,
             geom,
             u,
             ForceIntensity([0; 0; -1.0 / 4 / length(loadnl)]),
-            3)
+            3,
+        )
 
         associategeometry!(femm, geom)
 
@@ -258,22 +288,30 @@ function pinchcyl_h8_export()
         femm = FEMMDeforLinearMSH8(MR, IntegDomain(fes, GaussRule(3, 2)), material)
 
         boundaryfes = meshboundary(fes)
-        topl = selectelem(fens,
+        topl = selectelem(
+            fens,
             boundaryfes,
             box = [-Inf Inf -Inf Inf thickness thickness],
-            inflate = tolerance)
-        botl = selectelem(fens,
+            inflate = tolerance,
+        )
+        botl = selectelem(
+            fens,
             boundaryfes,
             box = [-Inf Inf -Inf Inf 0.0 0.0],
-            inflate = tolerance)
-        x0l = selectelem(fens,
+            inflate = tolerance,
+        )
+        x0l = selectelem(
+            fens,
             boundaryfes,
             box = [0.0 0.0 -Inf Inf 0.0 thickness],
-            inflate = tolerance)
-        y0l = selectelem(fens,
+            inflate = tolerance,
+        )
+        y0l = selectelem(
+            fens,
             boundaryfes,
             box = [-Inf Inf 0.0 0.0 0.0 thickness],
-            inflate = tolerance)
+            inflate = tolerance,
+        )
         cyll = setdiff(1:count(boundaryfes), topl, botl, x0l, y0l)
 
         geom = NodalField(fens.xyz)
@@ -337,13 +375,12 @@ function pinchcyl_h20r()
     let (n, nt) = (ref, 4)
         fens, fes = H20block(90 / 360 * 2 * pi, L / 2, thickness, n, n, nt)
 
-        for i in 1:count(fens)
+        for i = 1:count(fens)
             a = fens.xyz[i, 1]
             y = fens.xyz[i, 2]
             z = fens.xyz[i, 3]
-            fens.xyz[i, :] .= ((R - thickness / 2 + z) * sin(a),
-                y,
-                (R - thickness / 2 + z) * cos(a))
+            fens.xyz[i, :] .=
+                ((R - thickness / 2 + z) * sin(a), y, (R - thickness / 2 + z) * cos(a))
         end
 
         MR = DeforModelRed3D
@@ -351,22 +388,30 @@ function pinchcyl_h20r()
         femm = FEMMDeforLinear(MR, IntegDomain(fes, GaussRule(3, 2)), material)
 
         boundaryfes = meshboundary(fes)
-        topl = selectelem(fens,
+        topl = selectelem(
+            fens,
             boundaryfes,
             box = [-Inf Inf -Inf Inf thickness thickness],
-            inflate = tolerance)
-        botl = selectelem(fens,
+            inflate = tolerance,
+        )
+        botl = selectelem(
+            fens,
             boundaryfes,
             box = [-Inf Inf -Inf Inf 0.0 0.0],
-            inflate = tolerance)
-        x0l = selectelem(fens,
+            inflate = tolerance,
+        )
+        x0l = selectelem(
+            fens,
             boundaryfes,
             box = [0.0 0.0 -Inf Inf 0.0 thickness],
-            inflate = tolerance)
-        y0l = selectelem(fens,
+            inflate = tolerance,
+        )
+        y0l = selectelem(
+            fens,
             boundaryfes,
             box = [-Inf Inf 0.0 0.0 0.0 thickness],
-            inflate = tolerance)
+            inflate = tolerance,
+        )
         cyll = setdiff(1:count(boundaryfes), topl, botl, x0l, y0l)
 
         geom = NodalField(fens.xyz)
@@ -386,13 +431,15 @@ function pinchcyl_h20r()
 
         loadnl = selectnode(fens; box = [0 0 L / 2 L / 2 -Inf Inf], inflate = tolerance)
 
-        nfemm = FEMMBase(IntegDomain(FESetP1(reshape(loadnl, length(loadnl), 1)),
-            PointRule()))
-        F = distribloads(nfemm,
+        nfemm =
+            FEMMBase(IntegDomain(FESetP1(reshape(loadnl, length(loadnl), 1)), PointRule()))
+        F = distribloads(
+            nfemm,
             geom,
             u,
             ForceIntensity([0; 0; -1.0 / 4 / length(loadnl)]),
-            3)
+            3,
+        )
 
         associategeometry!(femm, geom)
 
@@ -415,13 +462,12 @@ function pinchcyl_h20()
     let (n, nt) = (ref, 4)
         fens, fes = H20block(90 / 360 * 2 * pi, L / 2, thickness, n, n, nt)
 
-        for i in 1:count(fens)
+        for i = 1:count(fens)
             a = fens.xyz[i, 1]
             y = fens.xyz[i, 2]
             z = fens.xyz[i, 3]
-            fens.xyz[i, :] .= ((R - thickness / 2 + z) * sin(a),
-                y,
-                (R - thickness / 2 + z) * cos(a))
+            fens.xyz[i, :] .=
+                ((R - thickness / 2 + z) * sin(a), y, (R - thickness / 2 + z) * cos(a))
         end
 
         MR = DeforModelRed3D
@@ -429,22 +475,30 @@ function pinchcyl_h20()
         femm = FEMMDeforLinear(MR, IntegDomain(fes, GaussRule(3, 3)), material)
 
         boundaryfes = meshboundary(fes)
-        topl = selectelem(fens,
+        topl = selectelem(
+            fens,
             boundaryfes,
             box = [-Inf Inf -Inf Inf thickness thickness],
-            inflate = tolerance)
-        botl = selectelem(fens,
+            inflate = tolerance,
+        )
+        botl = selectelem(
+            fens,
             boundaryfes,
             box = [-Inf Inf -Inf Inf 0.0 0.0],
-            inflate = tolerance)
-        x0l = selectelem(fens,
+            inflate = tolerance,
+        )
+        x0l = selectelem(
+            fens,
             boundaryfes,
             box = [0.0 0.0 -Inf Inf 0.0 thickness],
-            inflate = tolerance)
-        y0l = selectelem(fens,
+            inflate = tolerance,
+        )
+        y0l = selectelem(
+            fens,
             boundaryfes,
             box = [-Inf Inf 0.0 0.0 0.0 thickness],
-            inflate = tolerance)
+            inflate = tolerance,
+        )
         cyll = setdiff(1:count(boundaryfes), topl, botl, x0l, y0l)
 
         geom = NodalField(fens.xyz)
@@ -464,13 +518,15 @@ function pinchcyl_h20()
 
         loadnl = selectnode(fens; box = [0 0 L / 2 L / 2 -Inf Inf], inflate = tolerance)
 
-        nfemm = FEMMBase(IntegDomain(FESetP1(reshape(loadnl, length(loadnl), 1)),
-            PointRule()))
-        F = distribloads(nfemm,
+        nfemm =
+            FEMMBase(IntegDomain(FESetP1(reshape(loadnl, length(loadnl), 1)), PointRule()))
+        F = distribloads(
+            nfemm,
             geom,
             u,
             ForceIntensity([0; 0; -1.0 / 4 / length(loadnl)]),
-            3)
+            3,
+        )
 
         associategeometry!(femm, geom)
 
@@ -493,13 +549,12 @@ function pinchcyl_t10_ms()
     let (n, nt) = (ref, 4)
         fens, fes = T10block(90 / 360 * 2 * pi, L / 2, thickness, n, n, nt)
 
-        for i in 1:count(fens)
+        for i = 1:count(fens)
             a = fens.xyz[i, 1]
             y = fens.xyz[i, 2]
             z = fens.xyz[i, 3]
-            fens.xyz[i, :] .= ((R - thickness / 2 + z) * sin(a),
-                y,
-                (R - thickness / 2 + z) * cos(a))
+            fens.xyz[i, :] .=
+                ((R - thickness / 2 + z) * sin(a), y, (R - thickness / 2 + z) * cos(a))
         end
 
         MR = DeforModelRed3D
@@ -507,22 +562,30 @@ function pinchcyl_t10_ms()
         femm = FEMMDeforLinearMST10(MR, IntegDomain(fes, TetRule(4)), material)
 
         boundaryfes = meshboundary(fes)
-        topl = selectelem(fens,
+        topl = selectelem(
+            fens,
             boundaryfes,
             box = [-Inf Inf -Inf Inf thickness thickness],
-            inflate = tolerance)
-        botl = selectelem(fens,
+            inflate = tolerance,
+        )
+        botl = selectelem(
+            fens,
             boundaryfes,
             box = [-Inf Inf -Inf Inf 0.0 0.0],
-            inflate = tolerance)
-        x0l = selectelem(fens,
+            inflate = tolerance,
+        )
+        x0l = selectelem(
+            fens,
             boundaryfes,
             box = [0.0 0.0 -Inf Inf 0.0 thickness],
-            inflate = tolerance)
-        y0l = selectelem(fens,
+            inflate = tolerance,
+        )
+        y0l = selectelem(
+            fens,
             boundaryfes,
             box = [-Inf Inf 0.0 0.0 0.0 thickness],
-            inflate = tolerance)
+            inflate = tolerance,
+        )
         cyll = setdiff(1:count(boundaryfes), topl, botl, x0l, y0l)
 
         geom = NodalField(fens.xyz)
@@ -542,13 +605,15 @@ function pinchcyl_t10_ms()
 
         loadnl = selectnode(fens; box = [0 0 L / 2 L / 2 -Inf Inf], inflate = tolerance)
 
-        nfemm = FEMMBase(IntegDomain(FESetP1(reshape(loadnl, length(loadnl), 1)),
-            PointRule()))
-        F = distribloads(nfemm,
+        nfemm =
+            FEMMBase(IntegDomain(FESetP1(reshape(loadnl, length(loadnl), 1)), PointRule()))
+        F = distribloads(
+            nfemm,
             geom,
             u,
             ForceIntensity([0; 0; -1.0 / 4 / length(loadnl)]),
-            3)
+            3,
+        )
 
         associategeometry!(femm, geom)
 
@@ -571,13 +636,12 @@ function pinchcyl_t10()
     let (n, nt) = (ref, 4)
         fens, fes = T10block(90 / 360 * 2 * pi, L / 2, thickness, n, n, nt)
 
-        for i in 1:count(fens)
+        for i = 1:count(fens)
             a = fens.xyz[i, 1]
             y = fens.xyz[i, 2]
             z = fens.xyz[i, 3]
-            fens.xyz[i, :] .= ((R - thickness / 2 + z) * sin(a),
-                y,
-                (R - thickness / 2 + z) * cos(a))
+            fens.xyz[i, :] .=
+                ((R - thickness / 2 + z) * sin(a), y, (R - thickness / 2 + z) * cos(a))
         end
 
         MR = DeforModelRed3D
@@ -585,22 +649,30 @@ function pinchcyl_t10()
         femm = FEMMDeforLinear(MR, IntegDomain(fes, TetRule(4)), material)
 
         boundaryfes = meshboundary(fes)
-        topl = selectelem(fens,
+        topl = selectelem(
+            fens,
             boundaryfes,
             box = [-Inf Inf -Inf Inf thickness thickness],
-            inflate = tolerance)
-        botl = selectelem(fens,
+            inflate = tolerance,
+        )
+        botl = selectelem(
+            fens,
             boundaryfes,
             box = [-Inf Inf -Inf Inf 0.0 0.0],
-            inflate = tolerance)
-        x0l = selectelem(fens,
+            inflate = tolerance,
+        )
+        x0l = selectelem(
+            fens,
             boundaryfes,
             box = [0.0 0.0 -Inf Inf 0.0 thickness],
-            inflate = tolerance)
-        y0l = selectelem(fens,
+            inflate = tolerance,
+        )
+        y0l = selectelem(
+            fens,
             boundaryfes,
             box = [-Inf Inf 0.0 0.0 0.0 thickness],
-            inflate = tolerance)
+            inflate = tolerance,
+        )
         cyll = setdiff(1:count(boundaryfes), topl, botl, x0l, y0l)
 
         geom = NodalField(fens.xyz)
@@ -620,13 +692,15 @@ function pinchcyl_t10()
 
         loadnl = selectnode(fens; box = [0 0 L / 2 L / 2 -Inf Inf], inflate = tolerance)
 
-        nfemm = FEMMBase(IntegDomain(FESetP1(reshape(loadnl, length(loadnl), 1)),
-            PointRule()))
-        F = distribloads(nfemm,
+        nfemm =
+            FEMMBase(IntegDomain(FESetP1(reshape(loadnl, length(loadnl), 1)), PointRule()))
+        F = distribloads(
+            nfemm,
             geom,
             u,
             ForceIntensity([0; 0; -1.0 / 4 / length(loadnl)]),
-            3)
+            3,
+        )
 
         associategeometry!(femm, geom)
 

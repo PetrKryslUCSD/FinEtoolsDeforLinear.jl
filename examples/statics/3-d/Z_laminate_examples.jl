@@ -46,11 +46,22 @@ function Z_laminate_u_ss()
     fens, fes = H8toH20(fens, fes)
 
     MR = DeforModelRed3D
-    laminamaterial = MatDeforElastOrtho(MR,
-        0.0, E1s, E2s, E3s,
-        nu12s, nu13s, nu23s,
-        G12s, G13s, G23s,
-        0.0, 0.0, 0.0)
+    laminamaterial = MatDeforElastOrtho(
+        MR,
+        0.0,
+        E1s,
+        E2s,
+        E3s,
+        nu12s,
+        nu13s,
+        nu23s,
+        G12s,
+        G13s,
+        G23s,
+        0.0,
+        0.0,
+        0.0,
+    )
 
     function _updatecs!(csmatout::FFltMat, feid::FInt, labels)
         rotmat3!(csmatout, angles[labels[feid]] / 180.0 * pi * [0.0; 0.0; 1.0])
@@ -59,9 +70,19 @@ function Z_laminate_u_ss()
 
     gr = GaussRule(3, 3)
 
-    region = FDataDict("femm" => FEMMDeforLinear(MR, IntegDomain(fes, gr),
-        CSys(3, 3,
-            (csmatout, XYZ, tangents, feid, qpid) -> _updatecs!(csmatout, feid, fes.label)), laminamaterial))
+    region = FDataDict(
+        "femm" => FEMMDeforLinear(
+            MR,
+            IntegDomain(fes, gr),
+            CSys(
+                3,
+                3,
+                (csmatout, XYZ, tangents, feid, qpid) ->
+                    _updatecs!(csmatout, feid, fes.label),
+            ),
+            laminamaterial,
+        ),
+    )
 
     lx0 = selectnode(fens, box = [0.0 0.0 -Inf Inf -Inf Inf], inflate = tolerance)
     lxa = selectnode(fens, box = [a a -Inf Inf -Inf Inf], inflate = tolerance)
@@ -79,27 +100,36 @@ function Z_laminate_u_ss()
 
     bfes = meshboundary(fes)
     ttopl = selectelem(fens, bfes; facing = true, direction = [0.0 0.0 1.0])
-    Trac = FDataDict("traction_vector" => [0.0; 0.0; -q0],
-        "femm" => FEMMBase(IntegDomain(subset(bfes, ttopl), GaussRule(2, 3))))
+    Trac = FDataDict(
+        "traction_vector" => [0.0; 0.0; -q0],
+        "femm" => FEMMBase(IntegDomain(subset(bfes, ttopl), GaussRule(2, 3))),
+    )
 
-    modeldata = FDataDict("fens" => fens,
+    modeldata = FDataDict(
+        "fens" => fens,
         "regions" => [region],
         "essential_bcs" => [ex02, ex03, exa2, exa3, ey01, ey03, eyb1, eyb3],
-        "traction_bcs" => [Trac])
+        "traction_bcs" => [Trac],
+    )
     modeldata = AlgoDeforLinearModule.linearstatics(modeldata)
 
     u = modeldata["u"]
     geom = modeldata["geom"]
-    lcenter = selectnode(fens,
-        box = [a / 2 a / 2 b / 2 b / 2 -Inf Inf],
-        inflate = tolerance)
+    lcenter =
+        selectnode(fens, box = [a / 2 a / 2 b / 2 b / 2 -Inf Inf], inflate = tolerance)
     cdis = abs(mean(u.values[lcenter, 3]))
     println("")
     println("Normalized Center deflection: $(cdis/wc_analytical)")
 
     File = "Z_laminate_u_ss.vtk"
-    vtkexportmesh(File, fes.conn, geom.values, FinEtools.MeshExportModule.VTK.H20;
-        scalars = [("Layer", fes.label)], vectors = [("displacement", u.values)])
+    vtkexportmesh(
+        File,
+        fes.conn,
+        geom.values,
+        FinEtools.MeshExportModule.VTK.H20;
+        scalars = [("Layer", fes.label)],
+        vectors = [("displacement", u.values)],
+    )
     @async run(`"paraview.exe" $File`)
 
     println("Done")

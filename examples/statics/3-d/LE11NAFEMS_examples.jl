@@ -49,22 +49,25 @@ function LE11NAFEMS_H20()
     ##
     # The mesh  will be created in a very coarse representation from the
     # key points in the drawing. The first coordinate is radial, the second coordinate is axial.
-    rz = [1.0 0.0;#A
-        1.4 0.0;#B
-        0.995184726672197 0.098017140329561;
-        1.393258617341076 0.137223996461385;
-        0.980785 0.195090;#
-        1.37309939 0.27312645;
-        0.956940335732209 0.290284677254462
-        1.339716470025092 0.406398548156247
-        0.9238795 0.38268;#C
-        1.2124 0.7;#D
-        0.7071 0.7071;#E
-        1.1062 1.045;#F
-        0.7071 (0.7071 + 1.79)/2;#(E+H)/2
-        1.0 1.39;#G
-        0.7071 1.79;#H
-        1.0 1.79] * phun("M")
+    rz =
+        [
+            1.0 0.0#A
+            1.4 0.0#B
+            0.995184726672197 0.098017140329561
+            1.393258617341076 0.137223996461385
+            0.980785 0.195090#
+            1.37309939 0.27312645
+            0.956940335732209 0.290284677254462
+            1.339716470025092 0.406398548156247
+            0.9238795 0.38268#C
+            1.2124 0.7#D
+            0.7071 0.7071#E
+            1.1062 1.045#F
+            0.7071 (0.7071+1.79)/2#(E+H)/2
+            1.0 1.39#G
+            0.7071 1.79#H
+            1.0 1.79
+        ] * phun("M")
     tolerance = 1.e-6 * phun("M")
 
     ##
@@ -75,13 +78,15 @@ function LE11NAFEMS_H20()
     # This is the quadrilateral mesh of the cross-section.   It will be modified and
     # refined as  we go.
     fens = FENodeSet(rz)
-    fes = FESetQ4([1 2 4 3;
-        3 4 6 5;
-        5 6 8 7;
-        7 8 10 9;
-        9 10 12 11;
-        11 12 14 13;
-        13 14 16 15])
+    fes = FESetQ4([
+        1 2 4 3
+        3 4 6 5
+        5 6 8 7
+        7 8 10 9
+        9 10 12 11
+        11 12 14 13
+        13 14 16 15
+    ])
 
     ##
     # If needed, the initial mesh  can be refined by bisection.  Just set
@@ -95,12 +100,14 @@ function LE11NAFEMS_H20()
     # not be guaranteed.
 
     nref = 0
-    for ref in 1:nref
+    for ref = 1:nref
         fens, fes = Q4refine(fens, fes)
-        list = selectnode(fens,
+        list = selectnode(
+            fens,
             distance = 1.0 + 0.1 / 2^nref,
             from = [0.0 0.0],
-            inflate = tolerance)
+            inflate = tolerance,
+        )
         fens.xyz[list, :] = FinEtools.MeshUtilModule.ontosphere(fens.xyz[list, :], 1.0)
     end
 
@@ -114,8 +121,12 @@ function LE11NAFEMS_H20()
     ##
     # First the mesh is extruded to a block whose third dimension
     # represents the angular coordinate.
-    fens, fes = H8extrudeQ4(fens, fes, nLayers,
-        (rz, k) -> [rz[1], rz[2], 0.0] - (k) / nLayers * [0.0, 0.0, angslice])
+    fens, fes = H8extrudeQ4(
+        fens,
+        fes,
+        nLayers,
+        (rz, k) -> [rz[1], rz[2], 0.0] - (k) / nLayers * [0.0, 0.0, angslice],
+    )
 
     ##
     # The mesh is now converted to the serendipity 20-node elements.
@@ -128,12 +139,14 @@ function LE11NAFEMS_H20()
     # about the topology (connectivity), the geometry does not matter at
     # this point.
     bfes = meshboundary(fes)
-    f1l = selectelem(fens,
+    f1l =
+        selectelem(fens, bfes, box = [-Inf, Inf, -Inf, Inf, 0.0, 0.0], inflate = tolerance)
+    f2l = selectelem(
+        fens,
         bfes,
-        box = [-Inf, Inf, -Inf, Inf, 0.0, 0.0],
-        inflate = tolerance)
-    f2l = selectelem(fens, bfes, box = [-Inf, Inf, -Inf, Inf, -angslice, -angslice],
-        inflate = tolerance)
+        box = [-Inf, Inf, -Inf, Inf, -angslice, -angslice],
+        inflate = tolerance,
+    )
 
     ##
     # The block is now converted  to the axially symmetric geometry by using the
@@ -147,7 +160,7 @@ function LE11NAFEMS_H20()
             rza[2],
         ]
     end
-    for j in 1:size(fens.xyz, 1)
+    for j = 1:size(fens.xyz, 1)
         fens.xyz[j, :] = sweep(fens.xyz[j, :])
     end
 
@@ -157,8 +170,12 @@ function LE11NAFEMS_H20()
     # located on the spherical surface for sure. (Recall  that we have
     # inserted additional nodes at the midpoints of the edges when the mesh
     # was converted to quadratic elements.)
-    list = selectnode(fens, distance = 1.0 + 0.1 / 2^nref,
-        from = [0.0 0.0 0.0], inflate = tolerance)
+    list = selectnode(
+        fens,
+        distance = 1.0 + 0.1 / 2^nref,
+        from = [0.0 0.0 0.0],
+        inflate = tolerance,
+    )
     fens.xyz[list, :] = FinEtools.MeshUtilModule.ontosphere(fens.xyz[list, :], 1.0)
 
     ##
@@ -208,10 +225,13 @@ function LE11NAFEMS_H20()
 
     ##
     # We create the temperature field using the formula $T=r+z$.
-    dT = NodalField(reshape(sqrt.(fens.xyz[:, 1] .^ 2 + fens.xyz[:, 2] .^ 2) +
-                            fens.xyz[:, 3],
-        size(fens.xyz, 1),
-        1))
+    dT = NodalField(
+        reshape(
+            sqrt.(fens.xyz[:, 1] .^ 2 + fens.xyz[:, 2] .^ 2) + fens.xyz[:, 3],
+            size(fens.xyz, 1),
+            1,
+        ),
+    )
 
     ##
     # And we are ready to assemble the system matrix. Both the elastic stiffness of
@@ -239,8 +259,13 @@ function LE11NAFEMS_H20()
     # the axial stress painted on the deformed geometry.
 
     File = "LE11NAFEMS_H20_sigmaz.vtk"
-    vtkexportmesh(File, fens, fes;
-        scalars = [("sigmaz", fld.values)], vectors = [("u", u.values)])
+    vtkexportmesh(
+        File,
+        fens,
+        fes;
+        scalars = [("sigmaz", fld.values)],
+        vectors = [("u", u.values)],
+    )
     @async run(`"paraview.exe" $File`)
     # File =  "LE11NAFEMS_H20_dT.vtk"
     # vtkexportmesh(File, fens, fes; scalars=dT.values,scalars_name ="dT", vectors=u.values,vectors_name="u")
@@ -250,10 +275,12 @@ function LE11NAFEMS_H20()
     # going to be now extracted from the nodal field for the stress.
     # Nodes at level Z=0.0
     l1 = selectnode(fens, box = FFlt[-Inf Inf -Inf Inf 0.0 0.0], inflate = tolerance)
-    l2 = selectnode(fens,
+    l2 = selectnode(
+        fens,
         distance = 1.0 + 0.1 / 2^nref,
         from = FFlt[0.0 0.0 0.0],
-        inflate = tolerance)
+        inflate = tolerance,
+    )
     nA = intersect(l1, l2)
     sA = mean(fld.values[nA]) / phun("MEGA*Pa")
     sAn = mean(fld.values[nA]) / sigmaA

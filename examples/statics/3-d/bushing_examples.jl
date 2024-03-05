@@ -27,12 +27,14 @@ function bushing_h8_full()
 
     boundaryfes = meshboundary(fes)
     ibcl = selectelem(fens, boundaryfes, box = [0 ang 0 L 0 0], inflate = tolerance)
-    ebcl = selectelem(fens,
+    ebcl = selectelem(
+        fens,
         boundaryfes,
         box = [0 ang 0 L Re - Ri Re - Ri],
-        inflate = tolerance)
+        inflate = tolerance,
+    )
 
-    for i in 1:count(fens)
+    for i = 1:count(fens)
         a = fens.xyz[i, 1]
         y = fens.xyz[i, 2]
         r = fens.xyz[i, 3] + Ri
@@ -83,12 +85,14 @@ function bushing_h8_algo_full()
 
     boundaryfes = meshboundary(fes)
     ibcl = selectelem(fens, boundaryfes, box = [0 ang 0 L 0 0], inflate = tolerance)
-    ebcl = selectelem(fens,
+    ebcl = selectelem(
+        fens,
         boundaryfes,
         box = [0 ang 0 L Re - Ri Re - Ri],
-        inflate = tolerance)
+        inflate = tolerance,
+    )
 
-    for i in 1:count(fens)
+    for i = 1:count(fens)
         a = fens.xyz[i, 1]
         y = fens.xyz[i, 2]
         r = fens.xyz[i, 3] + Ri
@@ -97,42 +101,61 @@ function bushing_h8_algo_full()
 
     essential_bcs = FDataDict[]
     x0nl = selectnode(fens, box = [0 0 -Inf Inf -Inf Inf], inflate = tolerance)
-    push!(essential_bcs,
-        FDataDict("displacement" => 0.0, "component" => 1, "node_list" => x0nl))
+    push!(
+        essential_bcs,
+        FDataDict("displacement" => 0.0, "component" => 1, "node_list" => x0nl),
+    )
 
     y0nl = selectnode(fens, box = [-Inf Inf 0 0 -Inf Inf], inflate = tolerance)
-    push!(essential_bcs,
-        FDataDict("displacement" => 0.0, "component" => 2, "node_list" => y0nl))
+    push!(
+        essential_bcs,
+        FDataDict("displacement" => 0.0, "component" => 2, "node_list" => y0nl),
+    )
     yLnl = selectnode(fens, box = [-Inf Inf L L -Inf Inf], inflate = tolerance)
-    push!(essential_bcs,
-        FDataDict("displacement" => 0.0, "component" => 2, "node_list" => yLnl))
+    push!(
+        essential_bcs,
+        FDataDict("displacement" => 0.0, "component" => 2, "node_list" => yLnl),
+    )
 
     enl = connectednodes(subset(boundaryfes, ebcl))
-    push!(essential_bcs,
-        FDataDict("displacement" => 0.0, "component" => 1, "node_list" => enl))
-    push!(essential_bcs,
-        FDataDict("displacement" => 0.0, "component" => 2, "node_list" => enl))
-    push!(essential_bcs,
-        FDataDict("displacement" => 0.0, "component" => 3, "node_list" => enl))
+    push!(
+        essential_bcs,
+        FDataDict("displacement" => 0.0, "component" => 1, "node_list" => enl),
+    )
+    push!(
+        essential_bcs,
+        FDataDict("displacement" => 0.0, "component" => 2, "node_list" => enl),
+    )
+    push!(
+        essential_bcs,
+        FDataDict("displacement" => 0.0, "component" => 3, "node_list" => enl),
+    )
     inl = connectednodes(subset(boundaryfes, ibcl))
-    push!(essential_bcs,
-        FDataDict("displacement" => 0.0, "component" => 1, "node_list" => inl))
-    push!(essential_bcs,
-        FDataDict("displacement" => 0.0, "component" => 2, "node_list" => inl))
-    push!(essential_bcs,
-        FDataDict("displacement" => iuz, "component" => 3, "node_list" => inl))
+    push!(
+        essential_bcs,
+        FDataDict("displacement" => 0.0, "component" => 1, "node_list" => inl),
+    )
+    push!(
+        essential_bcs,
+        FDataDict("displacement" => 0.0, "component" => 2, "node_list" => inl),
+    )
+    push!(
+        essential_bcs,
+        FDataDict("displacement" => iuz, "component" => 3, "node_list" => inl),
+    )
 
-    modeldata = FDataDict("fens" => fens,
-        "regions" => regions,
-        "essential_bcs" => essential_bcs)
+    modeldata =
+        FDataDict("fens" => fens, "regions" => regions, "essential_bcs" => essential_bcs)
     modeldata = AlgoDeforLinearModule.linearstatics(modeldata)
 
     filebase = "bushing_h8_algo_full"
-    modeldata["postprocessing"] = FDataDict("file" => filebase * "-s",
+    modeldata["postprocessing"] = FDataDict(
+        "file" => filebase * "-s",
         "quantity" => :pressure,
         "component" => collect(1:1),
         "nodevalmethod" => :averaging,
-        "reportat" => :extraptrend)
+        "reportat" => :extraptrend,
+    )
     modeldata = AlgoDeforLinearModule.exportstress(modeldata)
 
     true
@@ -149,12 +172,14 @@ function bushing_h8_algo_ms()
 
     boundaryfes = meshboundary(fes)
     ibcl = selectelem(fens, boundaryfes, box = [0 ang 0 L 0 0], inflate = tolerance)
-    ebcl = selectelem(fens,
+    ebcl = selectelem(
+        fens,
         boundaryfes,
         box = [0 ang 0 L Re - Ri Re - Ri],
-        inflate = tolerance)
+        inflate = tolerance,
+    )
 
-    for i in 1:count(fens)
+    for i = 1:count(fens)
         a = fens.xyz[i, 1]
         y = fens.xyz[i, 2]
         r = fens.xyz[i, 3] + Ri
@@ -163,48 +188,69 @@ function bushing_h8_algo_ms()
 
     essential_bcs = FDataDict[]
     x0nl = selectnode(fens, box = [0 0 -Inf Inf -Inf Inf], inflate = tolerance)
-    push!(essential_bcs,
-        FDataDict("displacement" => 0.0, "component" => 1, "node_list" => x0nl))
+    push!(
+        essential_bcs,
+        FDataDict("displacement" => 0.0, "component" => 1, "node_list" => x0nl),
+    )
 
     y0nl = selectnode(fens, box = [-Inf Inf 0 0 -Inf Inf], inflate = tolerance)
-    push!(essential_bcs,
-        FDataDict("displacement" => 0.0, "component" => 2, "node_list" => y0nl))
+    push!(
+        essential_bcs,
+        FDataDict("displacement" => 0.0, "component" => 2, "node_list" => y0nl),
+    )
     yLnl = selectnode(fens, box = [-Inf Inf L L -Inf Inf], inflate = tolerance)
-    push!(essential_bcs,
-        FDataDict("displacement" => 0.0, "component" => 2, "node_list" => yLnl))
+    push!(
+        essential_bcs,
+        FDataDict("displacement" => 0.0, "component" => 2, "node_list" => yLnl),
+    )
 
     enl = connectednodes(subset(boundaryfes, ebcl))
-    push!(essential_bcs,
-        FDataDict("displacement" => 0.0, "component" => 1, "node_list" => enl))
-    push!(essential_bcs,
-        FDataDict("displacement" => 0.0, "component" => 2, "node_list" => enl))
-    push!(essential_bcs,
-        FDataDict("displacement" => 0.0, "component" => 3, "node_list" => enl))
+    push!(
+        essential_bcs,
+        FDataDict("displacement" => 0.0, "component" => 1, "node_list" => enl),
+    )
+    push!(
+        essential_bcs,
+        FDataDict("displacement" => 0.0, "component" => 2, "node_list" => enl),
+    )
+    push!(
+        essential_bcs,
+        FDataDict("displacement" => 0.0, "component" => 3, "node_list" => enl),
+    )
     inl = connectednodes(subset(boundaryfes, ibcl))
-    push!(essential_bcs,
-        FDataDict("displacement" => 0.0, "component" => 1, "node_list" => inl))
-    push!(essential_bcs,
-        FDataDict("displacement" => 0.0, "component" => 2, "node_list" => inl))
-    push!(essential_bcs,
-        FDataDict("displacement" => iuz, "component" => 3, "node_list" => inl))
+    push!(
+        essential_bcs,
+        FDataDict("displacement" => 0.0, "component" => 1, "node_list" => inl),
+    )
+    push!(
+        essential_bcs,
+        FDataDict("displacement" => 0.0, "component" => 2, "node_list" => inl),
+    )
+    push!(
+        essential_bcs,
+        FDataDict("displacement" => iuz, "component" => 3, "node_list" => inl),
+    )
 
-    modeldata = FDataDict("fens" => fens,
-        "regions" => regions,
-        "essential_bcs" => essential_bcs)
+    modeldata =
+        FDataDict("fens" => fens, "regions" => regions, "essential_bcs" => essential_bcs)
     modeldata = AlgoDeforLinearModule.linearstatics(modeldata)
 
     filebase = "bushing_h8_algo_ms"
-    modeldata["postprocessing"] = FDataDict("file" => filebase * "-nodal-",
+    modeldata["postprocessing"] = FDataDict(
+        "file" => filebase * "-nodal-",
         "quantity" => :pressure,
         "component" => collect(1:1),
         "nodevalmethod" => :averaging,
-        "reportat" => :extraptrend)
+        "reportat" => :extraptrend,
+    )
     modeldata = AlgoDeforLinearModule.exportstress(modeldata)
-    modeldata["postprocessing"] = FDataDict("file" => filebase * "-elwise-",
+    modeldata["postprocessing"] = FDataDict(
+        "file" => filebase * "-elwise-",
         "quantity" => :pressure,
         "component" => collect(1:1),
         "nodevalmethod" => :averaging,
-        "reportat" => :extraptrend)
+        "reportat" => :extraptrend,
+    )
     modeldata = AlgoDeforLinearModule.exportstresselementwise(modeldata)
 
     true
@@ -222,12 +268,14 @@ function bushing_h8u_algo_ms()
 
     boundaryfes = meshboundary(fes)
     ibcl = selectelem(fens, boundaryfes, box = [0 ang 0 L 0 0], inflate = tolerance)
-    ebcl = selectelem(fens,
+    ebcl = selectelem(
+        fens,
         boundaryfes,
         box = [0 ang 0 L Re - Ri Re - Ri],
-        inflate = tolerance)
+        inflate = tolerance,
+    )
 
-    for i in 1:count(fens)
+    for i = 1:count(fens)
         a = fens.xyz[i, 1]
         y = fens.xyz[i, 2]
         r = fens.xyz[i, 3] + Ri
@@ -236,48 +284,69 @@ function bushing_h8u_algo_ms()
 
     essential_bcs = FDataDict[]
     x0nl = selectnode(fens, box = [0 0 -Inf Inf -Inf Inf], inflate = tolerance)
-    push!(essential_bcs,
-        FDataDict("displacement" => 0.0, "component" => 1, "node_list" => x0nl))
+    push!(
+        essential_bcs,
+        FDataDict("displacement" => 0.0, "component" => 1, "node_list" => x0nl),
+    )
 
     y0nl = selectnode(fens, box = [-Inf Inf 0 0 -Inf Inf], inflate = tolerance)
-    push!(essential_bcs,
-        FDataDict("displacement" => 0.0, "component" => 2, "node_list" => y0nl))
+    push!(
+        essential_bcs,
+        FDataDict("displacement" => 0.0, "component" => 2, "node_list" => y0nl),
+    )
     yLnl = selectnode(fens, box = [-Inf Inf L L -Inf Inf], inflate = tolerance)
-    push!(essential_bcs,
-        FDataDict("displacement" => 0.0, "component" => 2, "node_list" => yLnl))
+    push!(
+        essential_bcs,
+        FDataDict("displacement" => 0.0, "component" => 2, "node_list" => yLnl),
+    )
 
     enl = connectednodes(subset(boundaryfes, ebcl))
-    push!(essential_bcs,
-        FDataDict("displacement" => 0.0, "component" => 1, "node_list" => enl))
-    push!(essential_bcs,
-        FDataDict("displacement" => 0.0, "component" => 2, "node_list" => enl))
-    push!(essential_bcs,
-        FDataDict("displacement" => 0.0, "component" => 3, "node_list" => enl))
+    push!(
+        essential_bcs,
+        FDataDict("displacement" => 0.0, "component" => 1, "node_list" => enl),
+    )
+    push!(
+        essential_bcs,
+        FDataDict("displacement" => 0.0, "component" => 2, "node_list" => enl),
+    )
+    push!(
+        essential_bcs,
+        FDataDict("displacement" => 0.0, "component" => 3, "node_list" => enl),
+    )
     inl = connectednodes(subset(boundaryfes, ibcl))
-    push!(essential_bcs,
-        FDataDict("displacement" => 0.0, "component" => 1, "node_list" => inl))
-    push!(essential_bcs,
-        FDataDict("displacement" => 0.0, "component" => 2, "node_list" => inl))
-    push!(essential_bcs,
-        FDataDict("displacement" => iuz, "component" => 3, "node_list" => inl))
+    push!(
+        essential_bcs,
+        FDataDict("displacement" => 0.0, "component" => 1, "node_list" => inl),
+    )
+    push!(
+        essential_bcs,
+        FDataDict("displacement" => 0.0, "component" => 2, "node_list" => inl),
+    )
+    push!(
+        essential_bcs,
+        FDataDict("displacement" => iuz, "component" => 3, "node_list" => inl),
+    )
 
-    modeldata = FDataDict("fens" => fens,
-        "regions" => regions,
-        "essential_bcs" => essential_bcs)
+    modeldata =
+        FDataDict("fens" => fens, "regions" => regions, "essential_bcs" => essential_bcs)
     modeldata = AlgoDeforLinearModule.linearstatics(modeldata)
 
     filebase = "bushing_h8u_algo_ms"
-    modeldata["postprocessing"] = FDataDict("file" => filebase * "-nodal-",
+    modeldata["postprocessing"] = FDataDict(
+        "file" => filebase * "-nodal-",
         "quantity" => :pressure,
         "component" => collect(1:1),
         "nodevalmethod" => :averaging,
-        "reportat" => :extraptrend)
+        "reportat" => :extraptrend,
+    )
     modeldata = AlgoDeforLinearModule.exportstress(modeldata)
-    modeldata["postprocessing"] = FDataDict("file" => filebase * "-elwise-",
+    modeldata["postprocessing"] = FDataDict(
+        "file" => filebase * "-elwise-",
         "quantity" => :pressure,
         "component" => collect(1:1),
         "nodevalmethod" => :averaging,
-        "reportat" => :extraptrend)
+        "reportat" => :extraptrend,
+    )
     modeldata = AlgoDeforLinearModule.exportstresselementwise(modeldata)
 
     true
@@ -295,22 +364,30 @@ function bushing_h8_export()
         femm = FEMMDeforLinearMSH8(MR, IntegDomain(fes, GaussRule(3, 2)), material)
 
         boundaryfes = meshboundary(fes)
-        topl = selectelem(fens,
+        topl = selectelem(
+            fens,
             boundaryfes,
             box = [-Inf Inf -Inf Inf thickness thickness],
-            inflate = tolerance)
-        botl = selectelem(fens,
+            inflate = tolerance,
+        )
+        botl = selectelem(
+            fens,
             boundaryfes,
             box = [-Inf Inf -Inf Inf 0.0 0.0],
-            inflate = tolerance)
-        x0l = selectelem(fens,
+            inflate = tolerance,
+        )
+        x0l = selectelem(
+            fens,
             boundaryfes,
             box = [0.0 0.0 -Inf Inf 0.0 thickness],
-            inflate = tolerance)
-        y0l = selectelem(fens,
+            inflate = tolerance,
+        )
+        y0l = selectelem(
+            fens,
             boundaryfes,
             box = [-Inf Inf 0.0 0.0 0.0 thickness],
-            inflate = tolerance)
+            inflate = tolerance,
+        )
         cyll = setdiff(1:count(boundaryfes), topl, botl, x0l, y0l)
 
         geom = NodalField(fens.xyz)
@@ -381,12 +458,14 @@ function bushing_t10_algo_ms()
 
     boundaryfes = meshboundary(fes)
     ibcl = selectelem(fens, boundaryfes, box = [0 ang 0 L 0 0], inflate = tolerance)
-    ebcl = selectelem(fens,
+    ebcl = selectelem(
+        fens,
         boundaryfes,
         box = [0 ang 0 L Re - Ri Re - Ri],
-        inflate = tolerance)
+        inflate = tolerance,
+    )
 
-    for i in 1:count(fens)
+    for i = 1:count(fens)
         a = fens.xyz[i, 1]
         y = fens.xyz[i, 2]
         r = fens.xyz[i, 3] + Ri
@@ -395,48 +474,69 @@ function bushing_t10_algo_ms()
 
     essential_bcs = FDataDict[]
     x0nl = selectnode(fens, box = [0 0 -Inf Inf -Inf Inf], inflate = tolerance)
-    push!(essential_bcs,
-        FDataDict("displacement" => 0.0, "component" => 1, "node_list" => x0nl))
+    push!(
+        essential_bcs,
+        FDataDict("displacement" => 0.0, "component" => 1, "node_list" => x0nl),
+    )
 
     y0nl = selectnode(fens, box = [-Inf Inf 0 0 -Inf Inf], inflate = tolerance)
-    push!(essential_bcs,
-        FDataDict("displacement" => 0.0, "component" => 2, "node_list" => y0nl))
+    push!(
+        essential_bcs,
+        FDataDict("displacement" => 0.0, "component" => 2, "node_list" => y0nl),
+    )
     yLnl = selectnode(fens, box = [-Inf Inf L L -Inf Inf], inflate = tolerance)
-    push!(essential_bcs,
-        FDataDict("displacement" => 0.0, "component" => 2, "node_list" => yLnl))
+    push!(
+        essential_bcs,
+        FDataDict("displacement" => 0.0, "component" => 2, "node_list" => yLnl),
+    )
 
     enl = connectednodes(subset(boundaryfes, ebcl))
-    push!(essential_bcs,
-        FDataDict("displacement" => 0.0, "component" => 1, "node_list" => enl))
-    push!(essential_bcs,
-        FDataDict("displacement" => 0.0, "component" => 2, "node_list" => enl))
-    push!(essential_bcs,
-        FDataDict("displacement" => 0.0, "component" => 3, "node_list" => enl))
+    push!(
+        essential_bcs,
+        FDataDict("displacement" => 0.0, "component" => 1, "node_list" => enl),
+    )
+    push!(
+        essential_bcs,
+        FDataDict("displacement" => 0.0, "component" => 2, "node_list" => enl),
+    )
+    push!(
+        essential_bcs,
+        FDataDict("displacement" => 0.0, "component" => 3, "node_list" => enl),
+    )
     inl = connectednodes(subset(boundaryfes, ibcl))
-    push!(essential_bcs,
-        FDataDict("displacement" => 0.0, "component" => 1, "node_list" => inl))
-    push!(essential_bcs,
-        FDataDict("displacement" => 0.0, "component" => 2, "node_list" => inl))
-    push!(essential_bcs,
-        FDataDict("displacement" => iuz, "component" => 3, "node_list" => inl))
+    push!(
+        essential_bcs,
+        FDataDict("displacement" => 0.0, "component" => 1, "node_list" => inl),
+    )
+    push!(
+        essential_bcs,
+        FDataDict("displacement" => 0.0, "component" => 2, "node_list" => inl),
+    )
+    push!(
+        essential_bcs,
+        FDataDict("displacement" => iuz, "component" => 3, "node_list" => inl),
+    )
 
-    modeldata = FDataDict("fens" => fens,
-        "regions" => regions,
-        "essential_bcs" => essential_bcs)
+    modeldata =
+        FDataDict("fens" => fens, "regions" => regions, "essential_bcs" => essential_bcs)
     modeldata = AlgoDeforLinearModule.linearstatics(modeldata)
 
     filebase = "bushing_T10_algo_ms"
-    modeldata["postprocessing"] = FDataDict("file" => filebase * "-nodal-",
+    modeldata["postprocessing"] = FDataDict(
+        "file" => filebase * "-nodal-",
         "quantity" => :pressure,
         "component" => collect(1:1),
         "nodevalmethod" => :averaging,
-        "reportat" => :extraptrend)
+        "reportat" => :extraptrend,
+    )
     modeldata = AlgoDeforLinearModule.exportstress(modeldata)
-    modeldata["postprocessing"] = FDataDict("file" => filebase * "-elwise-",
+    modeldata["postprocessing"] = FDataDict(
+        "file" => filebase * "-elwise-",
         "quantity" => :pressure,
         "component" => collect(1:1),
         "nodevalmethod" => :averaging,
-        "reportat" => :extraptrend)
+        "reportat" => :extraptrend,
+    )
     modeldata = AlgoDeforLinearModule.exportstresselementwise(modeldata)
 
     true
@@ -453,12 +553,14 @@ function bushing_t10_algo()
 
     boundaryfes = meshboundary(fes)
     ibcl = selectelem(fens, boundaryfes, box = [0 ang 0 L 0 0], inflate = tolerance)
-    ebcl = selectelem(fens,
+    ebcl = selectelem(
+        fens,
         boundaryfes,
         box = [0 ang 0 L Re - Ri Re - Ri],
-        inflate = tolerance)
+        inflate = tolerance,
+    )
 
-    for i in 1:count(fens)
+    for i = 1:count(fens)
         a = fens.xyz[i, 1]
         y = fens.xyz[i, 2]
         r = fens.xyz[i, 3] + Ri
@@ -467,48 +569,69 @@ function bushing_t10_algo()
 
     essential_bcs = FDataDict[]
     x0nl = selectnode(fens, box = [0 0 -Inf Inf -Inf Inf], inflate = tolerance)
-    push!(essential_bcs,
-        FDataDict("displacement" => 0.0, "component" => 1, "node_list" => x0nl))
+    push!(
+        essential_bcs,
+        FDataDict("displacement" => 0.0, "component" => 1, "node_list" => x0nl),
+    )
 
     y0nl = selectnode(fens, box = [-Inf Inf 0 0 -Inf Inf], inflate = tolerance)
-    push!(essential_bcs,
-        FDataDict("displacement" => 0.0, "component" => 2, "node_list" => y0nl))
+    push!(
+        essential_bcs,
+        FDataDict("displacement" => 0.0, "component" => 2, "node_list" => y0nl),
+    )
     yLnl = selectnode(fens, box = [-Inf Inf L L -Inf Inf], inflate = tolerance)
-    push!(essential_bcs,
-        FDataDict("displacement" => 0.0, "component" => 2, "node_list" => yLnl))
+    push!(
+        essential_bcs,
+        FDataDict("displacement" => 0.0, "component" => 2, "node_list" => yLnl),
+    )
 
     enl = connectednodes(subset(boundaryfes, ebcl))
-    push!(essential_bcs,
-        FDataDict("displacement" => 0.0, "component" => 1, "node_list" => enl))
-    push!(essential_bcs,
-        FDataDict("displacement" => 0.0, "component" => 2, "node_list" => enl))
-    push!(essential_bcs,
-        FDataDict("displacement" => 0.0, "component" => 3, "node_list" => enl))
+    push!(
+        essential_bcs,
+        FDataDict("displacement" => 0.0, "component" => 1, "node_list" => enl),
+    )
+    push!(
+        essential_bcs,
+        FDataDict("displacement" => 0.0, "component" => 2, "node_list" => enl),
+    )
+    push!(
+        essential_bcs,
+        FDataDict("displacement" => 0.0, "component" => 3, "node_list" => enl),
+    )
     inl = connectednodes(subset(boundaryfes, ibcl))
-    push!(essential_bcs,
-        FDataDict("displacement" => 0.0, "component" => 1, "node_list" => inl))
-    push!(essential_bcs,
-        FDataDict("displacement" => 0.0, "component" => 2, "node_list" => inl))
-    push!(essential_bcs,
-        FDataDict("displacement" => iuz, "component" => 3, "node_list" => inl))
+    push!(
+        essential_bcs,
+        FDataDict("displacement" => 0.0, "component" => 1, "node_list" => inl),
+    )
+    push!(
+        essential_bcs,
+        FDataDict("displacement" => 0.0, "component" => 2, "node_list" => inl),
+    )
+    push!(
+        essential_bcs,
+        FDataDict("displacement" => iuz, "component" => 3, "node_list" => inl),
+    )
 
-    modeldata = FDataDict("fens" => fens,
-        "regions" => regions,
-        "essential_bcs" => essential_bcs)
+    modeldata =
+        FDataDict("fens" => fens, "regions" => regions, "essential_bcs" => essential_bcs)
     modeldata = AlgoDeforLinearModule.linearstatics(modeldata)
 
     filebase = "bushing_T10_algo"
-    modeldata["postprocessing"] = FDataDict("file" => filebase * "-nodal-",
+    modeldata["postprocessing"] = FDataDict(
+        "file" => filebase * "-nodal-",
         "quantity" => :pressure,
         "component" => collect(1:1),
         "nodevalmethod" => :averaging,
-        "reportat" => :extraptrend)
+        "reportat" => :extraptrend,
+    )
     modeldata = AlgoDeforLinearModule.exportstress(modeldata)
-    modeldata["postprocessing"] = FDataDict("file" => filebase * "-elwise-",
+    modeldata["postprocessing"] = FDataDict(
+        "file" => filebase * "-elwise-",
         "quantity" => :pressure,
         "component" => collect(1:1),
         "nodevalmethod" => :averaging,
-        "reportat" => :extraptrend)
+        "reportat" => :extraptrend,
+    )
     modeldata = AlgoDeforLinearModule.exportstresselementwise(modeldata)
 
     true

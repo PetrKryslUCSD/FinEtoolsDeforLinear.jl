@@ -32,12 +32,14 @@ function trunc_cyl_shell()
     fens, fes = H8block(h, l, 2 * pi, nh, nl, nc)
     # Shape into a cylinder
     R = zeros(3, 3)
-    for i in 1:count(fens)
+    for i = 1:count(fens)
         x, y, z = fens.xyz[i, :]
         rotmat3!(R, [0, z, 0])
-        Q = [cos(psi * pi / 180) sin(psi * pi / 180) 0;
-            -sin(psi * pi / 180) cos(psi * pi / 180) 0;
-            0 0 1]
+        Q = [
+            cos(psi * pi / 180) sin(psi * pi / 180) 0
+            -sin(psi * pi / 180) cos(psi * pi / 180) 0
+            0 0 1
+        ]
         fens.xyz[i, :] = reshape([x + Rmed - h / 2, y - l / 2, 0], 1, 3) * Q * R
     end
     candidates = selectnode(fens, plane = [0.0 0.0 1.0 0.0], thickness = h / 1000)
@@ -64,11 +66,13 @@ function trunc_cyl_shell()
     # well as the final residual vector resid.
 
     if true
-        d, v, nev, nconv = eigs(Symmetric(K_ff + OmegaShift * M_ff),
+        d, v, nev, nconv = eigs(
+            Symmetric(K_ff + OmegaShift * M_ff),
             Symmetric(M_ff);
             nev = neigvs,
             which = :SM,
-            explicittransform = :none)
+            explicittransform = :none,
+        )
         d = d .- OmegaShift
         fs = real(sqrt.(complex(d))) / (2 * pi)
         println("Eigenvalues: $fs [Hz]")
@@ -84,12 +88,14 @@ function trunc_cyl_shell()
         v0 = rand(size(K_ff, 1), 2 * neigvs)
         tol = 1.0e-2
         maxiter = 20
-        lamb, v, nconv, niter, lamberr = solver(K_ff + OmegaShift .* M_ff,
+        lamb, v, nconv, niter, lamberr = solver(
+            K_ff + OmegaShift .* M_ff,
             M_ff;
             nev = neigvs,
             X = v0,
             tol = tol,
-            maxiter = maxiter)
+            maxiter = maxiter,
+        )
         if nconv < neigvs
             println("NOT converged")
         end

@@ -31,7 +31,7 @@ function NAFEMS_FV32_algo()
     Reffs = [44.623 130.03 162.70 246.05 379.90 391.44]
 
     fens, fes = H20block(1.0, 2.0, 1.0, nL, nW, nH)
-    for i in 1:count(fens)
+    for i = 1:count(fens)
         xi, eta, theta = fens.xyz[i, :]
         eta = eta - 1.0
         fens.xyz[i, :] = [xi * L eta * (1.0 - 0.8 * xi) * W0 / 2 theta * H / 2]
@@ -43,9 +43,10 @@ function NAFEMS_FV32_algo()
     # Make the region
     MR = DeforModelRed3D
     material = MatDeforElastIso(MR, rho, E, nu, 0.0)
-    region1 = FDataDict("femm" => FEMMDeforLinear(MR, IntegDomain(fes, GaussRule(3, 2)),
-            material), "femm_mass" => FEMMDeforLinear(MR, IntegDomain(fes, GaussRule(3, 3)),
-            material))
+    region1 = FDataDict(
+        "femm" => FEMMDeforLinear(MR, IntegDomain(fes, GaussRule(3, 2)), material),
+        "femm_mass" => FEMMDeforLinear(MR, IntegDomain(fes, GaussRule(3, 3)), material),
+    )
 
     nl1 = selectnode(fens; plane = [1.0 0.0 0.0 0.0], thickness = H / 1.0e4)
     ebc1 = FDataDict("node_list" => nl1, "component" => 1, "displacement" => 0.0)
@@ -56,9 +57,12 @@ function NAFEMS_FV32_algo()
     ebc4 = FDataDict("node_list" => nl4, "component" => 3, "displacement" => 0.0)
 
     # Make model data
-    modeldata = FDataDict("fens" => fens, "regions" => [region1],
+    modeldata = FDataDict(
+        "fens" => fens,
+        "regions" => [region1],
         "essential_bcs" => [ebc1 ebc2 ebc3 ebc4],
-        "neigvs" => neigvs)
+        "neigvs" => neigvs,
+    )
 
     # Solve
     modeldata = AlgoDeforLinearModule.modal(modeldata)
@@ -141,11 +145,13 @@ function NAFEMS_TEST13H_vib()
 
     if true
         t0 = time()
-        d, v, nev, nconv = eigs(K_ff + OmegaShift * M_ff,
+        d, v, nev, nconv = eigs(
+            K_ff + OmegaShift * M_ff,
             M_ff;
             nev = neigvs,
             which = :SM,
-            explicittransform = :none)
+            explicittransform = :none,
+        )
         d = d .- OmegaShift
         fs = real(sqrt.(complex(d))) / (2 * pi)
         println("Reference frequencies: $fs [Hz]")

@@ -3,8 +3,8 @@ module ss_beam_examples
 using FinEtools
 using FinEtools.AlgoBaseModule: evalconvergencestudy, solve_blocked!
 using FinEtoolsDeforLinear
-using FinEtoolsDeforLinear.AlgoDeforLinearModule: linearstatics,
-    exportstresselementwise, exportstress
+using FinEtoolsDeforLinear.AlgoDeforLinearModule:
+    linearstatics, exportstresselementwise, exportstress
 using Statistics: mean
 using LinearAlgebra: Symmetric, cholesky
 
@@ -19,11 +19,13 @@ magn = 1.0
 uzex = -5 / 384 * magn * W * L^4 / (E * W * H^3 / 12)
 n = 8 #
 
-function getfrcL!(forceout::FFltVec,
+function getfrcL!(
+    forceout::FFltVec,
     XYZ::FFltMat,
     tangents::FFltMat,
     feid::FInt,
-    qpid::FInt)
+    qpid::FInt,
+)
     copyto!(forceout, [0.0; 0.0; -magn])
     forceout
 end
@@ -47,7 +49,7 @@ function test_h8()
     material = MatDeforElastIso(MR, 0.0, E, nu, 0.0)
 
     # Material orientation matrix
-    csmat = [i == j ? one(FFlt) : zero(FFlt) for i in 1:3, j in 1:3]
+    csmat = [i == j ? one(FFlt) : zero(FFlt) for i = 1:3, j = 1:3]
 
     function updatecs!(csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, feid::FInt)
         copyto!(csmatout, csmat)
@@ -116,7 +118,7 @@ function test_h20r()
     material = MatDeforElastIso(MR, 0.0, E, nu, 0.0)
 
     # Material orientation matrix
-    csmat = [i == j ? one(FFlt) : zero(FFlt) for i in 1:3, j in 1:3]
+    csmat = [i == j ? one(FFlt) : zero(FFlt) for i = 1:3, j = 1:3]
 
     function updatecs!(csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, feid::FInt)
         copyto!(csmatout, csmat)

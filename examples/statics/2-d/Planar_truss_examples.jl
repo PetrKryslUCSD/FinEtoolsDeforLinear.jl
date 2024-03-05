@@ -18,20 +18,24 @@ function Planar_truss()
     E = 1.0e7 # Young's modulus
     nu = 0.0
     alpha = 0.0
-    fens = FENodeSetModule.FENodeSet([0.0 0;
-        0 40;
-        40 0;
-        40 40;
-        80 0;
-        80 40])
-    fes = FESetL2([1 3
+    fens = FENodeSetModule.FENodeSet([
+        0.0 0
+        0 40
+        40 0
+        40 40
+        80 0
+        80 40
+    ])
+    fes = FESetL2([
+        1 3
         1 4
         2 4
         3 4
         3 5
         5 4
         6 4
-        5 6])
+        5 6
+    ])
 
     MR = DeforModelRed1D
     material = MatDeforElastIso(MR, 0.0, E, nu, alpha)
@@ -71,8 +75,12 @@ function Planar_truss()
     display(vfld)
 
     File = "Planar_truss.vtk"
-    MeshExportModule.vtkexportmesh(File, fens, fes;
-        scalars = [("sx", sfld.values), ("vm", vfld.values)])
+    MeshExportModule.vtkexportmesh(
+        File,
+        fens,
+        fes;
+        scalars = [("sx", sfld.values), ("vm", vfld.values)],
+    )
     @async run(`"paraview.exe" $File`)
     # try rm(File) catch end
 

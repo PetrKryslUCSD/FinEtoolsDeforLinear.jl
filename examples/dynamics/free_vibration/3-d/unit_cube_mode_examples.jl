@@ -45,9 +45,7 @@ function unit_cube_modes()
     @time K = stiffness(femm, geom, u)
     femm = FEMMDeforLinear(MR, IntegDomain(fes, GaussRule(3, 3)), material)
     @time M = mass(femm, geom, u)
-    d, v, nconv = gep_smallest(K + OmegaShift * M,
-        M, neigvs,
-        which = :SM)
+    d, v, nconv = gep_smallest(K + OmegaShift * M, M, neigvs, which = :SM)
     d = d .- OmegaShift
     fs = real(sqrt.(complex(d))) / (2 * pi)
     println("Eigenvalues: $fs [Hz]")
@@ -59,7 +57,7 @@ function unit_cube_modes()
 
     vectors = []
     File = "unit_cube_modes.vtk"
-    for mode  in 1:neigvs
+    for mode = 1:neigvs
         scattersysvec!(u, v[:, mode])
         push!(vectors, ("mode$mode", deepcopy(u.values)))
     end
@@ -106,9 +104,14 @@ function unit_cube_modes_arnoldimethod()
     @time K = stiffness(femm, geom, u)
     femm = FEMMDeforLinear(MR, IntegDomain(fes, GaussRule(3, 3)), material)
     @time M = mass(femm, geom, u)
-    d, v, nconv = gep_smallest(K + OmegaShift * M,
-        M, neigvs; method = :ArnoldiMethod, orthogonalize = true,
-        which = :SM)
+    d, v, nconv = gep_smallest(
+        K + OmegaShift * M,
+        M,
+        neigvs;
+        method = :ArnoldiMethod,
+        orthogonalize = true,
+        which = :SM,
+    )
     d = d .- OmegaShift
     fs = real(sqrt.(complex(d))) / (2 * pi)
     println("Eigenvalues: $fs [Hz]")
@@ -120,7 +123,7 @@ function unit_cube_modes_arnoldimethod()
 
     vectors = []
     File = "unit_cube_modes_arnoldimethod.vtk"
-    for mode  in 1:neigvs
+    for mode = 1:neigvs
         scattersysvec!(u, v[:, mode])
         push!(vectors, ("mode$mode", deepcopy(u.values)))
     end
@@ -156,13 +159,18 @@ function unit_cube_modes_algo()
     # Make the region
     MR = DeforModelRed3D
     material = MatDeforElastIso(MR, rho, E, nu, 0.0)
-    region1 = FDataDict("femm" => FEMMDeforLinear(MR, IntegDomain(fes, GaussRule(3, 2)),
-            material), "femm_mass" => FEMMDeforLinear(MR, IntegDomain(fes, GaussRule(3, 3)),
-            material))
+    region1 = FDataDict(
+        "femm" => FEMMDeforLinear(MR, IntegDomain(fes, GaussRule(3, 2)), material),
+        "femm_mass" => FEMMDeforLinear(MR, IntegDomain(fes, GaussRule(3, 3)), material),
+    )
 
     # Make model data
-    modeldata = FDataDict("fens" => fens, "regions" => [region1],
-        "omega_shift" => omega_shift, "neigvs" => neigvs)
+    modeldata = FDataDict(
+        "fens" => fens,
+        "regions" => [region1],
+        "omega_shift" => omega_shift,
+        "neigvs" => neigvs,
+    )
 
     # Solve
     modeldata = AlgoDeforLinearModule.modal(modeldata)
@@ -170,8 +178,7 @@ function unit_cube_modes_algo()
     fs = modeldata["omega"] / (2 * pi)
     println("Eigenvalues: $fs [Hz]")
 
-    modeldata["postprocessing"] = FDataDict("file" => "unit_cube_mode",
-        "mode" => 10)
+    modeldata["postprocessing"] = FDataDict("file" => "unit_cube_mode", "mode" => 10)
     modeldata = AlgoDeforLinearModule.exportmode(modeldata)
     @async run(`"paraview.exe" $(modeldata["postprocessing"]["file"]*"1.vtk")`)
 
@@ -283,14 +290,19 @@ function unit_cube_modes_msh8_algo()
     # Make the region
     MR = DeforModelRed3D
     material = MatDeforElastIso(MR, rho, E, nu, 0.0)
-    region1 = FDataDict("femm" => FEMMDeforLinearMSH8(MR, IntegDomain(fes, GaussRule(3, 2)),
-            material),
-        "femm_mass" => FEMMDeforLinearMSH8(MR, IntegDomain(fes, GaussRule(3, 3)),
-            material))
+    region1 = FDataDict(
+        "femm" => FEMMDeforLinearMSH8(MR, IntegDomain(fes, GaussRule(3, 2)), material),
+        "femm_mass" =>
+            FEMMDeforLinearMSH8(MR, IntegDomain(fes, GaussRule(3, 3)), material),
+    )
 
     # Make model data
-    modeldata = FDataDict("fens" => fens, "regions" => [region1],
-        "omega_shift" => omega_shift, "neigvs" => neigvs)
+    modeldata = FDataDict(
+        "fens" => fens,
+        "regions" => [region1],
+        "omega_shift" => omega_shift,
+        "neigvs" => neigvs,
+    )
 
     # Solve
     modeldata = AlgoDeforLinearModule.modal(modeldata)
@@ -298,8 +310,7 @@ function unit_cube_modes_msh8_algo()
     fs = modeldata["omega"] / (2 * pi)
     println("Eigenvalues: $fs [Hz]")
 
-    modeldata["postprocessing"] = FDataDict("file" => "unit_cube_mode",
-        "mode" => 10)
+    modeldata["postprocessing"] = FDataDict("file" => "unit_cube_mode", "mode" => 10)
     modeldata = AlgoDeforLinearModule.exportmode(modeldata)
     @async run(`"paraview.exe" $(modeldata["postprocessing"]["file"]*"1.vtk")`)
 

@@ -21,8 +21,8 @@ function Pagano_3lay_cyl_bend_MST10_conv()
     # classical laminated plate theory (CPT), while the second is an exact
     # solution from linear elasticity theory.
 
-    for (extrap, nodevalmeth) in zip([:extrapmean, :extraptrend, :default],
-        [:averaging, :averaging, :invdistance])
+    for (extrap, nodevalmeth) in
+        zip([:extrapmean, :extraptrend, :default], [:averaging, :averaging, :invdistance])
         for Span_to_thickness in [4, 50]
             filebase = "Pagano_3lay_cyl_bend_conv_$(elementtag)_$(Span_to_thickness)_$(extrap)"
             modeldatasequence = FDataDict[]
@@ -64,11 +64,22 @@ function Pagano_3lay_cyl_bend_MST10_conv()
 
                 # This is the material  model
                 MR = DeforModelRed3D
-                skinmaterial = MatDeforElastOrtho(MR,
-                    0.0, E1, E2, E3,
-                    nu12, nu13, nu23,
-                    G12, G13, G23,
-                    CTE1, CTE2, CTE3)
+                skinmaterial = MatDeforElastOrtho(
+                    MR,
+                    0.0,
+                    E1,
+                    E2,
+                    E3,
+                    nu12,
+                    nu13,
+                    nu23,
+                    G12,
+                    G13,
+                    G23,
+                    CTE1,
+                    CTE2,
+                    CTE3,
+                )
 
                 # The material coordinate system function is defined as:
                 function _updatecs!(csmatout::FFltMat, layer::FInt)
@@ -81,41 +92,55 @@ function Pagano_3lay_cyl_bend_MST10_conv()
 
                 # We will create 3 regions, one for each of the layers
                 regions = FDataDict[]
-                for layer in 1:nLayers
+                for layer = 1:nLayers
                     rls = selectelem(fens, fes, label = layer)
-                    push!(regions,
-                        FDataDict("femm" => FEMMDeforLinearMST10(MR,
-                            IntegDomain(subset(fes, rls), gr),
-                            CSys(3, 3,
-                                (csmatout, XYZ, tangents, feid, qpid) -> _updatecs!(csmatout,
-                                    layer)), skinmaterial)))
+                    push!(
+                        regions,
+                        FDataDict(
+                            "femm" => FEMMDeforLinearMST10(
+                                MR,
+                                IntegDomain(subset(fes, rls), gr),
+                                CSys(
+                                    3,
+                                    3,
+                                    (csmatout, XYZ, tangents, feid, qpid) ->
+                                        _updatecs!(csmatout, layer),
+                                ),
+                                skinmaterial,
+                            ),
+                        ),
+                    )
                 end
 
                 # The essential boundary conditions are applied to enforce the plane strain constraint.
-                ly0 = selectnode(fens,
-                    box = [-Inf Inf 0.0 0.0 -Inf Inf],
-                    inflate = tolerance)
+                ly0 =
+                    selectnode(fens, box = [-Inf Inf 0.0 0.0 -Inf Inf], inflate = tolerance)
                 lyh = selectnode(fens, box = [-Inf Inf h h -Inf Inf], inflate = tolerance)
-                ey = FDataDict("displacement" => 0.0,
+                ey = FDataDict(
+                    "displacement" => 0.0,
                     "component" => 2,
-                    "node_list" => vcat(ly0, lyh))
+                    "node_list" => vcat(ly0, lyh),
+                )
                 # The transverse displacement is fixed at the two ends.
-                lz0 = selectnode(fens,
-                    box = [0.0 0.0 -Inf Inf -Inf Inf],
-                    inflate = tolerance)
+                lz0 =
+                    selectnode(fens, box = [0.0 0.0 -Inf Inf -Inf Inf], inflate = tolerance)
                 lzL = selectnode(fens, box = [L L -Inf Inf -Inf Inf], inflate = tolerance)
-                ez = FDataDict("displacement" => 0.0,
+                ez = FDataDict(
+                    "displacement" => 0.0,
                     "component" => 3,
-                    "node_list" => vcat(lz0, lzL))
+                    "node_list" => vcat(lz0, lzL),
+                )
                 ex = FDataDict("displacement" => 0.0, "component" => 1, "node_list" => [1])
 
                 # The traction boundary condition is applied at the top of the plate.
                 bfes = meshboundary(fes)
-                function pfun(forceout::FVec{T},
+                function pfun(
+                    forceout::FVec{T},
                     XYZ::FFltMat,
                     tangents::FFltMat,
                     feid::FInt,
-                    qpid::FInt) where {T}
+                    qpid::FInt,
+                ) where {T}
                     forceout[1] = 0.0
                     forceout[2] = 0.0
                     forceout[3] = -q0 * sin(pi * XYZ[1] / L)
@@ -123,17 +148,24 @@ function Pagano_3lay_cyl_bend_MST10_conv()
                 end
                 # From  the entire boundary we select those quadrilaterals that lie on the plane
                 # Z = thickness
-                tl = selectelem(fens,
+                tl = selectelem(
+                    fens,
                     bfes,
                     box = [-Inf Inf -Inf Inf T T],
-                    inflate = tolerance)
-                Trac = FDataDict("traction_vector" => pfun,
-                    "femm" => FEMMBase(IntegDomain(subset(bfes, tl), SimplexRule(2, 3))))
+                    inflate = tolerance,
+                )
+                Trac = FDataDict(
+                    "traction_vector" => pfun,
+                    "femm" =>
+                        FEMMBase(IntegDomain(subset(bfes, tl), SimplexRule(2, 3))),
+                )
 
-                modeldata = FDataDict("fens" => fens,
+                modeldata = FDataDict(
+                    "fens" => fens,
                     "regions" => regions,
                     "essential_bcs" => [ex, ey, ez],
-                    "traction_bcs" => [Trac])
+                    "traction_bcs" => [Trac],
+                )
                 modeldata = AlgoDeforLinearModule.linearstatics(modeldata)
 
                 # modeldata["postprocessing"] = FDataDict("file"=>filebase * "-u")
@@ -144,29 +176,30 @@ function Pagano_3lay_cyl_bend_MST10_conv()
 
                 # The results of the displacement and stresses will be reported at
                 # nodes located at the appropriate points.
-                ntopcenter = selectnode(fens,
-                    box = [L / 2 L / 2 0.0 h T T],
-                    inflate = tolerance)
-                ncenterline = selectnode(fens,
-                    box = [L / 2 L / 2 0.0 0.0 0.0 T],
-                    inflate = tolerance)
-                nx0line = selectnode(fens,
-                    box = [0.0 0.0 0.0 0.0 0.0 T],
-                    inflate = tolerance)
+                ntopcenter =
+                    selectnode(fens, box = [L / 2 L / 2 0.0 h T T], inflate = tolerance)
+                ncenterline =
+                    selectnode(fens, box = [L / 2 L / 2 0.0 0.0 0.0 T], inflate = tolerance)
+                nx0line =
+                    selectnode(fens, box = [0.0 0.0 0.0 0.0 0.0 T], inflate = tolerance)
 
                 zclo = sortperm(vec(geom.values[ncenterline, 3]))
                 ncenterline = ncenterline[zclo]
                 centerz = geom.values[ncenterline, 3]
 
-                println("Top Center deflection: $(mean(u.values[ntopcenter, 3], dims = 1)/phun("in")) [in]")
+                println(
+                    "Top Center deflection: $(mean(u.values[ntopcenter, 3], dims = 1)/phun("in")) [in]",
+                )
 
                 #  Compute  all stresses
-                modeldata["postprocessing"] = FDataDict("file" => filebase * "-s",
+                modeldata["postprocessing"] = FDataDict(
+                    "file" => filebase * "-s",
                     "quantity" => :Cauchy,
                     "component" => collect(1:6),
                     "outputcsys" => CSys(3),
                     "nodevalmethod" => nodevalmeth,
-                    "reportat" => extrap)
+                    "reportat" => extrap,
+                )
                 modeldata = AlgoDeforLinearModule.exportstress(modeldata)
 
                 modeldata["elementsize"] = T / Refinement
@@ -179,21 +212,24 @@ function Pagano_3lay_cyl_bend_MST10_conv()
             for md in modeldatasequence
                 md["targetfields"] = [e["field"] for e in md["postprocessing"]["exported"]]
             end
-            elementsizes, errornorms, p = AlgoBaseModule.evalconvergencestudy(modeldatasequence)
+            elementsizes, errornorms, p =
+                AlgoBaseModule.evalconvergencestudy(modeldatasequence)
 
             println("Normalized Approximate Error = $(errornorms)")
 
             f = log.(vec(errornorms))
-            A = hcat(log.(vec(elementsizes[1:(end - 1)])), ones(size(f)))
+            A = hcat(log.(vec(elementsizes[1:(end-1)])), ones(size(f)))
             p = A \ f
             println("Linear log-log fit: p = $(p)")
 
             csvFile = filebase * "_Stress" * ".CSV"
-            savecsv(csvFile,
-                elementsizes = vec(elementsizes[1:(end - 1)]),
-                elementsizes2 = vec(elementsizes[1:(end - 1)] .^ 2),
-                elementsizes3 = vec(elementsizes[1:(end - 1)] .^ 3),
-                errornorms = vec(errornorms))
+            savecsv(
+                csvFile,
+                elementsizes = vec(elementsizes[1:(end-1)]),
+                elementsizes2 = vec(elementsizes[1:(end-1)] .^ 2),
+                elementsizes3 = vec(elementsizes[1:(end-1)] .^ 3),
+                errornorms = vec(errornorms),
+            )
             println("Wrote $csvFile")
 
             println("")
@@ -201,21 +237,24 @@ function Pagano_3lay_cyl_bend_MST10_conv()
             for md in modeldatasequence
                 md["targetfields"] = [md["u"] for r in md["regions"]]
             end
-            elementsizes, errornorms, p = AlgoBaseModule.evalconvergencestudy(modeldatasequence)
+            elementsizes, errornorms, p =
+                AlgoBaseModule.evalconvergencestudy(modeldatasequence)
 
             println("Normalized Approximate Error = $(errornorms)")
 
             f = log.(vec(errornorms))
-            A = hcat(log.(vec(elementsizes[1:(end - 1)])), ones(size(f)))
+            A = hcat(log.(vec(elementsizes[1:(end-1)])), ones(size(f)))
             p = A \ f
             println("Linear log-log fit: p = $(p)")
 
             csvFile = filebase * "_Displ" * ".CSV"
-            savecsv(csvFile,
-                elementsizes = vec(elementsizes[1:(end - 1)]),
-                elementsizes2 = vec(elementsizes[1:(end - 1)] .^ 2),
-                elementsizes3 = vec(elementsizes[1:(end - 1)] .^ 3),
-                errornorms = vec(errornorms))
+            savecsv(
+                csvFile,
+                elementsizes = vec(elementsizes[1:(end-1)]),
+                elementsizes2 = vec(elementsizes[1:(end-1)] .^ 2),
+                elementsizes3 = vec(elementsizes[1:(end-1)] .^ 3),
+                errornorms = vec(errornorms),
+            )
             println("Wrote $csvFile")
 
             # @async run(`"paraview.exe" $csvFile`)
@@ -239,8 +278,8 @@ function Pagano_3lay_cyl_bend_H8_conv()
     # classical laminated plate theory (CPT), while the second is an exact
     # solution from linear elasticity theory.
 
-    for (extrap, nodevalmeth) in zip([:extrapmean, :extraptrend, :default],
-        [:averaging, :averaging, :invdistance])
+    for (extrap, nodevalmeth) in
+        zip([:extrapmean, :extraptrend, :default], [:averaging, :averaging, :invdistance])
         for Span_to_thickness in [4, 50]
             filebase = "Pagano_3lay_cyl_bend_conv_$(elementtag)_$(Span_to_thickness)_$(extrap)"
             modeldatasequence = FDataDict[]
@@ -282,11 +321,22 @@ function Pagano_3lay_cyl_bend_H8_conv()
 
                 # This is the material  model
                 MR = DeforModelRed3D
-                skinmaterial = MatDeforElastOrtho(MR,
-                    0.0, E1, E2, E3,
-                    nu12, nu13, nu23,
-                    G12, G13, G23,
-                    CTE1, CTE2, CTE3)
+                skinmaterial = MatDeforElastOrtho(
+                    MR,
+                    0.0,
+                    E1,
+                    E2,
+                    E3,
+                    nu12,
+                    nu13,
+                    nu23,
+                    G12,
+                    G13,
+                    G23,
+                    CTE1,
+                    CTE2,
+                    CTE3,
+                )
 
                 # The material coordinate system function is defined as:
                 function _updatecs!(csmatout::FFltMat, layer::FInt)
@@ -299,41 +349,55 @@ function Pagano_3lay_cyl_bend_H8_conv()
 
                 # We will create 3 regions, one for each of the layers
                 regions = FDataDict[]
-                for layer in 1:nLayers
+                for layer = 1:nLayers
                     rls = selectelem(fens, fes, label = layer)
-                    push!(regions,
-                        FDataDict("femm" => FEMMDeforLinear(MR,
-                            IntegDomain(subset(fes, rls), gr),
-                            CSys(3, 3,
-                                (csmatout, XYZ, tangents, feid, qpid) -> _updatecs!(csmatout,
-                                    layer)), skinmaterial)))
+                    push!(
+                        regions,
+                        FDataDict(
+                            "femm" => FEMMDeforLinear(
+                                MR,
+                                IntegDomain(subset(fes, rls), gr),
+                                CSys(
+                                    3,
+                                    3,
+                                    (csmatout, XYZ, tangents, feid, qpid) ->
+                                        _updatecs!(csmatout, layer),
+                                ),
+                                skinmaterial,
+                            ),
+                        ),
+                    )
                 end
 
                 # The essential boundary conditions are applied to enforce the plane strain constraint.
-                ly0 = selectnode(fens,
-                    box = [-Inf Inf 0.0 0.0 -Inf Inf],
-                    inflate = tolerance)
+                ly0 =
+                    selectnode(fens, box = [-Inf Inf 0.0 0.0 -Inf Inf], inflate = tolerance)
                 lyh = selectnode(fens, box = [-Inf Inf h h -Inf Inf], inflate = tolerance)
-                ey = FDataDict("displacement" => 0.0,
+                ey = FDataDict(
+                    "displacement" => 0.0,
                     "component" => 2,
-                    "node_list" => vcat(ly0, lyh))
+                    "node_list" => vcat(ly0, lyh),
+                )
                 # The transverse displacement is fixed at the two ends.
-                lz0 = selectnode(fens,
-                    box = [0.0 0.0 -Inf Inf -Inf Inf],
-                    inflate = tolerance)
+                lz0 =
+                    selectnode(fens, box = [0.0 0.0 -Inf Inf -Inf Inf], inflate = tolerance)
                 lzL = selectnode(fens, box = [L L -Inf Inf -Inf Inf], inflate = tolerance)
-                ez = FDataDict("displacement" => 0.0,
+                ez = FDataDict(
+                    "displacement" => 0.0,
                     "component" => 3,
-                    "node_list" => vcat(lz0, lzL))
+                    "node_list" => vcat(lz0, lzL),
+                )
                 ex = FDataDict("displacement" => 0.0, "component" => 1, "node_list" => [1])
 
                 # The traction boundary condition is applied at the top of the plate.
                 bfes = meshboundary(fes)
-                function pfun(forceout::FVec{T},
+                function pfun(
+                    forceout::FVec{T},
                     XYZ::FFltMat,
                     tangents::FFltMat,
                     feid::FInt,
-                    qpid::FInt) where {T}
+                    qpid::FInt,
+                ) where {T}
                     forceout[1] = 0.0
                     forceout[2] = 0.0
                     forceout[3] = -q0 * sin(pi * XYZ[1] / L)
@@ -341,17 +405,23 @@ function Pagano_3lay_cyl_bend_H8_conv()
                 end
                 # From  the entire boundary we select those quadrilaterals that lie on the plane
                 # Z = thickness
-                tl = selectelem(fens,
+                tl = selectelem(
+                    fens,
                     bfes,
                     box = [-Inf Inf -Inf Inf T T],
-                    inflate = tolerance)
-                Trac = FDataDict("traction_vector" => pfun,
-                    "femm" => FEMMBase(IntegDomain(subset(bfes, tl), GaussRule(2, 2))))
+                    inflate = tolerance,
+                )
+                Trac = FDataDict(
+                    "traction_vector" => pfun,
+                    "femm" => FEMMBase(IntegDomain(subset(bfes, tl), GaussRule(2, 2))),
+                )
 
-                modeldata = FDataDict("fens" => fens,
+                modeldata = FDataDict(
+                    "fens" => fens,
                     "regions" => regions,
                     "essential_bcs" => [ex, ey, ez],
-                    "traction_bcs" => [Trac])
+                    "traction_bcs" => [Trac],
+                )
                 modeldata = AlgoDeforLinearModule.linearstatics(modeldata)
 
                 # modeldata["postprocessing"] = FDataDict("file"=>filebase * "-u")
@@ -362,27 +432,30 @@ function Pagano_3lay_cyl_bend_H8_conv()
 
                 # The results of the displacement and stresses will be reported at
                 # nodes located at the appropriate points.
-                ntopcenter = selectnode(fens,
-                    box = [L / 2 L / 2 0.0 h T T],
-                    inflate = tolerance)
-                ncenterline = selectnode(fens,
-                    box = [L / 2 L / 2 0.0 0.0 0.0 T],
-                    inflate = tolerance)
-                nx0line = selectnode(fens,
-                    box = [0.0 0.0 0.0 0.0 0.0 T],
-                    inflate = tolerance)
+                ntopcenter =
+                    selectnode(fens, box = [L / 2 L / 2 0.0 h T T], inflate = tolerance)
+                ncenterline =
+                    selectnode(fens, box = [L / 2 L / 2 0.0 0.0 0.0 T], inflate = tolerance)
+                nx0line =
+                    selectnode(fens, box = [0.0 0.0 0.0 0.0 0.0 T], inflate = tolerance)
 
                 zclo = sortperm(vec(geom.values[ncenterline, 3]))
                 ncenterline = ncenterline[zclo]
                 centerz = geom.values[ncenterline, 3]
 
-                println("Top Center deflection: $(mean(u.values[ntopcenter, 3], dims = 1)/phun("in")) [in]")
+                println(
+                    "Top Center deflection: $(mean(u.values[ntopcenter, 3], dims = 1)/phun("in")) [in]",
+                )
 
                 #  Compute  all stresses
-                modeldata["postprocessing"] = FDataDict("file" => filebase * "-s",
-                    "quantity" => :Cauchy, "component" => collect(1:6),
+                modeldata["postprocessing"] = FDataDict(
+                    "file" => filebase * "-s",
+                    "quantity" => :Cauchy,
+                    "component" => collect(1:6),
                     "outputcsys" => CSys(3),
-                    "nodevalmethod" => nodevalmeth, "reportat" => extrap)
+                    "nodevalmethod" => nodevalmeth,
+                    "reportat" => extrap,
+                )
                 modeldata = AlgoDeforLinearModule.exportstress(modeldata)
 
                 modeldata["elementsize"] = T / Refinement
@@ -395,21 +468,24 @@ function Pagano_3lay_cyl_bend_H8_conv()
             for md in modeldatasequence
                 md["targetfields"] = [e["field"] for e in md["postprocessing"]["exported"]]
             end
-            elementsizes, errornorms, p = AlgoBaseModule.evalconvergencestudy(modeldatasequence)
+            elementsizes, errornorms, p =
+                AlgoBaseModule.evalconvergencestudy(modeldatasequence)
 
             println("Normalized Approximate Error = $(errornorms)")
 
             f = log.(vec(errornorms))
-            A = hcat(log.(vec(elementsizes[1:(end - 1)])), ones(size(f)))
+            A = hcat(log.(vec(elementsizes[1:(end-1)])), ones(size(f)))
             p = A \ f
             println("Linear log-log fit: p = $(p)")
 
             csvFile = filebase * "_Stress" * ".CSV"
-            savecsv(csvFile,
-                elementsizes = vec(elementsizes[1:(end - 1)]),
-                elementsizes2 = vec(elementsizes[1:(end - 1)] .^ 2),
-                elementsizes3 = vec(elementsizes[1:(end - 1)] .^ 3),
-                errornorms = vec(errornorms))
+            savecsv(
+                csvFile,
+                elementsizes = vec(elementsizes[1:(end-1)]),
+                elementsizes2 = vec(elementsizes[1:(end-1)] .^ 2),
+                elementsizes3 = vec(elementsizes[1:(end-1)] .^ 3),
+                errornorms = vec(errornorms),
+            )
             println("Wrote $csvFile")
 
             println("")
@@ -417,21 +493,24 @@ function Pagano_3lay_cyl_bend_H8_conv()
             for md in modeldatasequence
                 md["targetfields"] = [md["u"] for r in md["regions"]]
             end
-            elementsizes, errornorms, p = AlgoBaseModule.evalconvergencestudy(modeldatasequence)
+            elementsizes, errornorms, p =
+                AlgoBaseModule.evalconvergencestudy(modeldatasequence)
 
             println("Normalized Approximate Error = $(errornorms)")
 
             f = log.(vec(errornorms))
-            A = hcat(log.(vec(elementsizes[1:(end - 1)])), ones(size(f)))
+            A = hcat(log.(vec(elementsizes[1:(end-1)])), ones(size(f)))
             p = A \ f
             println("Linear log-log fit: p = $(p)")
 
             csvFile = filebase * "_Displ" * ".CSV"
-            savecsv(csvFile,
-                elementsizes = vec(elementsizes[1:(end - 1)]),
-                elementsizes2 = vec(elementsizes[1:(end - 1)] .^ 2),
-                elementsizes3 = vec(elementsizes[1:(end - 1)] .^ 3),
-                errornorms = vec(errornorms))
+            savecsv(
+                csvFile,
+                elementsizes = vec(elementsizes[1:(end-1)]),
+                elementsizes2 = vec(elementsizes[1:(end-1)] .^ 2),
+                elementsizes3 = vec(elementsizes[1:(end-1)] .^ 3),
+                errornorms = vec(errornorms),
+            )
             println("Wrote $csvFile")
 
             # @async run(`"paraview.exe" $csvFile`)
@@ -455,8 +534,8 @@ function Pagano_3lay_cyl_bend_MSH8_conv()
     # classical laminated plate theory (CPT), while the second is an exact
     # solution from linear elasticity theory.
 
-    for (extrap, nodevalmeth) in zip([:extrapmean, :extraptrend, :default],
-        [:averaging, :averaging, :invdistance])
+    for (extrap, nodevalmeth) in
+        zip([:extrapmean, :extraptrend, :default], [:averaging, :averaging, :invdistance])
         for Span_to_thickness in [4, 50]
             filebase = "Pagano_3lay_cyl_bend_conv_$(elementtag)_$(Span_to_thickness)_$(extrap)"
             modeldatasequence = FDataDict[]
@@ -498,11 +577,22 @@ function Pagano_3lay_cyl_bend_MSH8_conv()
 
                 # This is the material  model
                 MR = DeforModelRed3D
-                skinmaterial = MatDeforElastOrtho(MR,
-                    0.0, E1, E2, E3,
-                    nu12, nu13, nu23,
-                    G12, G13, G23,
-                    CTE1, CTE2, CTE3)
+                skinmaterial = MatDeforElastOrtho(
+                    MR,
+                    0.0,
+                    E1,
+                    E2,
+                    E3,
+                    nu12,
+                    nu13,
+                    nu23,
+                    G12,
+                    G13,
+                    G23,
+                    CTE1,
+                    CTE2,
+                    CTE3,
+                )
 
                 # The material coordinate system function is defined as:
                 function _updatecs!(csmatout::FFltMat, layer::FInt)
@@ -515,41 +605,55 @@ function Pagano_3lay_cyl_bend_MSH8_conv()
 
                 # We will create 3 regions, one for each of the layers
                 regions = FDataDict[]
-                for layer in 1:nLayers
+                for layer = 1:nLayers
                     rls = selectelem(fens, fes, label = layer)
-                    push!(regions,
-                        FDataDict("femm" => FEMMDeforLinearMSH8(MR,
-                            IntegDomain(subset(fes, rls), gr),
-                            CSys(3, 3,
-                                (csmatout, XYZ, tangents, feid, qpid) -> _updatecs!(csmatout,
-                                    layer)), skinmaterial)))
+                    push!(
+                        regions,
+                        FDataDict(
+                            "femm" => FEMMDeforLinearMSH8(
+                                MR,
+                                IntegDomain(subset(fes, rls), gr),
+                                CSys(
+                                    3,
+                                    3,
+                                    (csmatout, XYZ, tangents, feid, qpid) ->
+                                        _updatecs!(csmatout, layer),
+                                ),
+                                skinmaterial,
+                            ),
+                        ),
+                    )
                 end
 
                 # The essential boundary conditions are applied to enforce the plane strain constraint.
-                ly0 = selectnode(fens,
-                    box = [-Inf Inf 0.0 0.0 -Inf Inf],
-                    inflate = tolerance)
+                ly0 =
+                    selectnode(fens, box = [-Inf Inf 0.0 0.0 -Inf Inf], inflate = tolerance)
                 lyh = selectnode(fens, box = [-Inf Inf h h -Inf Inf], inflate = tolerance)
-                ey = FDataDict("displacement" => 0.0,
+                ey = FDataDict(
+                    "displacement" => 0.0,
                     "component" => 2,
-                    "node_list" => vcat(ly0, lyh))
+                    "node_list" => vcat(ly0, lyh),
+                )
                 # The transverse displacement is fixed at the two ends.
-                lz0 = selectnode(fens,
-                    box = [0.0 0.0 -Inf Inf -Inf Inf],
-                    inflate = tolerance)
+                lz0 =
+                    selectnode(fens, box = [0.0 0.0 -Inf Inf -Inf Inf], inflate = tolerance)
                 lzL = selectnode(fens, box = [L L -Inf Inf -Inf Inf], inflate = tolerance)
-                ez = FDataDict("displacement" => 0.0,
+                ez = FDataDict(
+                    "displacement" => 0.0,
                     "component" => 3,
-                    "node_list" => vcat(lz0, lzL))
+                    "node_list" => vcat(lz0, lzL),
+                )
                 ex = FDataDict("displacement" => 0.0, "component" => 1, "node_list" => [1])
 
                 # The traction boundary condition is applied at the top of the plate.
                 bfes = meshboundary(fes)
-                function pfun(forceout::FVec{T},
+                function pfun(
+                    forceout::FVec{T},
                     XYZ::FFltMat,
                     tangents::FFltMat,
                     feid::FInt,
-                    qpid::FInt) where {T}
+                    qpid::FInt,
+                ) where {T}
                     forceout[1] = 0.0
                     forceout[2] = 0.0
                     forceout[3] = -q0 * sin(pi * XYZ[1] / L)
@@ -557,17 +661,23 @@ function Pagano_3lay_cyl_bend_MSH8_conv()
                 end
                 # From  the entire boundary we select those quadrilaterals that lie on the plane
                 # Z = thickness
-                tl = selectelem(fens,
+                tl = selectelem(
+                    fens,
                     bfes,
                     box = [-Inf Inf -Inf Inf T T],
-                    inflate = tolerance)
-                Trac = FDataDict("traction_vector" => pfun,
-                    "femm" => FEMMBase(IntegDomain(subset(bfes, tl), GaussRule(2, 2))))
+                    inflate = tolerance,
+                )
+                Trac = FDataDict(
+                    "traction_vector" => pfun,
+                    "femm" => FEMMBase(IntegDomain(subset(bfes, tl), GaussRule(2, 2))),
+                )
 
-                modeldata = FDataDict("fens" => fens,
+                modeldata = FDataDict(
+                    "fens" => fens,
                     "regions" => regions,
                     "essential_bcs" => [ex, ey, ez],
-                    "traction_bcs" => [Trac])
+                    "traction_bcs" => [Trac],
+                )
                 modeldata = AlgoDeforLinearModule.linearstatics(modeldata)
 
                 # modeldata["postprocessing"] = FDataDict("file"=>filebase * "-u")
@@ -578,29 +688,30 @@ function Pagano_3lay_cyl_bend_MSH8_conv()
 
                 # The results of the displacement and stresses will be reported at
                 # nodes located at the appropriate points.
-                ntopcenter = selectnode(fens,
-                    box = [L / 2 L / 2 0.0 h T T],
-                    inflate = tolerance)
-                ncenterline = selectnode(fens,
-                    box = [L / 2 L / 2 0.0 0.0 0.0 T],
-                    inflate = tolerance)
-                nx0line = selectnode(fens,
-                    box = [0.0 0.0 0.0 0.0 0.0 T],
-                    inflate = tolerance)
+                ntopcenter =
+                    selectnode(fens, box = [L / 2 L / 2 0.0 h T T], inflate = tolerance)
+                ncenterline =
+                    selectnode(fens, box = [L / 2 L / 2 0.0 0.0 0.0 T], inflate = tolerance)
+                nx0line =
+                    selectnode(fens, box = [0.0 0.0 0.0 0.0 0.0 T], inflate = tolerance)
 
                 zclo = sortperm(vec(geom.values[ncenterline, 3]))
                 ncenterline = ncenterline[zclo]
                 centerz = geom.values[ncenterline, 3]
 
-                println("Top Center deflection: $(mean(u.values[ntopcenter, 3], dims = 1)/phun("in")) [in]")
+                println(
+                    "Top Center deflection: $(mean(u.values[ntopcenter, 3], dims = 1)/phun("in")) [in]",
+                )
 
                 #  Compute  all stresses
-                modeldata["postprocessing"] = FDataDict("file" => filebase * "-s",
+                modeldata["postprocessing"] = FDataDict(
+                    "file" => filebase * "-s",
                     "quantity" => :Cauchy,
                     "component" => collect(1:6),
                     "outputcsys" => CSys(3),
                     "nodevalmethod" => nodevalmeth,
-                    "reportat" => extrap)
+                    "reportat" => extrap,
+                )
                 modeldata = AlgoDeforLinearModule.exportstress(modeldata)
 
                 modeldata["elementsize"] = T / Refinement
@@ -613,21 +724,24 @@ function Pagano_3lay_cyl_bend_MSH8_conv()
             for md in modeldatasequence
                 md["targetfields"] = [e["field"] for e in md["postprocessing"]["exported"]]
             end
-            elementsizes, errornorms, p = AlgoBaseModule.evalconvergencestudy(modeldatasequence)
+            elementsizes, errornorms, p =
+                AlgoBaseModule.evalconvergencestudy(modeldatasequence)
 
             println("Normalized Approximate Error = $(errornorms)")
 
             f = log.(vec(errornorms))
-            A = hcat(log.(vec(elementsizes[1:(end - 1)])), ones(size(f)))
+            A = hcat(log.(vec(elementsizes[1:(end-1)])), ones(size(f)))
             p = A \ f
             println("Linear log-log fit: p = $(p)")
 
             csvFile = filebase * "_Stress" * ".CSV"
-            savecsv(csvFile,
-                elementsizes = vec(elementsizes[1:(end - 1)]),
-                elementsizes2 = vec(elementsizes[1:(end - 1)] .^ 2),
-                elementsizes3 = vec(elementsizes[1:(end - 1)] .^ 3),
-                errornorms = vec(errornorms))
+            savecsv(
+                csvFile,
+                elementsizes = vec(elementsizes[1:(end-1)]),
+                elementsizes2 = vec(elementsizes[1:(end-1)] .^ 2),
+                elementsizes3 = vec(elementsizes[1:(end-1)] .^ 3),
+                errornorms = vec(errornorms),
+            )
             println("Wrote $csvFile")
 
             println("")
@@ -635,21 +749,24 @@ function Pagano_3lay_cyl_bend_MSH8_conv()
             for md in modeldatasequence
                 md["targetfields"] = [md["u"] for r in md["regions"]]
             end
-            elementsizes, errornorms, p = AlgoBaseModule.evalconvergencestudy(modeldatasequence)
+            elementsizes, errornorms, p =
+                AlgoBaseModule.evalconvergencestudy(modeldatasequence)
 
             println("Normalized Approximate Error = $(errornorms)")
 
             f = log.(vec(errornorms))
-            A = hcat(log.(vec(elementsizes[1:(end - 1)])), ones(size(f)))
+            A = hcat(log.(vec(elementsizes[1:(end-1)])), ones(size(f)))
             p = A \ f
             println("Linear log-log fit: p = $(p)")
 
             csvFile = filebase * "_Displ" * ".CSV"
-            savecsv(csvFile,
-                elementsizes = vec(elementsizes[1:(end - 1)]),
-                elementsizes2 = vec(elementsizes[1:(end - 1)] .^ 2),
-                elementsizes3 = vec(elementsizes[1:(end - 1)] .^ 3),
-                errornorms = vec(errornorms))
+            savecsv(
+                csvFile,
+                elementsizes = vec(elementsizes[1:(end-1)]),
+                elementsizes2 = vec(elementsizes[1:(end-1)] .^ 2),
+                elementsizes3 = vec(elementsizes[1:(end-1)] .^ 3),
+                errornorms = vec(errornorms),
+            )
             println("Wrote $csvFile")
 
             # @async run(`"paraview.exe" $csvFile`)
@@ -715,11 +832,22 @@ function Pagano_3lay_cyl_bend_T10_conv()
 
                 # This is the material  model
                 MR = DeforModelRed3D
-                skinmaterial = MatDeforElastOrtho(MR,
-                    0.0, E1, E2, E3,
-                    nu12, nu13, nu23,
-                    G12, G13, G23,
-                    CTE1, CTE2, CTE3)
+                skinmaterial = MatDeforElastOrtho(
+                    MR,
+                    0.0,
+                    E1,
+                    E2,
+                    E3,
+                    nu12,
+                    nu13,
+                    nu23,
+                    G12,
+                    G13,
+                    G23,
+                    CTE1,
+                    CTE2,
+                    CTE3,
+                )
 
                 # The material coordinate system function is defined as:
                 function _updatecs!(csmatout::FFltMat, layer::FInt)
@@ -732,41 +860,55 @@ function Pagano_3lay_cyl_bend_T10_conv()
 
                 # We will create 3 regions, one for each of the layers
                 regions = FDataDict[]
-                for layer in 1:nLayers
+                for layer = 1:nLayers
                     rls = selectelem(fens, fes, label = layer)
-                    push!(regions,
-                        FDataDict("femm" => FEMMDeforLinear(MR,
-                            IntegDomain(subset(fes, rls), gr),
-                            CSys(3, 3,
-                                (csmatout, XYZ, tangents, feid, qpid) -> _updatecs!(csmatout,
-                                    layer)), skinmaterial)))
+                    push!(
+                        regions,
+                        FDataDict(
+                            "femm" => FEMMDeforLinear(
+                                MR,
+                                IntegDomain(subset(fes, rls), gr),
+                                CSys(
+                                    3,
+                                    3,
+                                    (csmatout, XYZ, tangents, feid, qpid) ->
+                                        _updatecs!(csmatout, layer),
+                                ),
+                                skinmaterial,
+                            ),
+                        ),
+                    )
                 end
 
                 # The essential boundary conditions are applied to enforce the plane strain constraint.
-                ly0 = selectnode(fens,
-                    box = [-Inf Inf 0.0 0.0 -Inf Inf],
-                    inflate = tolerance)
+                ly0 =
+                    selectnode(fens, box = [-Inf Inf 0.0 0.0 -Inf Inf], inflate = tolerance)
                 lyh = selectnode(fens, box = [-Inf Inf h h -Inf Inf], inflate = tolerance)
-                ey = FDataDict("displacement" => 0.0,
+                ey = FDataDict(
+                    "displacement" => 0.0,
                     "component" => 2,
-                    "node_list" => vcat(ly0, lyh))
+                    "node_list" => vcat(ly0, lyh),
+                )
                 # The transverse displacement is fixed at the two ends.
-                lz0 = selectnode(fens,
-                    box = [0.0 0.0 -Inf Inf -Inf Inf],
-                    inflate = tolerance)
+                lz0 =
+                    selectnode(fens, box = [0.0 0.0 -Inf Inf -Inf Inf], inflate = tolerance)
                 lzL = selectnode(fens, box = [L L -Inf Inf -Inf Inf], inflate = tolerance)
-                ez = FDataDict("displacement" => 0.0,
+                ez = FDataDict(
+                    "displacement" => 0.0,
                     "component" => 3,
-                    "node_list" => vcat(lz0, lzL))
+                    "node_list" => vcat(lz0, lzL),
+                )
                 ex = FDataDict("displacement" => 0.0, "component" => 1, "node_list" => [1])
 
                 # The traction boundary condition is applied at the top of the plate.
                 bfes = meshboundary(fes)
-                function pfun(forceout::FVec{T},
+                function pfun(
+                    forceout::FVec{T},
                     XYZ::FFltMat,
                     tangents::FFltMat,
                     feid::FInt,
-                    qpid::FInt) where {T}
+                    qpid::FInt,
+                ) where {T}
                     forceout[1] = 0.0
                     forceout[2] = 0.0
                     forceout[3] = -q0 * sin(pi * XYZ[1] / L)
@@ -774,17 +916,24 @@ function Pagano_3lay_cyl_bend_T10_conv()
                 end
                 # From  the entire boundary we select those quadrilaterals that lie on the plane
                 # Z = thickness
-                tl = selectelem(fens,
+                tl = selectelem(
+                    fens,
                     bfes,
                     box = [-Inf Inf -Inf Inf T T],
-                    inflate = tolerance)
-                Trac = FDataDict("traction_vector" => pfun,
-                    "femm" => FEMMBase(IntegDomain(subset(bfes, tl), SimplexRule(2, 3))))
+                    inflate = tolerance,
+                )
+                Trac = FDataDict(
+                    "traction_vector" => pfun,
+                    "femm" =>
+                        FEMMBase(IntegDomain(subset(bfes, tl), SimplexRule(2, 3))),
+                )
 
-                modeldata = FDataDict("fens" => fens,
+                modeldata = FDataDict(
+                    "fens" => fens,
                     "regions" => regions,
                     "essential_bcs" => [ex, ey, ez],
-                    "traction_bcs" => [Trac])
+                    "traction_bcs" => [Trac],
+                )
                 modeldata = AlgoDeforLinearModule.linearstatics(modeldata)
 
                 # modeldata["postprocessing"] = FDataDict("file"=>filebase * "-u")
@@ -795,29 +944,30 @@ function Pagano_3lay_cyl_bend_T10_conv()
 
                 # The results of the displacement and stresses will be reported at
                 # nodes located at the appropriate points.
-                ntopcenter = selectnode(fens,
-                    box = [L / 2 L / 2 0.0 h T T],
-                    inflate = tolerance)
-                ncenterline = selectnode(fens,
-                    box = [L / 2 L / 2 0.0 0.0 0.0 T],
-                    inflate = tolerance)
-                nx0line = selectnode(fens,
-                    box = [0.0 0.0 0.0 0.0 0.0 T],
-                    inflate = tolerance)
+                ntopcenter =
+                    selectnode(fens, box = [L / 2 L / 2 0.0 h T T], inflate = tolerance)
+                ncenterline =
+                    selectnode(fens, box = [L / 2 L / 2 0.0 0.0 0.0 T], inflate = tolerance)
+                nx0line =
+                    selectnode(fens, box = [0.0 0.0 0.0 0.0 0.0 T], inflate = tolerance)
 
                 zclo = sortperm(vec(geom.values[ncenterline, 3]))
                 ncenterline = ncenterline[zclo]
                 centerz = geom.values[ncenterline, 3]
 
-                println("Top Center deflection: $(mean(u.values[ntopcenter, 3], dims = 1)/phun("in")) [in]")
+                println(
+                    "Top Center deflection: $(mean(u.values[ntopcenter, 3], dims = 1)/phun("in")) [in]",
+                )
 
                 #  Compute  all stresses
-                modeldata["postprocessing"] = FDataDict("file" => filebase * "-s",
+                modeldata["postprocessing"] = FDataDict(
+                    "file" => filebase * "-s",
                     "quantity" => :Cauchy,
                     "component" => collect(1:6),
                     "outputcsys" => CSys(3),
                     "nodevalmethod" => nodevalmeth,
-                    "reportat" => extrap)
+                    "reportat" => extrap,
+                )
                 modeldata = AlgoDeforLinearModule.exportstress(modeldata)
 
                 modeldata["elementsize"] = T / Refinement
@@ -830,21 +980,24 @@ function Pagano_3lay_cyl_bend_T10_conv()
             for md in modeldatasequence
                 md["targetfields"] = [e["field"] for e in md["postprocessing"]["exported"]]
             end
-            elementsizes, errornorms, p = AlgoBaseModule.evalconvergencestudy(modeldatasequence)
+            elementsizes, errornorms, p =
+                AlgoBaseModule.evalconvergencestudy(modeldatasequence)
 
             println("Normalized Approximate Error = $(errornorms)")
 
             f = log.(vec(errornorms))
-            A = hcat(log.(vec(elementsizes[1:(end - 1)])), ones(size(f)))
+            A = hcat(log.(vec(elementsizes[1:(end-1)])), ones(size(f)))
             p = A \ f
             println("Linear log-log fit: p = $(p)")
 
             csvFile = filebase * "_Stress" * ".CSV"
-            savecsv(csvFile,
-                elementsizes = vec(elementsizes[1:(end - 1)]),
-                elementsizes2 = vec(elementsizes[1:(end - 1)] .^ 2),
-                elementsizes3 = vec(elementsizes[1:(end - 1)] .^ 3),
-                errornorms = vec(errornorms))
+            savecsv(
+                csvFile,
+                elementsizes = vec(elementsizes[1:(end-1)]),
+                elementsizes2 = vec(elementsizes[1:(end-1)] .^ 2),
+                elementsizes3 = vec(elementsizes[1:(end-1)] .^ 3),
+                errornorms = vec(errornorms),
+            )
             println("Wrote $csvFile")
 
             println("")
@@ -852,21 +1005,24 @@ function Pagano_3lay_cyl_bend_T10_conv()
             for md in modeldatasequence
                 md["targetfields"] = [md["u"] for r in md["regions"]]
             end
-            elementsizes, errornorms, p = AlgoBaseModule.evalconvergencestudy(modeldatasequence)
+            elementsizes, errornorms, p =
+                AlgoBaseModule.evalconvergencestudy(modeldatasequence)
 
             println("Normalized Approximate Error = $(errornorms)")
 
             f = log.(vec(errornorms))
-            A = hcat(log.(vec(elementsizes[1:(end - 1)])), ones(size(f)))
+            A = hcat(log.(vec(elementsizes[1:(end-1)])), ones(size(f)))
             p = A \ f
             println("Linear log-log fit: p = $(p)")
 
             csvFile = filebase * "_Displ" * ".CSV"
-            savecsv(csvFile,
-                elementsizes = vec(elementsizes[1:(end - 1)]),
-                elementsizes2 = vec(elementsizes[1:(end - 1)] .^ 2),
-                elementsizes3 = vec(elementsizes[1:(end - 1)] .^ 3),
-                errornorms = vec(errornorms))
+            savecsv(
+                csvFile,
+                elementsizes = vec(elementsizes[1:(end-1)]),
+                elementsizes2 = vec(elementsizes[1:(end-1)] .^ 2),
+                elementsizes3 = vec(elementsizes[1:(end-1)] .^ 3),
+                errornorms = vec(errornorms),
+            )
             println("Wrote $csvFile")
 
             # @async run(`"paraview.exe" $csvFile`)

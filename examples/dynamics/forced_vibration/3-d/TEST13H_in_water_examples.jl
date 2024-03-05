@@ -104,10 +104,12 @@ function TEST13H_hva()
     bdryfes = meshboundary(fes)
     topbfl = selectelem(fens, bdryfes, facing = true, direction = [0.0 0.0 1.0])
     el1femm = FEMMBase(IntegDomain(subset(bdryfes, topbfl), GaussRule(2, 2)))
-    function pfun(forceout::FVec{T},
+    function pfun(
+        forceout::FVec{T},
         XYZ::FFltMat,
         tangents::FFltMat,
-        fe_label::FInt) where {T}
+        fe_label::FInt,
+    ) where {T}
         forceout .= [0.0, 0.0, -qmagn]
         return forceout
     end
@@ -125,42 +127,60 @@ function TEST13H_hva()
     midpointdof = u.dofnums[midpoint, 3]
 
     umidAmpl = abs.(U1[midpointdof, :]) / phun("MM")
-    @pgf _a = SemiLogXAxis({
+    @pgf _a = SemiLogXAxis(
+        {
             xlabel = "Frequency [Hz]",
             ylabel = "Midpoint  displacement amplitude [mm]",
             grid = "major",
             legend_pos = "south east",
             title = "Thin plate midpoint Amplitude FRF",
         },
-        Plot({"red", mark = "triangle"},
-            Table([:x => vec(frequencies), :y => vec(umidAmpl)])), LegendEntry("FEA"))
+        Plot(
+            {"red", mark = "triangle"},
+            Table([:x => vec(frequencies), :y => vec(umidAmpl)]),
+        ),
+        LegendEntry("FEA"),
+    )
     display(_a)
 
     umidReal = real.(U1[midpointdof, :]) / phun("MM")
     umidImag = imag.(U1[midpointdof, :]) / phun("MM")
-    @pgf _a = SemiLogXAxis({
+    @pgf _a = SemiLogXAxis(
+        {
             xlabel = "Frequency [Hz]",
             ylabel = "Displacement amplitude [mm]",
             grid = "major",
             legend_pos = "south east",
             title = "Thin plate midpoint Real/Imag FRF",
         },
-        Plot({"red", mark = "triangle"},
-            Table([:x => vec(frequencies), :y => vec(umidReal)])), LegendEntry("real"),
-        Plot({"blue", mark = "circle"},
-            Table([:x => vec(frequencies), :y => vec(umidImag)])), LegendEntry("imag"))
+        Plot(
+            {"red", mark = "triangle"},
+            Table([:x => vec(frequencies), :y => vec(umidReal)]),
+        ),
+        LegendEntry("real"),
+        Plot(
+            {"blue", mark = "circle"},
+            Table([:x => vec(frequencies), :y => vec(umidImag)]),
+        ),
+        LegendEntry("imag"),
+    )
     display(_a)
 
     umidPhase = atan.(umidImag, umidReal) / pi * 180
-    @pgf _a = SemiLogXAxis({
+    @pgf _a = SemiLogXAxis(
+        {
             xlabel = "Frequency [Hz]",
             ylabel = "Phase shift [deg]",
             grid = "major",
             legend_pos = "south east",
             title = "Thin plate midpoint Real/Imag FRF",
         },
-        Plot({"red", mark = "triangle"},
-            Table([:x => vec(frequencies), :y => vec(umidPhase)])), LegendEntry("imag"))
+        Plot(
+            {"red", mark = "triangle"},
+            Table([:x => vec(frequencies), :y => vec(umidPhase)]),
+        ),
+        LegendEntry("imag"),
+    )
     display(_a)
 
     true

@@ -34,11 +34,13 @@ function uxo_mode_esnice_t4()
     associategeometry!(femm, geom)
     K = stiffness(femm, geom, u)
     M = mass(femm, geom, u)
-    d, v, nev, nconv = eigs(Symmetric(K + OmegaShift * M),
+    d, v, nev, nconv = eigs(
+        Symmetric(K + OmegaShift * M),
         Symmetric(M);
         nev = neigvs,
         which = :SM,
-        explicittransform = :none)
+        explicittransform = :none,
+    )
     d = d .- OmegaShift
     fs = real(sqrt.(complex(d))) / (2 * pi)
     println("Eigenvalues: $fs [Hz]")

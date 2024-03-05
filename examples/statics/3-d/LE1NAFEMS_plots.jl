@@ -12,7 +12,8 @@ function coldata(inputcsv, theset)
     return contents[1][:, theset]
 end
 
-set(axis = "loglog",
+set(
+    axis = "loglog",
     plotstyle = "linespoints",
     linewidth = 2,
     pointsize = 2,
@@ -20,7 +21,8 @@ set(axis = "loglog",
     xlabel = "Number of nodes",
     ylabel = "Relative error",
     grid = "on",
-    title = "")
+    title = "",
+)
 
 inputcsv = "LE1NAFEMS_MSH8_convergence.CSV"
 x = coldata(inputcsv, 1)

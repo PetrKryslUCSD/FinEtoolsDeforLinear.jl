@@ -44,14 +44,18 @@ function rectangular_plate_esnice()
     femm = FEMMDeforLinearESNICET4(MR, IntegDomain(fes, NodalSimplexRule(3)), material)
     associategeometry!(femm, geom)
     @show minimum(vec(femm.nphis)), maximum(vec(femm.nphis))
-    @pgf a = Axis({
+    @pgf a = Axis(
+        {
             xlabel = "Entity",
             ylabel = "Stabilization factor",
             grid = "major",
             legend_pos = "north east",
         },
-        Plot({"only marks", mark = "+"},
-            Table([:x => vec(1:count(fes)), :y => vec(femm.ephis)])))
+        Plot(
+            {"only marks", mark = "+"},
+            Table([:x => vec(1:count(fes)), :y => vec(femm.ephis)]),
+        ),
+    )
     display(a)
     K = stiffness(femm, geom, u)
     M = mass(femm, geom, u)
@@ -62,16 +66,18 @@ function rectangular_plate_esnice()
     println("f/f_analytical = $(fs[7:10]  ./ f_analytical[7:10] .* 100) %")
 
     vectors = []
-    for i in 7:length(fs)
+    for i = 7:length(fs)
         scattersysvec!(u, v[:, i])
         push!(vectors, ("Mode_$i", deepcopy(u.values)))
     end
     File = "rectangular_plate_esnice.vtk"
-    vtkexportmesh(File,
+    vtkexportmesh(
+        File,
         connasarray(fes),
         fens.xyz,
         FinEtools.MeshExportModule.VTK.T4;
-        vectors = vectors)
+        vectors = vectors,
+    )
     @async run(`"paraview.exe" $File`)
 
     true

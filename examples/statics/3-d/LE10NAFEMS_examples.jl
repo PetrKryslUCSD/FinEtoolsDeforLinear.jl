@@ -2,8 +2,8 @@ module LE10NAFEMS_examples
 using FinEtools
 using FinEtools
 using FinEtoolsDeforLinear
-using FinEtoolsDeforLinear.AlgoDeforLinearModule: linearstatics,
-    exportstresselementwise, exportstress
+using FinEtoolsDeforLinear.AlgoDeforLinearModule:
+    linearstatics, exportstresselementwise, exportstress
 using FinEtools.MeshExportModule
 using FinEtools.MeshImportModule
 using FinEtools.AlgoBaseModule: evalconvergencestudy
@@ -1378,10 +1378,12 @@ function LE10NAFEMS_Abaqus_fine_MST10()
     # of the boundary that is loaded with the transverse pressure
     bdryfes = meshboundary(fes)
     exteriorbfl = selectelem(fens, bdryfes, facing = true, direction = [1.0, 1.0, 0.0])
-    topbfl = selectelem(fens,
+    topbfl = selectelem(
+        fens,
         bdryfes,
         box = [0.0, Inf, 0.0, Inf, Thickness, Thickness],
-        inflate = tolerance)
+        inflate = tolerance,
+    )
 
     geom = NodalField(fens.xyz)
     u = NodalField(zeros(size(fens.xyz, 1), 3)) # displacement field
@@ -1389,9 +1391,11 @@ function LE10NAFEMS_Abaqus_fine_MST10()
     L12 = connectednodes(subset(bdryfes, exteriorbfl)) # external boundary
     setebc!(u, L12, true, 1, 0.0)
     setebc!(u, L12, true, 2, 0.0)
-    LL = selectnode(fens;
+    LL = selectnode(
+        fens;
         box = [0.0, Inf, 0.0, Inf, Thickness / 2.0, Thickness / 2.0],
-        inflate = tolerance)
+        inflate = tolerance,
+    )
     L3 = intersect(LL, connectednodes(subset(bdryfes, exteriorbfl)))
     setebc!(u, L3, true, 3, 0.0)
     L1 = selectnode(fens; box = [0.0, 0.0, 0.0, Inf, 0.0, Thickness], inflate = tolerance)
@@ -1403,10 +1407,12 @@ function LE10NAFEMS_Abaqus_fine_MST10()
     numberdofs!(u)
 
     eL1femm = FEMMBase(IntegDomain(subset(bdryfes, topbfl), TriRule(3)))
-    function pfun(forceout::FVec{T},
+    function pfun(
+        forceout::FVec{T},
         XYZ::FFltMat,
         tangents::FFltMat,
-        fe_label::FInt) where {T}
+        fe_label::FInt,
+    ) where {T}
         forceout .= [0.0, 0.0, -qmagn]
         return forceout
     end
@@ -1433,48 +1439,70 @@ function LE10NAFEMS_Abaqus_fine_MST10()
     thecorneru = zeros(FFlt, 1, 3)
     gathervalues_asmat!(u, thecorneru, nl)
     thecorneru = thecorneru / phun("mm")
-    println("displacement =$(thecorneru) [MM] as compared to reference [-0.030939, 0, -0.10488] [MM]")
+    println(
+        "displacement =$(thecorneru) [MM] as compared to reference [-0.030939, 0, -0.10488] [MM]",
+    )
 
-    fld = fieldfromintegpoints(femm,
+    fld = fieldfromintegpoints(
+        femm,
         geom,
         u,
         :Cauchy,
         2;
         nodevalmethod = :averaging,
-        reportat = :extrapmean)#
-    println("Sigma_y =$(fld.values[nl,1][1]/phun("MPa")) as compared to reference sigma_yP = $(sigma_yP/phun("MPa")) [MPa]")
+        reportat = :extrapmean,
+    )#
+    println(
+        "Sigma_y =$(fld.values[nl,1][1]/phun("MPa")) as compared to reference sigma_yP = $(sigma_yP/phun("MPa")) [MPa]",
+    )
 
     println("Mean-stress: $(fld.values[nl,1][1]/phun("MPa"))")
 
-    fld = fieldfromintegpoints(femm,
+    fld = fieldfromintegpoints(
+        femm,
         geom,
         u,
         :Cauchy,
         2;
         nodevalmethod = :averaging,
-        reportat = :extraptrend)#
-    println("Sigma_y =$(fld.values[nl,1][1]/phun("MPa")) as compared to reference sigma_yP = $(sigma_yP/phun("MPa")) [MPa]")
+        reportat = :extraptrend,
+    )#
+    println(
+        "Sigma_y =$(fld.values[nl,1][1]/phun("MPa")) as compared to reference sigma_yP = $(sigma_yP/phun("MPa")) [MPa]",
+    )
 
     println("Trend estimation: $(fld.values[nl,1][1]/phun("MPa"))")
 
     File = "LE10NAFEMS_MST10_sigmay.vtk"
-    vtkexportmesh(File, fes.conn, geom.values,
-        FinEtools.MeshExportModule.VTK.T10; vectors = [("u", u.values)],
-        scalars = [("sigmay", fld.values)])
+    vtkexportmesh(
+        File,
+        fes.conn,
+        geom.values,
+        FinEtools.MeshExportModule.VTK.T10;
+        vectors = [("u", u.values)],
+        scalars = [("sigmay", fld.values)],
+    )
     @async run(`"paraview.exe" $File`)
     true
 
     AE = AbaqusExporter("LE10NAFEMS_MST10")
-    HEADING(AE,
-        "LE10NAFEMS: Transverse deflection of elliptical plate with elliptical hole.")
+    HEADING(
+        AE,
+        "LE10NAFEMS: Transverse deflection of elliptical plate with elliptical hole.",
+    )
     PART(AE, "part1")
     END_PART(AE)
     ASSEMBLY(AE, "ASSEM1")
     INSTANCE(AE, "INSTNC1", "PART1")
     NODE(AE, fens.xyz)
     ELEMENT(AE, "c3d10", "AllElements", 1, femm.integdata.fes.conn)
-    ELEMENT(AE, "SFM3D6", "TractionElements",
-        1 + count(femm.integdata.fes), eL1femm.integdata.fes.conn)
+    ELEMENT(
+        AE,
+        "SFM3D6",
+        "TractionElements",
+        1 + count(femm.integdata.fes),
+        eL1femm.integdata.fes.conn,
+    )
     NSET_NSET(AE, "L1", L1)
     NSET_NSET(AE, "L2", L2)
     NSET_NSET(AE, "L3", L3)
@@ -1504,10 +1532,12 @@ function LE10NAFEMS_Abaqus_fine_MST10()
     # of the boundary that is loaded with the transverse pressure
     bdryfes = meshboundary(fes)
     exteriorbfl = selectelem(fens, bdryfes, facing = true, direction = [1.0, 1.0, 0.0])
-    topbfl = selectelem(fens,
+    topbfl = selectelem(
+        fens,
         bdryfes,
         box = [0.0, Inf, 0.0, Inf, Thickness, Thickness],
-        inflate = tolerance)
+        inflate = tolerance,
+    )
 
     geom = NodalField(fens.xyz)
     u = NodalField(zeros(size(fens.xyz, 1), 3)) # displacement field
@@ -1515,9 +1545,11 @@ function LE10NAFEMS_Abaqus_fine_MST10()
     L12 = connectednodes(subset(bdryfes, exteriorbfl)) # external boundary
     setebc!(u, L12, true, 1, 0.0)
     setebc!(u, L12, true, 2, 0.0)
-    LL = selectnode(fens;
+    LL = selectnode(
+        fens;
         box = [0.0, Inf, 0.0, Inf, Thickness / 2.0, Thickness / 2.0],
-        inflate = tolerance)
+        inflate = tolerance,
+    )
     L3 = intersect(LL, connectednodes(subset(bdryfes, exteriorbfl)))
     setebc!(u, L3, true, 3, 0.0)
     L1 = selectnode(fens; box = [0.0, 0.0, 0.0, Inf, 0.0, Thickness], inflate = tolerance)
@@ -1552,34 +1584,49 @@ function LE10NAFEMS_Abaqus_fine_MST10()
     thecorneru = zeros(FFlt, 1, 3)
     gathervalues_asmat!(u, thecorneru, nl)
     thecorneru = thecorneru / phun("mm")
-    println("displacement =$(thecorneru) [MM] as compared to reference [-0.030939, 0, -0.10488] [MM]")
+    println(
+        "displacement =$(thecorneru) [MM] as compared to reference [-0.030939, 0, -0.10488] [MM]",
+    )
 
-    fld = fieldfromintegpoints(femm,
+    fld = fieldfromintegpoints(
+        femm,
         geom,
         u,
         :Cauchy,
         2;
         nodevalmethod = :averaging,
-        reportat = :extrapmean)#
-    println("Sigma_y =$(fld.values[nl,1][1]/phun("MPa")) as compared to reference sigma_yP = $(sigma_yP/phun("MPa")) [MPa]")
+        reportat = :extrapmean,
+    )#
+    println(
+        "Sigma_y =$(fld.values[nl,1][1]/phun("MPa")) as compared to reference sigma_yP = $(sigma_yP/phun("MPa")) [MPa]",
+    )
 
     println("Mean-stress: $(fld.values[nl,1][1]/phun("MPa"))")
 
-    fld = fieldfromintegpoints(femm,
+    fld = fieldfromintegpoints(
+        femm,
         geom,
         u,
         :Cauchy,
         2;
         nodevalmethod = :averaging,
-        reportat = :extraptrend)#
-    println("Sigma_y =$(fld.values[nl,1][1]/phun("MPa")) as compared to reference sigma_yP = $(sigma_yP/phun("MPa")) [MPa]")
+        reportat = :extraptrend,
+    )#
+    println(
+        "Sigma_y =$(fld.values[nl,1][1]/phun("MPa")) as compared to reference sigma_yP = $(sigma_yP/phun("MPa")) [MPa]",
+    )
 
     println("Trend estimation: $(fld.values[nl,1][1]/phun("MPa"))")
 
     File = "LE10NAFEMS_MST10_sigmay.vtk"
-    vtkexportmesh(File, fes.conn, geom.values,
-        FinEtools.MeshExportModule.T10; vectors = [("u", u.values)],
-        scalars = [("sigmay", fld.values)])
+    vtkexportmesh(
+        File,
+        fes.conn,
+        geom.values,
+        FinEtools.MeshExportModule.T10;
+        vectors = [("u", u.values)],
+        scalars = [("sigmay", fld.values)],
+    )
     @async run(`"paraview.exe" $File`)
     true
 end # LE10NAFEMS_Abaqus_fine_MST10
@@ -1908,10 +1955,12 @@ function LE10NAFEMS_Abaqus_MST10()
     # of the boundary that is loaded with the transverse pressure
     bdryfes = meshboundary(fes)
     exteriorbfl = selectelem(fens, bdryfes, facing = true, direction = [1.0, 1.0, 0.0])
-    topbfl = selectelem(fens,
+    topbfl = selectelem(
+        fens,
         bdryfes,
         box = [0.0, Inf, 0.0, Inf, Thickness, Thickness],
-        inflate = tolerance)
+        inflate = tolerance,
+    )
 
     geom = NodalField(fens.xyz)
     u = NodalField(zeros(size(fens.xyz, 1), 3)) # displacement field
@@ -1919,9 +1968,11 @@ function LE10NAFEMS_Abaqus_MST10()
     L12 = connectednodes(subset(bdryfes, exteriorbfl)) # external boundary
     setebc!(u, L12, true, 1, 0.0)
     setebc!(u, L12, true, 2, 0.0)
-    LL = selectnode(fens;
+    LL = selectnode(
+        fens;
         box = [0.0, Inf, 0.0, Inf, Thickness / 2.0, Thickness / 2.0],
-        inflate = tolerance)
+        inflate = tolerance,
+    )
     L3 = intersect(LL, connectednodes(subset(bdryfes, exteriorbfl)))
     setebc!(u, L3, true, 3, 0.0)
     L1 = selectnode(fens; box = [0.0, 0.0, 0.0, Inf, 0.0, Thickness], inflate = tolerance)
@@ -1933,10 +1984,12 @@ function LE10NAFEMS_Abaqus_MST10()
     numberdofs!(u)
 
     eL1femm = FEMMBase(IntegDomain(subset(bdryfes, topbfl), TriRule(3)))
-    function pfun(forceout::FVec{T},
+    function pfun(
+        forceout::FVec{T},
         XYZ::FFltMat,
         tangents::FFltMat,
-        fe_label::FInt) where {T}
+        fe_label::FInt,
+    ) where {T}
         forceout .= [0.0, 0.0, -qmagn]
         return forceout
     end
@@ -1963,48 +2016,70 @@ function LE10NAFEMS_Abaqus_MST10()
     thecorneru = zeros(FFlt, 1, 3)
     gathervalues_asmat!(u, thecorneru, nl)
     thecorneru = thecorneru / phun("mm")
-    println("displacement =$(thecorneru) [MM] as compared to reference [-0.030939, 0, -0.10488] [MM]")
+    println(
+        "displacement =$(thecorneru) [MM] as compared to reference [-0.030939, 0, -0.10488] [MM]",
+    )
 
-    fld = fieldfromintegpoints(femm,
+    fld = fieldfromintegpoints(
+        femm,
         geom,
         u,
         :Cauchy,
         2;
         nodevalmethod = :averaging,
-        reportat = :extrapmean)#
-    println("Sigma_y =$(fld.values[nl,1][1]/phun("MPa")) as compared to reference sigma_yP = $(sigma_yP/phun("MPa")) [MPa]")
+        reportat = :extrapmean,
+    )#
+    println(
+        "Sigma_y =$(fld.values[nl,1][1]/phun("MPa")) as compared to reference sigma_yP = $(sigma_yP/phun("MPa")) [MPa]",
+    )
 
     println("Mean-stress: $(fld.values[nl,1][1]/phun("MPa"))")
 
-    fld = fieldfromintegpoints(femm,
+    fld = fieldfromintegpoints(
+        femm,
         geom,
         u,
         :Cauchy,
         2;
         nodevalmethod = :averaging,
-        reportat = :extraptrend)#
-    println("Sigma_y =$(fld.values[nl,1][1]/phun("MPa")) as compared to reference sigma_yP = $(sigma_yP/phun("MPa")) [MPa]")
+        reportat = :extraptrend,
+    )#
+    println(
+        "Sigma_y =$(fld.values[nl,1][1]/phun("MPa")) as compared to reference sigma_yP = $(sigma_yP/phun("MPa")) [MPa]",
+    )
 
     println("Trend estimation: $(fld.values[nl,1][1]/phun("MPa"))")
 
     File = "LE10NAFEMS_MST10_sigmay.vtk"
-    vtkexportmesh(File, fes.conn, geom.values,
-        FinEtools.MeshExportModule.T10; vectors = [("u", u.values)],
-        scalars = [("sigmay", fld.values)])
+    vtkexportmesh(
+        File,
+        fes.conn,
+        geom.values,
+        FinEtools.MeshExportModule.T10;
+        vectors = [("u", u.values)],
+        scalars = [("sigmay", fld.values)],
+    )
     @async run(`"paraview.exe" $File`)
     true
 
     AE = AbaqusExporter("LE10NAFEMS_MST10")
-    HEADING(AE,
-        "LE10NAFEMS: Transverse deflection of elliptical plate with elliptical hole.")
+    HEADING(
+        AE,
+        "LE10NAFEMS: Transverse deflection of elliptical plate with elliptical hole.",
+    )
     PART(AE, "part1")
     END_PART(AE)
     ASSEMBLY(AE, "ASSEM1")
     INSTANCE(AE, "INSTNC1", "PART1")
     NODE(AE, fens.xyz)
     ELEMENT(AE, "c3d10", "AllElements", 1, femm.integdata.fes.conn)
-    ELEMENT(AE, "SFM3D6", "TractionElements",
-        1 + count(femm.integdata.fes), eL1femm.integdata.fes.conn)
+    ELEMENT(
+        AE,
+        "SFM3D6",
+        "TractionElements",
+        1 + count(femm.integdata.fes),
+        eL1femm.integdata.fes.conn,
+    )
     NSET_NSET(AE, "L1", L1)
     NSET_NSET(AE, "L2", L2)
     NSET_NSET(AE, "L3", L3)
@@ -2034,10 +2109,12 @@ function LE10NAFEMS_Abaqus_MST10()
     # of the boundary that is loaded with the transverse pressure
     bdryfes = meshboundary(fes)
     exteriorbfl = selectelem(fens, bdryfes, facing = true, direction = [1.0, 1.0, 0.0])
-    topbfl = selectelem(fens,
+    topbfl = selectelem(
+        fens,
         bdryfes,
         box = [0.0, Inf, 0.0, Inf, Thickness, Thickness],
-        inflate = tolerance)
+        inflate = tolerance,
+    )
 
     geom = NodalField(fens.xyz)
     u = NodalField(zeros(size(fens.xyz, 1), 3)) # displacement field
@@ -2045,9 +2122,11 @@ function LE10NAFEMS_Abaqus_MST10()
     L12 = connectednodes(subset(bdryfes, exteriorbfl)) # external boundary
     setebc!(u, L12, true, 1, 0.0)
     setebc!(u, L12, true, 2, 0.0)
-    LL = selectnode(fens;
+    LL = selectnode(
+        fens;
         box = [0.0, Inf, 0.0, Inf, Thickness / 2.0, Thickness / 2.0],
-        inflate = tolerance)
+        inflate = tolerance,
+    )
     L3 = intersect(LL, connectednodes(subset(bdryfes, exteriorbfl)))
     setebc!(u, L3, true, 3, 0.0)
     L1 = selectnode(fens; box = [0.0, 0.0, 0.0, Inf, 0.0, Thickness], inflate = tolerance)
@@ -2082,34 +2161,49 @@ function LE10NAFEMS_Abaqus_MST10()
     thecorneru = zeros(FFlt, 1, 3)
     gathervalues_asmat!(u, thecorneru, nl)
     thecorneru = thecorneru / phun("mm")
-    println("displacement =$(thecorneru) [MM] as compared to reference [-0.030939, 0, -0.10488] [MM]")
+    println(
+        "displacement =$(thecorneru) [MM] as compared to reference [-0.030939, 0, -0.10488] [MM]",
+    )
 
-    fld = fieldfromintegpoints(femm,
+    fld = fieldfromintegpoints(
+        femm,
         geom,
         u,
         :Cauchy,
         2;
         nodevalmethod = :averaging,
-        reportat = :extrapmean)#
-    println("Sigma_y =$(fld.values[nl,1][1]/phun("MPa")) as compared to reference sigma_yP = $(sigma_yP/phun("MPa")) [MPa]")
+        reportat = :extrapmean,
+    )#
+    println(
+        "Sigma_y =$(fld.values[nl,1][1]/phun("MPa")) as compared to reference sigma_yP = $(sigma_yP/phun("MPa")) [MPa]",
+    )
 
     println("Mean-stress: $(fld.values[nl,1][1]/phun("MPa"))")
 
-    fld = fieldfromintegpoints(femm,
+    fld = fieldfromintegpoints(
+        femm,
         geom,
         u,
         :Cauchy,
         2;
         nodevalmethod = :averaging,
-        reportat = :extraptrend)#
-    println("Sigma_y =$(fld.values[nl,1][1]/phun("MPa")) as compared to reference sigma_yP = $(sigma_yP/phun("MPa")) [MPa]")
+        reportat = :extraptrend,
+    )#
+    println(
+        "Sigma_y =$(fld.values[nl,1][1]/phun("MPa")) as compared to reference sigma_yP = $(sigma_yP/phun("MPa")) [MPa]",
+    )
 
     println("Trend estimation: $(fld.values[nl,1][1]/phun("MPa"))")
 
     File = "LE10NAFEMS_MST10_sigmay.vtk"
-    vtkexportmesh(File, fes.conn, geom.values,
-        FinEtools.MeshExportModule.T10; vectors = [("u", u.values)],
-        scalars = [("sigmay", fld.values)])
+    vtkexportmesh(
+        File,
+        fes.conn,
+        geom.values,
+        FinEtools.MeshExportModule.T10;
+        vectors = [("u", u.values)],
+        scalars = [("sigmay", fld.values)],
+    )
     @async run(`"paraview.exe" $File`)
     true
 end # LE10NAFEMS_Abaqus_MST10
@@ -2146,28 +2240,37 @@ function LE10NAFEMS_MSH8()
 
     fens, fes = Q4block(1.0, pi / 2, nr, nc)
     #
-    @assert nt % 2==0 "Number of elements through the thickness must be even"
-    fens, fes = H8extrudeQ4(fens, fes,
-        nt, (xyz, layer) -> [xyz[1], xyz[2], (layer) / nt * Thickness])
+    @assert nt % 2 == 0 "Number of elements through the thickness must be even"
+    fens, fes = H8extrudeQ4(
+        fens,
+        fes,
+        nt,
+        (xyz, layer) -> [xyz[1], xyz[2], (layer) / nt * Thickness],
+    )
 
     # Select the  boundary faces, on the boundary that is clamped,  and on the part
     # of the boundary that is loaded with the transverse pressure
     bdryfes = meshboundary(fes)
-    exteriorbfl = selectelem(fens,
+    exteriorbfl = selectelem(
+        fens,
         bdryfes,
         box = [1.0, 1.0, 0.0, pi / 2, 0.0, Thickness],
-        inflate = tolerance)
-    topbfl = selectelem(fens,
+        inflate = tolerance,
+    )
+    topbfl = selectelem(
+        fens,
         bdryfes,
         box = [0.0, 1.0, 0.0, pi / 2, Thickness, Thickness],
-        inflate = tolerance)
+        inflate = tolerance,
+    )
 
     # Reshape the generated block into the elliptical plate
-    for i in 1:count(fens)
+    for i = 1:count(fens)
         r = fens.xyz[i, 1]
         a = fens.xyz[i, 2]
         z = fens.xyz[i, 3]
-        fens.xyz[i, :] = [(r * Ae + (1 - r) * Ai) * cos(a) (r * Be + (1 - r) * Bi) * sin(a) z]
+        fens.xyz[i, :] =
+            [(r * Ae + (1 - r) * Ai) * cos(a) (r * Be + (1 - r) * Bi) * sin(a) z]
     end
 
     geom = NodalField(fens.xyz)
@@ -2176,9 +2279,11 @@ function LE10NAFEMS_MSH8()
     l1 = connectednodes(subset(bdryfes, exteriorbfl)) # external boundary
     setebc!(u, l1, true, 1, 0.0)
     setebc!(u, l1, true, 2, 0.0)
-    l1 = selectnode(fens;
+    l1 = selectnode(
+        fens;
         box = [0.0, Inf, 0.0, Inf, Thickness / 2.0, Thickness / 2.0],
-        inflate = tolerance)
+        inflate = tolerance,
+    )
     l1 = intersect(l1, connectednodes(subset(bdryfes, exteriorbfl)))
     setebc!(u, l1, true, 3, 0.0)
     l1 = selectnode(fens; box = [0.0, 0.0, 0.0, Inf, 0.0, Thickness], inflate = tolerance)
@@ -2190,10 +2295,12 @@ function LE10NAFEMS_MSH8()
     numberdofs!(u)
 
     el1femm = FEMMBase(IntegDomain(subset(bdryfes, topbfl), GaussRule(2, 2)))
-    function pfun(forceout::FVec{T},
+    function pfun(
+        forceout::FVec{T},
         XYZ::FFltMat,
         tangents::FFltMat,
-        fe_label::FInt) where {T}
+        fe_label::FInt,
+    ) where {T}
         forceout .= [0.0, 0.0, -qmagn]
         return forceout
     end
@@ -2220,23 +2327,34 @@ function LE10NAFEMS_MSH8()
     thecorneru = zeros(FFlt, 1, 3)
     gathervalues_asmat!(u, thecorneru, nl)
     thecorneru = thecorneru / phun("mm")
-    println("displacement =$(thecorneru) [MM] as compared to reference [-0.030939, 0, -0.10488] [MM]")
+    println(
+        "displacement =$(thecorneru) [MM] as compared to reference [-0.030939, 0, -0.10488] [MM]",
+    )
 
-    fld = fieldfromintegpoints(femm,
+    fld = fieldfromintegpoints(
+        femm,
         geom,
         u,
         :Cauchy,
         2;
         nodevalmethod = :averaging,
-        reportat = :extraptrend)#
-    println("Sigma_y =$(fld.values[nl,1][1]/phun("MPa")) as compared to reference sigma_yP = $(sigma_yP/phun("MPa")) [MPa]")
+        reportat = :extraptrend,
+    )#
+    println(
+        "Sigma_y =$(fld.values[nl,1][1]/phun("MPa")) as compared to reference sigma_yP = $(sigma_yP/phun("MPa")) [MPa]",
+    )
 
     println("$((nc, nr, nt)), $(fld.values[nl,1][1]/phun("MPa"))")
 
     File = "LE10NAFEMS_sigmay.vtk"
-    vtkexportmesh(File, fes.conn, geom.values,
-        FinEtools.MeshExportModule.H8; vectors = [("u", u.values)],
-        scalars = [("sigmay", fld.values)])
+    vtkexportmesh(
+        File,
+        fes.conn,
+        geom.values,
+        FinEtools.MeshExportModule.H8;
+        vectors = [("u", u.values)],
+        scalars = [("sigmay", fld.values)],
+    )
     @async run(`"paraview.exe" $File`)
     true
 end # LE10NAFEMS_MSH8
@@ -2273,28 +2391,37 @@ function LE10NAFEMS_MSH8_alt_export()
 
     fens, fes = Q4block(1.0, pi / 2, nr, nc)
     #
-    @assert nt % 2==0 "Number of elements through the thickness must be even"
-    fens, fes = H8extrudeQ4(fens, fes,
-        nt, (xyz, layer) -> [xyz[1], xyz[2], (layer) / nt * Thickness])
+    @assert nt % 2 == 0 "Number of elements through the thickness must be even"
+    fens, fes = H8extrudeQ4(
+        fens,
+        fes,
+        nt,
+        (xyz, layer) -> [xyz[1], xyz[2], (layer) / nt * Thickness],
+    )
 
     # Select the  boundary faces, on the boundary that is clamped,  and on the part
     # of the boundary that is loaded with the transverse pressure
     bdryfes = meshboundary(fes)
-    exteriorbfl = selectelem(fens,
+    exteriorbfl = selectelem(
+        fens,
         bdryfes,
         box = [1.0, 1.0, 0.0, pi / 2, 0.0, Thickness],
-        inflate = tolerance)
-    topbfl = selectelem(fens,
+        inflate = tolerance,
+    )
+    topbfl = selectelem(
+        fens,
         bdryfes,
         box = [0.0, 1.0, 0.0, pi / 2, Thickness, Thickness],
-        inflate = tolerance)
+        inflate = tolerance,
+    )
 
     # Reshape the generated block into the elliptical plate
-    for i in 1:count(fens)
+    for i = 1:count(fens)
         r = fens.xyz[i, 1]
         a = fens.xyz[i, 2]
         z = fens.xyz[i, 3]
-        fens.xyz[i, :] = [(r * Ae + (1 - r) * Ai) * cos(a) (r * Be + (1 - r) * Bi) * sin(a) z]
+        fens.xyz[i, :] =
+            [(r * Ae + (1 - r) * Ai) * cos(a) (r * Be + (1 - r) * Bi) * sin(a) z]
     end
 
     geom = NodalField(fens.xyz)
@@ -2303,9 +2430,11 @@ function LE10NAFEMS_MSH8_alt_export()
     l12 = connectednodes(subset(bdryfes, exteriorbfl)) # external boundary
     setebc!(u, l12, true, 1, 0.0)
     setebc!(u, l12, true, 2, 0.0)
-    ll = selectnode(fens;
+    ll = selectnode(
+        fens;
         box = [0.0, Inf, 0.0, Inf, Thickness / 2.0, Thickness / 2.0],
-        inflate = tolerance)
+        inflate = tolerance,
+    )
     l3 = intersect(ll, connectednodes(subset(bdryfes, exteriorbfl)))
     setebc!(u, l3, true, 3, 0.0)
     l1 = selectnode(fens; box = [0.0, 0.0, 0.0, Inf, 0.0, Thickness], inflate = tolerance)
@@ -2317,10 +2446,12 @@ function LE10NAFEMS_MSH8_alt_export()
     numberdofs!(u)
 
     el1femm = FEMMBase(IntegDomain(subset(bdryfes, topbfl), GaussRule(2, 2)))
-    function pfun(forceout::FVec{T},
+    function pfun(
+        forceout::FVec{T},
         XYZ::FFltMat,
         tangents::FFltMat,
-        fe_label::FInt) where {T}
+        fe_label::FInt,
+    ) where {T}
         forceout .= [0.0, 0.0, -qmagn]
         return forceout
     end
@@ -2347,16 +2478,22 @@ function LE10NAFEMS_MSH8_alt_export()
     thecorneru = zeros(FFlt, 1, 3)
     gathervalues_asmat!(u, thecorneru, nl)
     thecorneru = thecorneru / phun("mm")
-    println("displacement =$(thecorneru) [MM] as compared to reference [-0.030939, 0, -0.10488] [MM]")
+    println(
+        "displacement =$(thecorneru) [MM] as compared to reference [-0.030939, 0, -0.10488] [MM]",
+    )
 
-    fld = fieldfromintegpoints(femm,
+    fld = fieldfromintegpoints(
+        femm,
         geom,
         u,
         :Cauchy,
         2;
         nodevalmethod = :averaging,
-        reportat = :extraptrend)#
-    println("Sigma_y =$(fld.values[nl,1][1]/phun("MPa")) as compared to reference sigma_yP = $(sigma_yP/phun("MPa")) [MPa]")
+        reportat = :extraptrend,
+    )#
+    println(
+        "Sigma_y =$(fld.values[nl,1][1]/phun("MPa")) as compared to reference sigma_yP = $(sigma_yP/phun("MPa")) [MPa]",
+    )
 
     println("$((nc, nr, nt)), $(fld.values[nl,1][1]/phun("MPa"))")
 
@@ -2368,16 +2505,23 @@ function LE10NAFEMS_MSH8_alt_export()
     # true
 
     AE = AbaqusExporter("LE10NAFEMS_H8")
-    HEADING(AE,
-        "LE10NAFEMS: Transverse deflection of elliptical plate with elliptical hole.")
+    HEADING(
+        AE,
+        "LE10NAFEMS: Transverse deflection of elliptical plate with elliptical hole.",
+    )
     PART(AE, "part1")
     END_PART(AE)
     ASSEMBLY(AE, "ASSEM1")
     INSTANCE(AE, "INSTNC1", "PART1")
     NODE(AE, fens.xyz)
     ELEMENT(AE, "c3d8rh", "AllElements", 1, femm.integdata.fes.conn)
-    ELEMENT(AE, "SFM3D4", "TractionElements",
-        1 + count(femm.integdata.fes), el1femm.integdata.fes.conn)
+    ELEMENT(
+        AE,
+        "SFM3D4",
+        "TractionElements",
+        1 + count(femm.integdata.fes),
+        el1femm.integdata.fes.conn,
+    )
     NSET_NSET(AE, "l1", l1)
     NSET_NSET(AE, "l2", l2)
     NSET_NSET(AE, "l3", l3)
@@ -2429,28 +2573,37 @@ function LE10NAFEMS_MSH8_export()
 
     fens, fes = Q4block(1.0, pi / 2, nr, nc)
     #
-    @assert nt % 2==0 "Number of elements through the thickness must be even"
-    fens, fes = H8extrudeQ4(fens, fes,
-        nt, (xyz, layer) -> [xyz[1], xyz[2], (layer) / nt * Thickness])
+    @assert nt % 2 == 0 "Number of elements through the thickness must be even"
+    fens, fes = H8extrudeQ4(
+        fens,
+        fes,
+        nt,
+        (xyz, layer) -> [xyz[1], xyz[2], (layer) / nt * Thickness],
+    )
 
     # Select the  boundary faces, on the boundary that is clamped,  and on the part
     # of the boundary that is loaded with the transverse pressure
     bdryfes = meshboundary(fes)
-    exteriorbfl = selectelem(fens,
+    exteriorbfl = selectelem(
+        fens,
         bdryfes,
         box = [1.0, 1.0, 0.0, pi / 2, 0.0, Thickness],
-        inflate = tolerance)
-    topbfl = selectelem(fens,
+        inflate = tolerance,
+    )
+    topbfl = selectelem(
+        fens,
         bdryfes,
         box = [0.0, 1.0, 0.0, pi / 2, Thickness, Thickness],
-        inflate = tolerance)
+        inflate = tolerance,
+    )
 
     # Reshape the generated block into the elliptical plate
-    for i in 1:count(fens)
+    for i = 1:count(fens)
         r = fens.xyz[i, 1]
         a = fens.xyz[i, 2]
         z = fens.xyz[i, 3]
-        fens.xyz[i, :] = [(r * Ae + (1 - r) * Ai) * cos(a) (r * Be + (1 - r) * Bi) * sin(a) z]
+        fens.xyz[i, :] =
+            [(r * Ae + (1 - r) * Ai) * cos(a) (r * Be + (1 - r) * Bi) * sin(a) z]
     end
 
     geom = NodalField(fens.xyz)
@@ -2459,9 +2612,11 @@ function LE10NAFEMS_MSH8_export()
     l12 = connectednodes(subset(bdryfes, exteriorbfl)) # external boundary
     setebc!(u, l12, true, 1, 0.0)
     setebc!(u, l12, true, 2, 0.0)
-    ll = selectnode(fens;
+    ll = selectnode(
+        fens;
         box = [0.0, Inf, 0.0, Inf, Thickness / 2.0, Thickness / 2.0],
-        inflate = tolerance)
+        inflate = tolerance,
+    )
     l3 = intersect(ll, connectednodes(subset(bdryfes, exteriorbfl)))
     setebc!(u, l3, true, 3, 0.0)
     l1 = selectnode(fens; box = [0.0, 0.0, 0.0, Inf, 0.0, Thickness], inflate = tolerance)
@@ -2473,10 +2628,12 @@ function LE10NAFEMS_MSH8_export()
     numberdofs!(u)
 
     el1femm = FEMMBase(IntegDomain(subset(bdryfes, topbfl), GaussRule(2, 2)))
-    function pfun(forceout::FVec{T},
+    function pfun(
+        forceout::FVec{T},
         XYZ::FFltMat,
         tangents::FFltMat,
-        fe_label::FInt) where {T}
+        fe_label::FInt,
+    ) where {T}
         forceout .= [0.0, 0.0, -qmagn]
         return forceout
     end
@@ -2503,16 +2660,22 @@ function LE10NAFEMS_MSH8_export()
     thecorneru = zeros(FFlt, 1, 3)
     gathervalues_asmat!(u, thecorneru, nl)
     thecorneru = thecorneru / phun("mm")
-    println("displacement =$(thecorneru) [MM] as compared to reference [-0.030939, 0, -0.10488] [MM]")
+    println(
+        "displacement =$(thecorneru) [MM] as compared to reference [-0.030939, 0, -0.10488] [MM]",
+    )
 
-    fld = fieldfromintegpoints(femm,
+    fld = fieldfromintegpoints(
+        femm,
         geom,
         u,
         :Cauchy,
         2;
         nodevalmethod = :averaging,
-        reportat = :extraptrend)#
-    println("Sigma_y =$(fld.values[nl,1][1]/phun("MPa")) as compared to reference sigma_yP = $(sigma_yP/phun("MPa")) [MPa]")
+        reportat = :extraptrend,
+    )#
+    println(
+        "Sigma_y =$(fld.values[nl,1][1]/phun("MPa")) as compared to reference sigma_yP = $(sigma_yP/phun("MPa")) [MPa]",
+    )
 
     println("$((nc, nr, nt)), $(fld.values[nl,1][1]/phun("MPa"))")
 
@@ -2524,16 +2687,23 @@ function LE10NAFEMS_MSH8_export()
     # true
 
     AE = AbaqusExporter("LE10NAFEMS_H8")
-    HEADING(AE,
-        "LE10NAFEMS: Transverse deflection of elliptical plate with elliptical hole.")
+    HEADING(
+        AE,
+        "LE10NAFEMS: Transverse deflection of elliptical plate with elliptical hole.",
+    )
     PART(AE, "part1")
     END_PART(AE)
     ASSEMBLY(AE, "ASSEM1")
     INSTANCE(AE, "INSTNC1", "PART1")
     NODE(AE, fens.xyz)
     ELEMENT(AE, "c3d8rh", "AllElements", 1, femm.integdata.fes.conn)
-    ELEMENT(AE, "SFM3D4", "TractionElements",
-        1 + count(femm.integdata.fes), el1femm.integdata.fes.conn)
+    ELEMENT(
+        AE,
+        "SFM3D4",
+        "TractionElements",
+        1 + count(femm.integdata.fes),
+        el1femm.integdata.fes.conn,
+    )
     NSET_NSET(AE, "l1", l1)
     NSET_NSET(AE, "l2", l2)
     NSET_NSET(AE, "l3", l3)
@@ -2585,27 +2755,32 @@ function LE10NAFEMS_MST10()
     nt = 2^ref * 2 # number of elements through the thickness
     tolerance = Thickness / nt / 1000.0 # Geometrical tolerance
 
-    @assert nt % 2==0 "Number of elements through the thickness must be even"
+    @assert nt % 2 == 0 "Number of elements through the thickness must be even"
     fens, fes = T10block(1.0, pi / 2, Thickness, nr, nc, nt, orientation = :b)
 
     # Select the  boundary faces, on the boundary that is clamped,  and on the part
     # of the boundary that is loaded with the transverse pressure
     bdryfes = meshboundary(fes)
-    exteriorbfl = selectelem(fens,
+    exteriorbfl = selectelem(
+        fens,
         bdryfes,
         box = [1.0, 1.0, 0.0, pi / 2, 0.0, Thickness],
-        inflate = tolerance)
-    topbfl = selectelem(fens,
+        inflate = tolerance,
+    )
+    topbfl = selectelem(
+        fens,
         bdryfes,
         box = [0.0, 1.0, 0.0, pi / 2, Thickness, Thickness],
-        inflate = tolerance)
+        inflate = tolerance,
+    )
 
     # Reshape the generated block into the elliptical plate
-    for i in 1:count(fens)
+    for i = 1:count(fens)
         r = fens.xyz[i, 1]
         a = fens.xyz[i, 2]
         z = fens.xyz[i, 3]
-        fens.xyz[i, :] = [(r * Ae + (1 - r) * Ai) * cos(a) (r * Be + (1 - r) * Bi) * sin(a) z]
+        fens.xyz[i, :] =
+            [(r * Ae + (1 - r) * Ai) * cos(a) (r * Be + (1 - r) * Bi) * sin(a) z]
     end
 
     geom = NodalField(fens.xyz)
@@ -2614,9 +2789,11 @@ function LE10NAFEMS_MST10()
     l12 = connectednodes(subset(bdryfes, exteriorbfl)) # external boundary
     setebc!(u, l12, true, 1, 0.0)
     setebc!(u, l12, true, 2, 0.0)
-    ll = selectnode(fens;
+    ll = selectnode(
+        fens;
         box = [0.0, Inf, 0.0, Inf, Thickness / 2.0, Thickness / 2.0],
-        inflate = tolerance)
+        inflate = tolerance,
+    )
     l3 = intersect(ll, connectednodes(subset(bdryfes, exteriorbfl)))
     setebc!(u, l3, true, 3, 0.0)
     l1 = selectnode(fens; box = [0.0, 0.0, 0.0, Inf, 0.0, Thickness], inflate = tolerance)
@@ -2628,10 +2805,12 @@ function LE10NAFEMS_MST10()
     numberdofs!(u)
 
     el1femm = FEMMBase(IntegDomain(subset(bdryfes, topbfl), TriRule(3)))
-    function pfun(forceout::FVec{T},
+    function pfun(
+        forceout::FVec{T},
         XYZ::FFltMat,
         tangents::FFltMat,
-        fe_label::FInt) where {T}
+        fe_label::FInt,
+    ) where {T}
         forceout .= [0.0, 0.0, -qmagn]
         return forceout
     end
@@ -2658,16 +2837,22 @@ function LE10NAFEMS_MST10()
     thecorneru = zeros(FFlt, 1, 3)
     gathervalues_asmat!(u, thecorneru, nl)
     thecorneru = thecorneru / phun("mm")
-    println("displacement =$(thecorneru) [MM] as compared to reference [-0.030939, 0, -0.10488] [MM]")
+    println(
+        "displacement =$(thecorneru) [MM] as compared to reference [-0.030939, 0, -0.10488] [MM]",
+    )
 
-    fld = fieldfromintegpoints(femm,
+    fld = fieldfromintegpoints(
+        femm,
         geom,
         u,
         :Cauchy,
         2;
         nodevalmethod = :averaging,
-        reportat = :extraptrend)#
-    println("Sigma_y =$(fld.values[nl,1][1]/phun("MPa")) as compared to reference sigma_yP = $(sigma_yP/phun("MPa")) [MPa]")
+        reportat = :extraptrend,
+    )#
+    println(
+        "Sigma_y =$(fld.values[nl,1][1]/phun("MPa")) as compared to reference sigma_yP = $(sigma_yP/phun("MPa")) [MPa]",
+    )
 
     println("$((nc, nr, nt)), $(fld.values[nl,1][1]/phun("MPa"))")
 
@@ -2679,16 +2864,23 @@ function LE10NAFEMS_MST10()
     # true
 
     AE = AbaqusExporter("LE10NAFEMS_MST10")
-    HEADING(AE,
-        "LE10NAFEMS: Transverse deflection of elliptical plate with elliptical hole.")
+    HEADING(
+        AE,
+        "LE10NAFEMS: Transverse deflection of elliptical plate with elliptical hole.",
+    )
     PART(AE, "part1")
     END_PART(AE)
     ASSEMBLY(AE, "ASSEM1")
     INSTANCE(AE, "INSTNC1", "PART1")
     NODE(AE, fens.xyz)
     ELEMENT(AE, "c3d10", "AllElements", 1, femm.integdata.fes.conn)
-    ELEMENT(AE, "SFM3D6", "TractionElements",
-        1 + count(femm.integdata.fes), el1femm.integdata.fes.conn)
+    ELEMENT(
+        AE,
+        "SFM3D6",
+        "TractionElements",
+        1 + count(femm.integdata.fes),
+        el1femm.integdata.fes.conn,
+    )
     NSET_NSET(AE, "l1", l1)
     NSET_NSET(AE, "l2", l2)
     NSET_NSET(AE, "l3", l3)
@@ -2720,16 +2912,18 @@ function evaluateerrors(filebase, modeldatasequence)
     println("Normalized Approximate Error = $(errornorms)")
 
     f = log.(vec(errornorms))
-    A = hcat(log.(vec(elementsizes[1:(end - 1)])), ones(size(f)))
+    A = hcat(log.(vec(elementsizes[1:(end-1)])), ones(size(f)))
     p = A \ f
     println("Linear log-log fit: p = $(p)")
 
     csvFile = filebase * "_Stress" * ".CSV"
-    savecsv(csvFile,
-        elementsizes = vec(elementsizes[1:(end - 1)]),
-        elementsizes2 = vec(elementsizes[1:(end - 1)] .^ 2),
-        elementsizes3 = vec(elementsizes[1:(end - 1)] .^ 3),
-        errornorms = vec(errornorms))
+    savecsv(
+        csvFile,
+        elementsizes = vec(elementsizes[1:(end-1)]),
+        elementsizes2 = vec(elementsizes[1:(end-1)] .^ 2),
+        elementsizes3 = vec(elementsizes[1:(end-1)] .^ 3),
+        errornorms = vec(errornorms),
+    )
     println("Wrote $csvFile")
 end
 
@@ -2749,10 +2943,12 @@ function LE10NAFEMS_MST10_stresses_nodal()
     Ai = 2.0 * phun("m") # Major radius of the interior ellipse
     Bi = 1.0 * phun("m") # Minor radius of the interior ellipse
     Thickness = 0.6 * phun("m")
-    function pfun(forceout::FVec{T},
+    function pfun(
+        forceout::FVec{T},
         XYZ::FFltMat,
         tangents::FFltMat,
-        fe_label::FInt) where {T}
+        fe_label::FInt,
+    ) where {T}
         forceout .= [0.0, 0.0, -qmagn]
         return forceout
     end
@@ -2764,28 +2960,32 @@ function LE10NAFEMS_MST10_stresses_nodal()
 
             # nr, nc, nt = 2^ref*5, 2^ref*6, 2^ref*2 # July 5, 2018
             nr, nc, nt = 2^ref * 3, 2^ref * 4, 2^ref * 2
-            @assert nt % 2==0 "Number of elements through the thickness must be even"
+            @assert nt % 2 == 0 "Number of elements through the thickness must be even"
             fens, fes = T10block(1.0, pi / 2, Thickness, nr, nc, nt, orientation = :b)
 
             # Select the  boundary faces, on the boundary that is clamped,  and on the part
             # of the boundary that is loaded with the transverse pressure
             bdryfes = meshboundary(fes)
-            exteriorbfl = selectelem(fens,
+            exteriorbfl = selectelem(
+                fens,
                 bdryfes,
                 box = [1.0, 1.0, 0.0, pi / 2, 0.0, Thickness],
-                inflate = tolerance)
-            topbfl = selectelem(fens,
+                inflate = tolerance,
+            )
+            topbfl = selectelem(
+                fens,
                 bdryfes,
                 box = [0.0, 1.0, 0.0, pi / 2, Thickness, Thickness],
-                inflate = tolerance)
+                inflate = tolerance,
+            )
 
             # Reshape the generated block into the elliptical plate
-            for i in 1:count(fens)
+            for i = 1:count(fens)
                 r = fens.xyz[i, 1]
                 a = fens.xyz[i, 2]
                 z = fens.xyz[i, 3]
-                fens.xyz[i, :] = [(r * Ae + (1 - r) * Ai) * cos(a) (r * Be + (1 - r) * Bi) *
-                                                                   sin(a) z]
+                fens.xyz[i, :] =
+                    [(r * Ae + (1 - r) * Ai) * cos(a) (r * Be + (1 - r) * Bi) * sin(a) z]
             end
 
             geom = NodalField(fens.xyz)
@@ -2794,18 +2994,24 @@ function LE10NAFEMS_MST10_stresses_nodal()
             l12 = connectednodes(subset(bdryfes, exteriorbfl)) # external boundary
             setebc!(u, l12, true, 1, 0.0)
             setebc!(u, l12, true, 2, 0.0)
-            ll = selectnode(fens;
+            ll = selectnode(
+                fens;
                 box = [0.0, Inf, 0.0, Inf, Thickness / 2.0, Thickness / 2.0],
-                inflate = tolerance)
+                inflate = tolerance,
+            )
             l3 = intersect(ll, connectednodes(subset(bdryfes, exteriorbfl)))
             setebc!(u, l3, true, 3, 0.0)
-            l1 = selectnode(fens;
+            l1 = selectnode(
+                fens;
                 box = [0.0, 0.0, 0.0, Inf, 0.0, Thickness],
-                inflate = tolerance)
+                inflate = tolerance,
+            )
             setebc!(u, l1, true, 1, 0.0) # symmetry plane X = 0
-            l2 = selectnode(fens;
+            l2 = selectnode(
+                fens;
                 box = [0.0, Inf, 0.0, 0.0, 0.0, Thickness],
-                inflate = tolerance)
+                inflate = tolerance,
+            )
             setebc!(u, l2, true, 2, 0.0) # symmetry plane Y = 0
 
             applyebc!(u)
@@ -2831,21 +3037,27 @@ function LE10NAFEMS_MST10_stresses_nodal()
             U = K \ (F2)
             scattersysvec!(u, U[:])
 
-            nl = selectnode(fens,
+            nl = selectnode(
+                fens,
                 box = [Ai, Ai, 0, 0, Thickness, Thickness],
-                inflate = tolerance)
+                inflate = tolerance,
+            )
             thecorneru = zeros(FFlt, 1, 3)
             gathervalues_asmat!(u, thecorneru, nl)
             thecorneru = thecorneru / phun("mm")
-            println("displacement =$(thecorneru) [MM] as compared to reference [-0.030939, 0, -0.10488] [MM]")
+            println(
+                "displacement =$(thecorneru) [MM] as compared to reference [-0.030939, 0, -0.10488] [MM]",
+            )
 
-            stressfield = fieldfromintegpoints(femm,
+            stressfield = fieldfromintegpoints(
+                femm,
                 geom,
                 u,
                 :Cauchy,
                 collect(1:6);
                 nodevalmethod = :averaging,
-                reportat = extrapolation)
+                reportat = extrapolation,
+            )
 
             # File =  "LE10NAFEMS_MST10_sigmay.vtk"
             # vtkexportmesh(File, fes.conn, geom.values,
@@ -2883,10 +3095,12 @@ function LE10NAFEMS_MSH8_stresses_nodal()
     Ai = 2.0 * phun("m") # Major radius of the interior ellipse
     Bi = 1.0 * phun("m") # Minor radius of the interior ellipse
     Thickness = 0.6 * phun("m")
-    function pfun(forceout::FVec{T},
+    function pfun(
+        forceout::FVec{T},
         XYZ::FFltMat,
         tangents::FFltMat,
-        fe_label::FInt) where {T}
+        fe_label::FInt,
+    ) where {T}
         forceout .= [0.0, 0.0, -qmagn]
         return forceout
     end
@@ -2897,28 +3111,32 @@ function LE10NAFEMS_MSH8_stresses_nodal()
             tolerance = Thickness / 2^ref / 1000.0 # Geometrical tolerance
 
             nr, nc, nt = 2^ref * 5, 2^ref * 6, 2^ref * 2
-            @assert nt % 2==0 "Number of elements through the thickness must be even"
+            @assert nt % 2 == 0 "Number of elements through the thickness must be even"
             fens, fes = H8block(1.0, pi / 2, Thickness, nr, nc, nt)
 
             # Select the  boundary faces, on the boundary that is clamped,  and on the part
             # of the boundary that is loaded with the transverse pressure
             bdryfes = meshboundary(fes)
-            exteriorbfl = selectelem(fens,
+            exteriorbfl = selectelem(
+                fens,
                 bdryfes,
                 box = [1.0, 1.0, 0.0, pi / 2, 0.0, Thickness],
-                inflate = tolerance)
-            topbfl = selectelem(fens,
+                inflate = tolerance,
+            )
+            topbfl = selectelem(
+                fens,
                 bdryfes,
                 box = [0.0, 1.0, 0.0, pi / 2, Thickness, Thickness],
-                inflate = tolerance)
+                inflate = tolerance,
+            )
 
             # Reshape the generated block into the elliptical plate
-            for i in 1:count(fens)
+            for i = 1:count(fens)
                 r = fens.xyz[i, 1]
                 a = fens.xyz[i, 2]
                 z = fens.xyz[i, 3]
-                fens.xyz[i, :] = [(r * Ae + (1 - r) * Ai) * cos(a) (r * Be + (1 - r) * Bi) *
-                                                                   sin(a) z]
+                fens.xyz[i, :] =
+                    [(r * Ae + (1 - r) * Ai) * cos(a) (r * Be + (1 - r) * Bi) * sin(a) z]
             end
 
             geom = NodalField(fens.xyz)
@@ -2927,18 +3145,24 @@ function LE10NAFEMS_MSH8_stresses_nodal()
             l12 = connectednodes(subset(bdryfes, exteriorbfl)) # external boundary
             setebc!(u, l12, true, 1, 0.0)
             setebc!(u, l12, true, 2, 0.0)
-            ll = selectnode(fens;
+            ll = selectnode(
+                fens;
                 box = [0.0, Inf, 0.0, Inf, Thickness / 2.0, Thickness / 2.0],
-                inflate = tolerance)
+                inflate = tolerance,
+            )
             l3 = intersect(ll, connectednodes(subset(bdryfes, exteriorbfl)))
             setebc!(u, l3, true, 3, 0.0)
-            l1 = selectnode(fens;
+            l1 = selectnode(
+                fens;
                 box = [0.0, 0.0, 0.0, Inf, 0.0, Thickness],
-                inflate = tolerance)
+                inflate = tolerance,
+            )
             setebc!(u, l1, true, 1, 0.0) # symmetry plane X = 0
-            l2 = selectnode(fens;
+            l2 = selectnode(
+                fens;
                 box = [0.0, Inf, 0.0, 0.0, 0.0, Thickness],
-                inflate = tolerance)
+                inflate = tolerance,
+            )
             setebc!(u, l2, true, 2, 0.0) # symmetry plane Y = 0
 
             applyebc!(u)
@@ -2964,22 +3188,30 @@ function LE10NAFEMS_MSH8_stresses_nodal()
             U = K \ (F2)
             scattersysvec!(u, U[:])
 
-            nl = selectnode(fens,
+            nl = selectnode(
+                fens,
                 box = [Ai, Ai, 0, 0, Thickness, Thickness],
-                inflate = tolerance)
+                inflate = tolerance,
+            )
             thecorneru = zeros(FFlt, 1, 3)
             gathervalues_asmat!(u, thecorneru, nl)
             thecorneru = thecorneru / phun("mm")
-            println("displacement =$(thecorneru) [MM] as compared to reference [-0.030939, 0, -0.10488] [MM]")
+            println(
+                "displacement =$(thecorneru) [MM] as compared to reference [-0.030939, 0, -0.10488] [MM]",
+            )
 
-            stressfield = fieldfromintegpoints(femm,
+            stressfield = fieldfromintegpoints(
+                femm,
                 geom,
                 u,
                 :Cauchy,
                 collect(1:6);
                 nodevalmethod = :averaging,
-                reportat = extrapolation)
-            println("Sigma_y =$(stressfield.values[nl,2][1]/phun("MPa")) as compared to reference sigma_yP = $(sigma_yP/phun("MPa")) [MPa]")
+                reportat = extrapolation,
+            )
+            println(
+                "Sigma_y =$(stressfield.values[nl,2][1]/phun("MPa")) as compared to reference sigma_yP = $(sigma_yP/phun("MPa")) [MPa]",
+            )
 
             # File =  "LE10NAFEMS_MST10_sigmay.vtk"
             # vtkexportmesh(File, fes.conn, geom.values,

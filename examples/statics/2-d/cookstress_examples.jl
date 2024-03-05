@@ -31,9 +31,10 @@ function cookstress()
 
     # Reshape into a trapezoidal panel
     for i in eachindex(fens)
-        fens.xyz[i, 2] = fens.xyz[i, 2] +
-                         (fens.xyz[i, 1] / width) *
-                         (height - fens.xyz[i, 2] / height * (height - free_height))
+        fens.xyz[i, 2] =
+            fens.xyz[i, 2] +
+            (fens.xyz[i, 1] / width) *
+            (height - fens.xyz[i, 2] / height * (height - free_height))
     end
 
     geom = NodalField(fens.xyz)
@@ -46,10 +47,8 @@ function cookstress()
     numberdofs!(u)
 
     @time boundaryfes = meshboundary(fes)
-    Toplist = selectelem(fens,
-        boundaryfes,
-        box = [width, width, -Inf, Inf],
-        inflate = tolerance)
+    Toplist =
+        selectelem(fens, boundaryfes, box = [width, width, -Inf, Inf], inflate = tolerance)
     el1femm = FEMMBase(IntegDomain(subset(boundaryfes, Toplist), GaussRule(1, 2)))
     fi = ForceIntensity([0.0, +magn])
     F2 = distribloads(el1femm, geom, u, fi, 2)
@@ -64,16 +63,25 @@ function cookstress()
     U = K \ (F2)
     scattersysvec!(u, U[:])
 
-    nl = selectnode(fens,
+    nl = selectnode(
+        fens,
         box = [Mid_edge[1], Mid_edge[1], Mid_edge[2], Mid_edge[2]],
-        inflate = tolerance)
+        inflate = tolerance,
+    )
     theutip = zeros(FFlt, 1, 2)
     gathervalues_asmat!(u, theutip, nl)
-    println("$(time()-t0) [s];  displacement =$(theutip[2]) as compared to converged $convutip")
+    println(
+        "$(time()-t0) [s];  displacement =$(theutip[2]) as compared to converged $convutip",
+    )
 
     File = "a.vtk"
-    vtkexportmesh(File, fes.conn, geom.values + u.values,
-        FinEtools.MeshExportModule.T3; vectors = [("u", u.values)])
+    vtkexportmesh(
+        File,
+        fes.conn,
+        geom.values + u.values,
+        FinEtools.MeshExportModule.T3;
+        vectors = [("u", u.values)],
+    )
 
     true
 end # cookstress
@@ -95,9 +103,10 @@ function cookstress_algo()
 
     # Reshape into a trapezoidal panel
     for i in eachindex(fens)
-        fens.xyz[i, 2] = fens.xyz[i, 2] +
-                         (fens.xyz[i, 1] / width) *
-                         (height - fens.xyz[i, 2] / height * (height - free_height))
+        fens.xyz[i, 2] =
+            fens.xyz[i, 2] +
+            (fens.xyz[i, 1] / width) *
+            (height - fens.xyz[i, 2] / height * (height - free_height))
     end
 
     # Clamped edge of the membrane
@@ -107,23 +116,23 @@ function cookstress_algo()
 
     # Traction on the opposite edge
     boundaryfes = meshboundary(fes)
-    Toplist = selectelem(fens,
-        boundaryfes,
-        box = [width, width, -Inf, Inf],
-        inflate = tolerance)
+    Toplist =
+        selectelem(fens, boundaryfes, box = [width, width, -Inf, Inf], inflate = tolerance)
     el1femm = FEMMBase(IntegDomain(subset(boundaryfes, Toplist), GaussRule(1, 2)))
     flux1 = FDataDict("traction_vector" => [0.0, +magn], "femm" => el1femm)
 
     # Make the region
     MR = DeforModelRed2DStress
     material = MatDeforElastIso(MR, 0.0, E, nu, 0.0)
-    region1 = FDataDict("femm" => FEMMDeforLinear(MR,
-        IntegDomain(fes, TriRule(1)), material))
+    region1 =
+        FDataDict("femm" => FEMMDeforLinear(MR, IntegDomain(fes, TriRule(1)), material))
 
-    modeldata = FDataDict("fens" => fens,
+    modeldata = FDataDict(
+        "fens" => fens,
         "regions" => [region1],
         "essential_bcs" => [ess1, ess2],
-        "traction_bcs" => [flux1])
+        "traction_bcs" => [flux1],
+    )
 
     # Call the solver
     modeldata = AlgoDeforLinearModule.linearstatics(modeldata)
@@ -132,14 +141,16 @@ function cookstress_algo()
     geom = modeldata["geom"]
 
     # Extract the solution
-    nl = selectnode(fens, box = [Mid_edge[1], Mid_edge[1], Mid_edge[2], Mid_edge[2]],
-        inflate = tolerance)
+    nl = selectnode(
+        fens,
+        box = [Mid_edge[1], Mid_edge[1], Mid_edge[2], Mid_edge[2]],
+        inflate = tolerance,
+    )
     theutip = u.values[nl, :]
     println("displacement =$(theutip[2]) as compared to converged $convutip")
 
-    modeldata["postprocessing"] = FDataDict("file" => "cookstress",
-        "quantity" => :Cauchy,
-        "component" => :xy)
+    modeldata["postprocessing"] =
+        FDataDict("file" => "cookstress", "quantity" => :Cauchy, "component" => :xy)
     modeldata = AlgoDeforLinearModule.exportstress(modeldata)
 
     true
@@ -162,9 +173,10 @@ function cookstress_algo_export()
 
     # Reshape into a trapezoidal panel
     for i in eachindex(fens)
-        fens.xyz[i, 2] = fens.xyz[i, 2] +
-                         (fens.xyz[i, 1] / width) *
-                         (height - fens.xyz[i, 2] / height * (height - free_height))
+        fens.xyz[i, 2] =
+            fens.xyz[i, 2] +
+            (fens.xyz[i, 1] / width) *
+            (height - fens.xyz[i, 2] / height * (height - free_height))
     end
 
     # Clamped edge of the membrane
@@ -174,25 +186,26 @@ function cookstress_algo_export()
 
     # Traction on the opposite edge
     boundaryfes = meshboundary(fes)
-    Toplist = selectelem(fens,
-        boundaryfes,
-        box = [width, width, -Inf, Inf],
-        inflate = tolerance)
-    el1femm = FEMMBase(IntegDomain(subset(boundaryfes, Toplist),
-        GaussRule(1, 2),
-        thickness))
+    Toplist =
+        selectelem(fens, boundaryfes, box = [width, width, -Inf, Inf], inflate = tolerance)
+    el1femm =
+        FEMMBase(IntegDomain(subset(boundaryfes, Toplist), GaussRule(1, 2), thickness))
     flux1 = FDataDict("traction_vector" => [0.0, +magn], "femm" => el1femm)
 
     # Make the region
     MR = DeforModelRed2DStress
     material = MatDeforElastIso(MR, 0.0, E, nu, 0.0)
-    region1 = FDataDict("femm" => FEMMDeforLinear(MR,
-        IntegDomain(fes, TriRule(1), thickness), material))
+    region1 = FDataDict(
+        "femm" =>
+            FEMMDeforLinear(MR, IntegDomain(fes, TriRule(1), thickness), material),
+    )
 
-    modeldata = FDataDict("fens" => fens,
+    modeldata = FDataDict(
+        "fens" => fens,
         "regions" => [region1],
         "essential_bcs" => [ess1, ess2],
-        "traction_bcs" => [flux1])
+        "traction_bcs" => [flux1],
+    )
 
     # Call the solver
     modeldata = AlgoDeforLinearModule.linearstatics(modeldata)
@@ -201,45 +214,57 @@ function cookstress_algo_export()
     geom = modeldata["geom"]
 
     # Extract the solution
-    nl = selectnode(fens, box = [Mid_edge[1], Mid_edge[1], Mid_edge[2], Mid_edge[2]],
-        inflate = tolerance)
+    nl = selectnode(
+        fens,
+        box = [Mid_edge[1], Mid_edge[1], Mid_edge[2], Mid_edge[2]],
+        inflate = tolerance,
+    )
     theutip = u.values[nl, :]
     println("displacement =$(theutip[2]) as compared to converged $convutip")
 
-    modeldata["postprocessing"] = FDataDict("file" => "cookstress-ew",
-        "quantity" => :Cauchy, "component" => :xy)
+    modeldata["postprocessing"] =
+        FDataDict("file" => "cookstress-ew", "quantity" => :Cauchy, "component" => :xy)
     modeldata = AlgoDeforLinearModule.exportstresselementwise(modeldata)
     fld = modeldata["postprocessing"]["exported"][1]["field"]
     println("range of Cauchy_xy = $((minimum(fld.values), maximum(fld.values)))")
     File = modeldata["postprocessing"]["exported"][1]["file"]
     @async run(`"paraview.exe" $File`)
 
-    modeldata["postprocessing"] = FDataDict("file" => "cookstress-ew-vm",
-        "quantity" => :vm, "component" => 1)
+    modeldata["postprocessing"] =
+        FDataDict("file" => "cookstress-ew-vm", "quantity" => :vm, "component" => 1)
     modeldata = AlgoDeforLinearModule.exportstresselementwise(modeldata)
     fld = modeldata["postprocessing"]["exported"][1]["field"]
     println("range of vm = $((minimum(fld.values), maximum(fld.values)))")
     File = modeldata["postprocessing"]["exported"][1]["file"]
     @async run(`"paraview.exe" $File`)
 
-    modeldata["postprocessing"] = FDataDict("file" => "cookstress-ew-pressure",
-        "quantity" => :pressure, "component" => 1)
+    modeldata["postprocessing"] = FDataDict(
+        "file" => "cookstress-ew-pressure",
+        "quantity" => :pressure,
+        "component" => 1,
+    )
     modeldata = AlgoDeforLinearModule.exportstresselementwise(modeldata)
     fld = modeldata["postprocessing"]["exported"][1]["field"]
     println("range of pressure = $((minimum(fld.values), maximum(fld.values)))")
     File = modeldata["postprocessing"]["exported"][1]["file"]
     @async run(`"paraview.exe" $File`)
 
-    modeldata["postprocessing"] = FDataDict("file" => "cookstress-ew-princ1",
-        "quantity" => :princCauchy, "component" => 1)
+    modeldata["postprocessing"] = FDataDict(
+        "file" => "cookstress-ew-princ1",
+        "quantity" => :princCauchy,
+        "component" => 1,
+    )
     modeldata = AlgoDeforLinearModule.exportstresselementwise(modeldata)
     fld = modeldata["postprocessing"]["exported"][1]["field"]
     println("range of princCauchy Max = $((minimum(fld.values), maximum(fld.values)))")
     File = modeldata["postprocessing"]["exported"][1]["file"]
     @async run(`"paraview.exe" $File`)
 
-    modeldata["postprocessing"] = FDataDict("file" => "cookstress-ew-princ2",
-        "quantity" => :princCauchy, "component" => 2)
+    modeldata["postprocessing"] = FDataDict(
+        "file" => "cookstress-ew-princ2",
+        "quantity" => :princCauchy,
+        "component" => 2,
+    )
     modeldata = AlgoDeforLinearModule.exportstresselementwise(modeldata)
     fld = modeldata["postprocessing"]["exported"][1]["field"]
     println("range of princCauchy Min = $((minimum(fld.values), maximum(fld.values)))")
@@ -257,10 +282,12 @@ function cookstress_algo_export()
     COMMENT(AE, "We are assuming three node triangles in plane-stress")
     COMMENT(AE, "CPS3 are pretty poor-accuracy elements, but here we don't care about it.")
     @assert nodesperelem(modeldata["regions"][1]["femm"].integdomain.fes) == 3
-    ELEMENT(AE,
+    ELEMENT(
+        AE,
         "CPS3",
         "AllElements",
-        connasarray(modeldata["regions"][1]["femm"].integdomain.fes))
+        connasarray(modeldata["regions"][1]["femm"].integdomain.fes),
+    )
     NSET_NSET(AE, "clamped", modeldata["essential_bcs"][1]["node_list"])
     ORIENTATION(AE, "GlobalOrientation", vec([1.0 0 0]), vec([0 1.0 0]))
     SOLID_SECTION(AE, "elasticity", "GlobalOrientation", "AllElements", thickness)
@@ -278,7 +305,7 @@ function cookstress_algo_export()
     nl = connectednodes(bfes)
     F = zeros(count(modeldata["fens"]))
     for ix in eachindex(bfes)
-        for jx in 1:2
+        for jx = 1:2
             F[bfes.conn[ix][jx]] += 1.0 / n / 2 / thickness
         end
     end
@@ -310,9 +337,10 @@ function cookstress_algo_export_ortho()
 
     # Reshape into a trapezoidal panel
     for i in eachindex(fens)
-        fens.xyz[i, 2] = fens.xyz[i, 2] +
-                         (fens.xyz[i, 1] / width) *
-                         (height - fens.xyz[i, 2] / height * (height - free_height))
+        fens.xyz[i, 2] =
+            fens.xyz[i, 2] +
+            (fens.xyz[i, 1] / width) *
+            (height - fens.xyz[i, 2] / height * (height - free_height))
     end
 
     # Clamped edge of the membrane
@@ -322,26 +350,26 @@ function cookstress_algo_export_ortho()
 
     # Traction on the opposite edge
     boundaryfes = meshboundary(fes)
-    Toplist = selectelem(fens,
-        boundaryfes,
-        box = [width, width, -Inf, Inf],
-        inflate = tolerance)
-    el1femm = FEMMBase(IntegDomain(subset(boundaryfes, Toplist),
-        GaussRule(1, 2),
-        thickness))
-    flux1 = FDataDict("traction_vector" => [0.0, +magn],
-        "femm" => el1femm)
+    Toplist =
+        selectelem(fens, boundaryfes, box = [width, width, -Inf, Inf], inflate = tolerance)
+    el1femm =
+        FEMMBase(IntegDomain(subset(boundaryfes, Toplist), GaussRule(1, 2), thickness))
+    flux1 = FDataDict("traction_vector" => [0.0, +magn], "femm" => el1femm)
 
     # Make the region
     MR = DeforModelRed2DStress
     material = MatDeforElastOrtho(MR, 0.0, E, nu, 0.0)
-    region1 = FDataDict("femm" => FEMMDeforLinear(MR,
-        IntegDomain(fes, TriRule(1), thickness), material))
+    region1 = FDataDict(
+        "femm" =>
+            FEMMDeforLinear(MR, IntegDomain(fes, TriRule(1), thickness), material),
+    )
 
-    modeldata = FDataDict("fens" => fens,
+    modeldata = FDataDict(
+        "fens" => fens,
         "regions" => [region1],
         "essential_bcs" => [ess1, ess2],
-        "traction_bcs" => [flux1])
+        "traction_bcs" => [flux1],
+    )
 
     # Call the solver
     modeldata = AlgoDeforLinearModule.linearstatics(modeldata)
@@ -350,45 +378,57 @@ function cookstress_algo_export_ortho()
     geom = modeldata["geom"]
 
     # Extract the solution
-    nl = selectnode(fens, box = [Mid_edge[1], Mid_edge[1], Mid_edge[2], Mid_edge[2]],
-        inflate = tolerance)
+    nl = selectnode(
+        fens,
+        box = [Mid_edge[1], Mid_edge[1], Mid_edge[2], Mid_edge[2]],
+        inflate = tolerance,
+    )
     theutip = u.values[nl, :]
     println("displacement =$(theutip[2]) as compared to converged $convutip")
 
-    modeldata["postprocessing"] = FDataDict("file" => "cookstress-ew",
-        "quantity" => :Cauchy, "component" => :xy)
+    modeldata["postprocessing"] =
+        FDataDict("file" => "cookstress-ew", "quantity" => :Cauchy, "component" => :xy)
     modeldata = AlgoDeforLinearModule.exportstresselementwise(modeldata)
     fld = modeldata["postprocessing"]["exported"][1]["field"]
     println("range of Cauchy_xy = $((minimum(fld.values), maximum(fld.values)))")
     File = modeldata["postprocessing"]["exported"][1]["file"]
     @async run(`"paraview.exe" $File`)
 
-    modeldata["postprocessing"] = FDataDict("file" => "cookstress-ew-vm",
-        "quantity" => :vm, "component" => 1)
+    modeldata["postprocessing"] =
+        FDataDict("file" => "cookstress-ew-vm", "quantity" => :vm, "component" => 1)
     modeldata = AlgoDeforLinearModule.exportstresselementwise(modeldata)
     fld = modeldata["postprocessing"]["exported"][1]["field"]
     println("range of vm = $((minimum(fld.values), maximum(fld.values)))")
     File = modeldata["postprocessing"]["exported"][1]["file"]
     @async run(`"paraview.exe" $File`)
 
-    modeldata["postprocessing"] = FDataDict("file" => "cookstress-ew-pressure",
-        "quantity" => :pressure, "component" => 1)
+    modeldata["postprocessing"] = FDataDict(
+        "file" => "cookstress-ew-pressure",
+        "quantity" => :pressure,
+        "component" => 1,
+    )
     modeldata = AlgoDeforLinearModule.exportstresselementwise(modeldata)
     fld = modeldata["postprocessing"]["exported"][1]["field"]
     println("range of pressure = $((minimum(fld.values), maximum(fld.values)))")
     File = modeldata["postprocessing"]["exported"][1]["file"]
     @async run(`"paraview.exe" $File`)
 
-    modeldata["postprocessing"] = FDataDict("file" => "cookstress-ew-princ1",
-        "quantity" => :princCauchy, "component" => 1)
+    modeldata["postprocessing"] = FDataDict(
+        "file" => "cookstress-ew-princ1",
+        "quantity" => :princCauchy,
+        "component" => 1,
+    )
     modeldata = AlgoDeforLinearModule.exportstresselementwise(modeldata)
     fld = modeldata["postprocessing"]["exported"][1]["field"]
     println("range of princCauchy Max = $((minimum(fld.values), maximum(fld.values)))")
     File = modeldata["postprocessing"]["exported"][1]["file"]
     @async run(`"paraview.exe" $File`)
 
-    modeldata["postprocessing"] = FDataDict("file" => "cookstress-ew-princ2",
-        "quantity" => :princCauchy, "component" => 2)
+    modeldata["postprocessing"] = FDataDict(
+        "file" => "cookstress-ew-princ2",
+        "quantity" => :princCauchy,
+        "component" => 2,
+    )
     modeldata = AlgoDeforLinearModule.exportstresselementwise(modeldata)
     fld = modeldata["postprocessing"]["exported"][1]["field"]
     println("range of princCauchy Min = $((minimum(fld.values), maximum(fld.values)))")
@@ -406,10 +446,12 @@ function cookstress_algo_export_ortho()
     COMMENT(AE, "We are assuming three node triangles in plane-stress")
     COMMENT(AE, "CPS3 are pretty poor-accuracy elements, but here we don't care about it.")
     @assert nodesperelem(modeldata["regions"][1]["femm"].integdomain.fes) == 3
-    ELEMENT(AE,
+    ELEMENT(
+        AE,
         "CPS3",
         "AllElements",
-        connasarray(modeldata["regions"][1]["femm"].integdomain.fes))
+        connasarray(modeldata["regions"][1]["femm"].integdomain.fes),
+    )
     NSET_NSET(AE, "clamped", modeldata["essential_bcs"][1]["node_list"])
     ORIENTATION(AE, "GlobalOrientation", vec([1.0 0 0]), vec([0 1.0 0]))
     SOLID_SECTION(AE, "elasticity", "GlobalOrientation", "AllElements", thickness)
@@ -427,7 +469,7 @@ function cookstress_algo_export_ortho()
     nl = connectednodes(bfes)
     F = zeros(count(modeldata["fens"]))
     for ix in eachindex(bfes)
-        for jx in 1:2
+        for jx = 1:2
             F[bfes.conn[ix][jx]] += 1.0 / n / 2 / thickness
         end
     end
@@ -460,9 +502,10 @@ function cookstress_t6_algo()
 
     # Reshape into a trapezoidal panel
     for i in eachindex(fens)
-        fens.xyz[i, 2] = fens.xyz[i, 2] +
-                         (fens.xyz[i, 1] / width) *
-                         (height - fens.xyz[i, 2] / height * (height - free_height))
+        fens.xyz[i, 2] =
+            fens.xyz[i, 2] +
+            (fens.xyz[i, 1] / width) *
+            (height - fens.xyz[i, 2] / height * (height - free_height))
     end
 
     # Clamped edge of the membrane
@@ -472,24 +515,23 @@ function cookstress_t6_algo()
 
     # Traction on the opposite edge
     boundaryfes = meshboundary(fes)
-    Toplist = selectelem(fens,
-        boundaryfes,
-        box = [width, width, -Inf, Inf],
-        inflate = tolerance)
+    Toplist =
+        selectelem(fens, boundaryfes, box = [width, width, -Inf, Inf], inflate = tolerance)
     el1femm = FEMMBase(IntegDomain(subset(boundaryfes, Toplist), GaussRule(1, 3)))
-    flux1 = FDataDict("traction_vector" => [0.0, +magn],
-        "femm" => el1femm)
+    flux1 = FDataDict("traction_vector" => [0.0, +magn], "femm" => el1femm)
 
     # Make the region
     MR = DeforModelRed2DStress
     material = MatDeforElastIso(MR, 0.0, E, nu, 0.0)
-    region1 = FDataDict("femm" => FEMMDeforLinear(MR,
-        IntegDomain(fes, TriRule(3)), material))
+    region1 =
+        FDataDict("femm" => FEMMDeforLinear(MR, IntegDomain(fes, TriRule(3)), material))
 
-    modeldata = FDataDict("fens" => fens,
+    modeldata = FDataDict(
+        "fens" => fens,
         "regions" => [region1],
         "essential_bcs" => [ess1, ess2],
-        "traction_bcs" => [flux1])
+        "traction_bcs" => [flux1],
+    )
 
     # Call the solver
     modeldata = AlgoDeforLinearModule.linearstatics(modeldata)
@@ -498,13 +540,16 @@ function cookstress_t6_algo()
     geom = modeldata["geom"]
 
     # Extract the solution
-    nl = selectnode(fens, box = [Mid_edge[1], Mid_edge[1], Mid_edge[2], Mid_edge[2]],
-        inflate = tolerance)
+    nl = selectnode(
+        fens,
+        box = [Mid_edge[1], Mid_edge[1], Mid_edge[2], Mid_edge[2]],
+        inflate = tolerance,
+    )
     theutip = u.values[nl, :]
     println("displacement =$(theutip[2]) as compared to converged $convutip")
 
-    modeldata["postprocessing"] = FDataDict("file" => "cookstress",
-        "quantity" => :Cauchy, "component" => :xy)
+    modeldata["postprocessing"] =
+        FDataDict("file" => "cookstress", "quantity" => :Cauchy, "component" => :xy)
     modeldata = AlgoDeforLinearModule.exportstress(modeldata)
     File = modeldata["postprocessing"]["exported"][1]["file"]
     @async run(`"paraview.exe" $File`)
@@ -514,7 +559,9 @@ function cookstress_t6_algo()
 end # cookstress_t6_algo
 
 function cookstress_t6_ortho2iso_algo()
-    println("Cook plane stress, with quadratic triangles. With orthotropic  material model.")
+    println(
+        "Cook plane stress, with quadratic triangles. With orthotropic  material model.",
+    )
     E = 1.0
     nu = 1.0 / 3
     E1 = E2 = E3 = E
@@ -534,9 +581,10 @@ function cookstress_t6_ortho2iso_algo()
 
     # Reshape into a trapezoidal panel
     for i in eachindex(fens)
-        fens.xyz[i, 2] = fens.xyz[i, 2] +
-                         (fens.xyz[i, 1] / width) *
-                         (height - fens.xyz[i, 2] / height * (height - free_height))
+        fens.xyz[i, 2] =
+            fens.xyz[i, 2] +
+            (fens.xyz[i, 1] / width) *
+            (height - fens.xyz[i, 2] / height * (height - free_height))
     end
 
     # Clamped edge of the membrane
@@ -546,10 +594,8 @@ function cookstress_t6_ortho2iso_algo()
 
     # Traction on the opposite edge
     boundaryfes = meshboundary(fes)
-    Toplist = selectelem(fens,
-        boundaryfes,
-        box = [width, width, -Inf, Inf],
-        inflate = tolerance)
+    Toplist =
+        selectelem(fens, boundaryfes, box = [width, width, -Inf, Inf], inflate = tolerance)
     el1femm = FEMMBase(IntegDomain(subset(boundaryfes, Toplist), GaussRule(1, 3)))
     flux1 = FDataDict("traction_vector" => [0.0, +magn], "femm" => el1femm)
 
@@ -558,14 +604,15 @@ function cookstress_t6_ortho2iso_algo()
     # This material model is orthotropic,  but the input parameters correspond to an
     # isotropiic material  model..
     material = MatDeforElastOrtho(MR, E1, E2, E3, nu12, nu13, nu23, G12, G13, G23)
-    region1 = FDataDict("femm" => FEMMDeforLinear(MR,
-        IntegDomain(fes, TriRule(3)),
-        material))
+    region1 =
+        FDataDict("femm" => FEMMDeforLinear(MR, IntegDomain(fes, TriRule(3)), material))
 
-    modeldata = FDataDict("fens" => fens,
+    modeldata = FDataDict(
+        "fens" => fens,
         "regions" => [region1],
         "essential_bcs" => [ess1, ess2],
-        "traction_bcs" => [flux1])
+        "traction_bcs" => [flux1],
+    )
 
     # Call the solver
     modeldata = AlgoDeforLinearModule.linearstatics(modeldata)
@@ -574,14 +621,16 @@ function cookstress_t6_ortho2iso_algo()
     geom = modeldata["geom"]
 
     # Extract the solution
-    nl = selectnode(fens,
+    nl = selectnode(
+        fens,
         box = [Mid_edge[1], Mid_edge[1], Mid_edge[2], Mid_edge[2]],
-        inflate = tolerance)
+        inflate = tolerance,
+    )
     theutip = u.values[nl, :]
     println("displacement =$(theutip[2]) as compared to converged $convutip")
 
-    modeldata["postprocessing"] = FDataDict("file" => "cookstress",
-        "quantity" => :Cauchy, "component" => :xy)
+    modeldata["postprocessing"] =
+        FDataDict("file" => "cookstress", "quantity" => :Cauchy, "component" => :xy)
     modeldata = AlgoDeforLinearModule.exportstress(modeldata)
     File = modeldata["postprocessing"]["exported"][1]["file"]
     @async run(`"paraview.exe" $File`)
@@ -610,9 +659,10 @@ function cookstress_big(n = 10, solver = :suitesparse)
 
     # Reshape into a trapezoidal panel
     for i in eachindex(fens)
-        fens.xyz[i, 2] = fens.xyz[i, 2] +
-                         (fens.xyz[i, 1] / width) *
-                         (height - fens.xyz[i, 2] / height * (height - free_height))
+        fens.xyz[i, 2] =
+            fens.xyz[i, 2] +
+            (fens.xyz[i, 1] / width) *
+            (height - fens.xyz[i, 2] / height * (height - free_height))
     end
 
     # Renumber the nodes
@@ -635,10 +685,8 @@ function cookstress_big(n = 10, solver = :suitesparse)
     # numberdofs!(u)
 
     @time boundaryfes = meshboundary(fes)
-    Toplist = selectelem(fens,
-        boundaryfes,
-        box = [width, width, -Inf, Inf],
-        inflate = tolerance)
+    Toplist =
+        selectelem(fens, boundaryfes, box = [width, width, -Inf, Inf], inflate = tolerance)
     el1femm = FEMMBase(IntegDomain(subset(boundaryfes, Toplist), GaussRule(1, 2)))
     fi = ForceIntensity([0.0, +magn])
     F2 = distribloads(el1femm, geom, u, fi, 2)
@@ -681,12 +729,16 @@ function cookstress_big(n = 10, solver = :suitesparse)
     end
     scattersysvec!(u, U[:])
 
-    nl = selectnode(fens,
+    nl = selectnode(
+        fens,
         box = [Mid_edge[1], Mid_edge[1], Mid_edge[2], Mid_edge[2]],
-        inflate = tolerance)
+        inflate = tolerance,
+    )
     theutip = zeros(FFlt, 1, 2)
     gathervalues_asmat!(u, theutip, nl)
-    println("$(time()-t0) [s];  displacement =$(theutip[2]) as compared to converged $convutip")
+    println(
+        "$(time()-t0) [s];  displacement =$(theutip[2]) as compared to converged $convutip",
+    )
 
     # File =  "a.vtk"
     # vtkexportmesh(File,  fes.conn,  geom.values+u.values,

@@ -18,25 +18,27 @@ function distorted_block_infsup_T10()
     lambdamin = Float64[]
     h = Float64[]
     for ne in [2, 3, 4]
-        Length::FFlt, Width::FFlt, Height::FFlt, nL::FInt, nW::FInt, nH::FInt, orientation::Symbol = (6.0,
-            6.0,
-            6.0,
-            ne,
-            ne,
-            ne,
-            :a)
+        Length::FFlt,
+        Width::FFlt,
+        Height::FFlt,
+        nL::FInt,
+        nW::FInt,
+        nH::FInt,
+        orientation::Symbol = (6.0, 6.0, 6.0, ne, ne, ne, :a)
 
-        fens, fes = T4block(Length::FFlt,
+        fens, fes = T4block(
+            Length::FFlt,
             Width::FFlt,
             Height::FFlt,
             nL::FInt,
             nW::FInt,
             nH::FInt,
-            orientation::Symbol)
+            orientation::Symbol,
+        )
         fens, fes = T4toT10(fens, fes)
         # @show connasarray(fes)
 
-        for i in 1:count(fens)
+        for i = 1:count(fens)
             fens.xyz[i, :] = fens.xyz[i, :] + vec(reshape(fens.xyz[i, :], 1, 3) * A)
         end
         # @show fens.xyz
@@ -74,12 +76,14 @@ function distorted_block_infsup_T10()
 
         abslambda = sqrt.(sort(abslambda))
         ix = findall(y -> y > 0.0, abslambda)
-        a = lineplot(1:length(abslambda[ix]),
+        a = lineplot(
+            1:length(abslambda[ix]),
             log.(abslambda[ix]),
             name = "infsup",
             xlabel = "eigenvalue",
             ylabel = "log(eigenvalue)",
-            canvas = DotCanvas)
+            canvas = DotCanvas,
+        )
         display(a)
 
         ix = findall(y -> y >= lambdatol, abslambda)
@@ -91,12 +95,14 @@ function distorted_block_infsup_T10()
     end
 
     @show lambdamin
-    a = lineplot(log.(h),
+    a = lineplot(
+        log.(h),
         log.(lambdamin),
         name = "infsup",
         xlabel = "log(Element Size)",
         ylabel = "log(minimum eigenvalue)",
-        canvas = DotCanvas)
+        canvas = DotCanvas,
+    )
     display(a)
 
     # @test norm(lambdamin - [0.262065, 0.1709, 0.126159, 0.100228, 0.0828139]) / norm(lambdamin) <= 1.0e-4
@@ -113,25 +119,27 @@ function distorted_block_infsup_T4()
     lambdamin = Float64[]
     h = Float64[]
     for ne in [2, 3, 4]
-        Length::FFlt, Width::FFlt, Height::FFlt, nL::FInt, nW::FInt, nH::FInt, orientation::Symbol = (6.0,
-            6.0,
-            6.0,
-            ne,
-            ne,
-            ne,
-            :a)
+        Length::FFlt,
+        Width::FFlt,
+        Height::FFlt,
+        nL::FInt,
+        nW::FInt,
+        nH::FInt,
+        orientation::Symbol = (6.0, 6.0, 6.0, ne, ne, ne, :a)
 
-        fens, fes = T4block(Length::FFlt,
+        fens, fes = T4block(
+            Length::FFlt,
             Width::FFlt,
             Height::FFlt,
             nL::FInt,
             nW::FInt,
             nH::FInt,
-            orientation::Symbol)
+            orientation::Symbol,
+        )
         # fens, fes = T4toT10(fens, fes)
         # @show connasarray(fes)
 
-        for i in 1:count(fens)
+        for i = 1:count(fens)
             fens.xyz[i, :] = fens.xyz[i, :] + vec(reshape(fens.xyz[i, :], 1, 3) * A)
         end
         # @show fens.xyz
@@ -169,12 +177,14 @@ function distorted_block_infsup_T4()
 
         abslambda = sqrt.(sort(abslambda))
         ix = findall(y -> y > 0.0, abslambda)
-        a = lineplot(1:length(abslambda[ix]),
+        a = lineplot(
+            1:length(abslambda[ix]),
             log.(abslambda[ix]),
             name = "infsup",
             xlabel = "eigenvalue",
             ylabel = "log(eigenvalue)",
-            canvas = DotCanvas)
+            canvas = DotCanvas,
+        )
         display(a)
 
         ix = findall(y -> y >= lambdatol, abslambda)
@@ -186,12 +196,14 @@ function distorted_block_infsup_T4()
     end
 
     @show lambdamin
-    a = lineplot(log.(h),
+    a = lineplot(
+        log.(h),
         log.(lambdamin),
         name = "infsup",
         xlabel = "log(Element Size)",
         ylabel = "log(minimum eigenvalue)",
-        canvas = DotCanvas)
+        canvas = DotCanvas,
+    )
     display(a)
 
     # @test norm(lambdamin - [0.262065, 0.1709, 0.126159, 0.100228, 0.0828139]) / norm(lambdamin) <= 1.0e-4
@@ -208,24 +220,20 @@ function distorted_block_infsup_H8()
     lambdamin = Float64[]
     h = Float64[]
     for ne in [2, 3, 4]
-        Length::FFlt, Width::FFlt, Height::FFlt, nL::FInt, nW::FInt, nH::FInt, orientation::Symbol = (6.0,
-            6.0,
-            6.0,
-            ne,
-            ne,
-            ne,
-            :a)
+        Length::FFlt,
+        Width::FFlt,
+        Height::FFlt,
+        nL::FInt,
+        nW::FInt,
+        nH::FInt,
+        orientation::Symbol = (6.0, 6.0, 6.0, ne, ne, ne, :a)
 
-        fens, fes = H8block(Length::FFlt,
-            Width::FFlt,
-            Height::FFlt,
-            nL::FInt,
-            nW::FInt,
-            nH::FInt)
+        fens, fes =
+            H8block(Length::FFlt, Width::FFlt, Height::FFlt, nL::FInt, nW::FInt, nH::FInt)
         # fens, fes = T4toT10(fens, fes)
         # @show connasarray(fes)
 
-        for i in 1:count(fens)
+        for i = 1:count(fens)
             fens.xyz[i, :] = fens.xyz[i, :] + vec(reshape(fens.xyz[i, :], 1, 3) * A)
         end
         # @show fens.xyz
@@ -263,12 +271,14 @@ function distorted_block_infsup_H8()
 
         abslambda = sqrt.(sort(abslambda))
         ix = findall(y -> y > 0.0, abslambda)
-        a = lineplot(1:length(abslambda[ix]),
+        a = lineplot(
+            1:length(abslambda[ix]),
             log.(abslambda[ix]),
             name = "infsup",
             xlabel = "eigenvalue",
             ylabel = "log(eigenvalue)",
-            canvas = DotCanvas)
+            canvas = DotCanvas,
+        )
         display(a)
 
         ix = findall(y -> y >= lambdatol, abslambda)
@@ -280,12 +290,14 @@ function distorted_block_infsup_H8()
     end
 
     @show lambdamin
-    a = lineplot(log.(h),
+    a = lineplot(
+        log.(h),
         log.(lambdamin),
         name = "infsup",
         xlabel = "log(Element Size)",
         ylabel = "log(minimum eigenvalue)",
-        canvas = DotCanvas)
+        canvas = DotCanvas,
+    )
     display(a)
 
     # @test norm(lambdamin - [0.262065, 0.1709, 0.126159, 0.100228, 0.0828139]) / norm(lambdamin) <= 1.0e-4
@@ -302,24 +314,20 @@ function distorted_block_infsup_H20()
     lambdamin = Float64[]
     h = Float64[]
     for ne in [2, 3, 4]
-        Length::FFlt, Width::FFlt, Height::FFlt, nL::FInt, nW::FInt, nH::FInt, orientation::Symbol = (6.0,
-            6.0,
-            6.0,
-            ne,
-            ne,
-            ne,
-            :a)
+        Length::FFlt,
+        Width::FFlt,
+        Height::FFlt,
+        nL::FInt,
+        nW::FInt,
+        nH::FInt,
+        orientation::Symbol = (6.0, 6.0, 6.0, ne, ne, ne, :a)
 
-        fens, fes = H20block(Length::FFlt,
-            Width::FFlt,
-            Height::FFlt,
-            nL::FInt,
-            nW::FInt,
-            nH::FInt)
+        fens, fes =
+            H20block(Length::FFlt, Width::FFlt, Height::FFlt, nL::FInt, nW::FInt, nH::FInt)
         # fens, fes = T4toT10(fens, fes)
         # @show connasarray(fes)
 
-        for i in 1:count(fens)
+        for i = 1:count(fens)
             fens.xyz[i, :] = fens.xyz[i, :] + vec(reshape(fens.xyz[i, :], 1, 3) * A)
         end
         # @show fens.xyz
@@ -357,12 +365,14 @@ function distorted_block_infsup_H20()
 
         abslambda = sqrt.(sort(abslambda))
         ix = findall(y -> y > 0.0, abslambda)
-        a = lineplot(1:length(abslambda[ix]),
+        a = lineplot(
+            1:length(abslambda[ix]),
             log.(abslambda[ix]),
             name = "infsup",
             xlabel = "eigenvalue",
             ylabel = "log(eigenvalue)",
-            canvas = DotCanvas)
+            canvas = DotCanvas,
+        )
         display(a)
 
         ix = findall(y -> y >= lambdatol, abslambda)
@@ -374,12 +384,14 @@ function distorted_block_infsup_H20()
     end
 
     @show lambdamin
-    a = lineplot(log.(h),
+    a = lineplot(
+        log.(h),
         log.(lambdamin),
         name = "infsup",
         xlabel = "log(Element Size)",
         ylabel = "log(minimum eigenvalue)",
-        canvas = DotCanvas)
+        canvas = DotCanvas,
+    )
     display(a)
 
     # @test norm(lambdamin - [0.262065, 0.1709, 0.126159, 0.100228, 0.0828139]) / norm(lambdamin) <= 1.0e-4

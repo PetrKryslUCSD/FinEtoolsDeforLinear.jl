@@ -1,9 +1,9 @@
 module stubby_corbel_examples
 using FinEtools
-using FinEtools.AlgoBaseModule: evalconvergencestudy
+using FinEtools.AlgoBaseModule: evalconvergencestudy, solve_blocked!
 using FinEtoolsDeforLinear
-using FinEtoolsDeforLinear.AlgoDeforLinearModule: linearstatics,
-    exportstresselementwise, exportstress
+using FinEtoolsDeforLinear.AlgoDeforLinearModule:
+    linearstatics, exportstresselementwise, exportstress
 using Statistics: mean
 using LinearAlgebra
 using Krylov, LinearOperators, IncompleteLU
@@ -16,7 +16,7 @@ using PlotlyJS
 # using Infiltrator
 using Random
 using ILUZero
-using SkylineSolvers
+# using SkylineSolvers
 using LDLFactorizations
 using LimitedLDLFactorizations, LinearOperators, Krylov
 using DataDrop
@@ -24,8 +24,8 @@ import CoNCMOR: CoNCData, transfmatrix, LegendreBasis, SineCosineBasis
 
 # Isotropic material
 E = 1000.0
-nu = 0.4999 #Taylor data
-# nu=0.3; #Taylor data#.
+nu = 0.4999 # Taylor data: nearly incompressible material
+nu = 0.3 # Compressible material
 W = 25.0
 H = 50.0
 L = 50.0
@@ -36,7 +36,7 @@ Force = magn * W * H * 2
 CTE = 0.0
 n = 5 #
 
-function getfrcL!(forceout::FFltVec, XYZ::FFltMat, tangents::FFltMat, fe_label::FInt)
+function getfrcL!(forceout, XYZ, tangents, feid, qpid)
     copyto!(forceout, [0.0; 0.0; magn])
 end
 
@@ -86,9 +86,9 @@ function stubby_corbel_H8_by_hand()
     material = MatDeforElastIso(MR, 0.0, E, nu, CTE)
 
     # Material orientation matrix
-    csmat = [i == j ? one(FFlt) : zero(FFlt) for i in 1:3, j in 1:3]
+    csmat = [i == j ? one(Float64) : zero(Float64) for i = 1:3, j = 1:3]
 
-    function updatecs!(csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, fe_label::FInt)
+    function updatecs!(csmatout, XYZ, tangents, feid, qpid)
         copyto!(csmatout, csmat)
     end
 
@@ -105,17 +105,14 @@ function stubby_corbel_H8_by_hand()
     setebc!(u, lx1, true, 1, 0.0)
     applyebc!(u)
     numberdofs!(u)
-    println("u.nfreedofs = $(u.nfreedofs)")
+    println("nfreedofs(u) = $(nfreedofs(u))")
 
     fi = ForceIntensity(Float64, 3, getfrcL!)
     el2femm = FEMMBase(IntegDomain(subset(bfes, sectionL), GaussRule(2, 2)))
     F = distribloads(el2femm, geom, u, fi, 2)
     associategeometry!(femm, geom)
     K = stiffness(femm, geom, u)
-    @time K = cholesky(K)
-    @time U = K \ (F)
-    scattersysvec!(u, U[:])
-    @show length(U)
+    @time solve_blocked!(u, K, F)
     Tipl = selectnode(fens, box = [0 W L L 0 H], inflate = htol)
     utip = mean(u.values[Tipl, 3], dims = 1)
     println("Deflection: $(utip), compared to $(uzex)")
@@ -136,7 +133,7 @@ function stubby_corbel_H8_by_hand()
     true
 end # stubby_corbel_H8_by_hand
 
-function stubby_corbel_H8_big_1(n = 10, solver = :suitesparse)
+function stubby_corbel_H8_big_iso(n = 10, solver = :suitesparse)
     elementtag = "H8"
     println("""
     Stubby corbel example. Element: $(elementtag)
@@ -156,9 +153,9 @@ function stubby_corbel_H8_big_1(n = 10, solver = :suitesparse)
     material = MatDeforElastIso(MR, 0.0, E, nu, CTE)
 
     # Material orientation matrix
-    csmat = [i == j ? one(FFlt) : zero(FFlt) for i in 1:3, j in 1:3]
+    csmat = [i == j ? one(Float64) : zero(Float64) for i = 1:3, j = 1:3]
 
-    function updatecs!(csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, fe_label::FInt)
+    function updatecs!(csmatout, XYZ, tangents, feid, qpid)
         copyto!(csmatout, csmat)
     end
 
@@ -188,7 +185,7 @@ function stubby_corbel_H8_big_1(n = 10, solver = :suitesparse)
     applyebc!(u)
     numberdofs!(u, perm)
     # numberdofs!(u)
-    println("u.nfreedofs = $(u.nfreedofs)")
+    println("nfreedofs(u) = $(nfreedofs(u))")
 
     fi = ForceIntensity(Float64, 3, getfrcL!)
     el2femm = FEMMBase(IntegDomain(subset(bfes, sectionL), GaussRule(2, 2)))
@@ -228,11 +225,8 @@ function stubby_corbel_H8_big_1(n = 10, solver = :suitesparse)
         # @time factor = ilu0(sK)
         @show nnz(factor) / nnz(K)
         opM = LinearOperator(Float64, n, n, false, false, (y, v) -> ldiv!(y, factor, v))
-        @time (U, stats) = Krylov.cg(sK,
-            idKs * F;
-            M = opM,
-            itmax = Int(round(n / 2)),
-            verbose = 1)
+        @time (U, stats) =
+            Krylov.cg(sK, idKs * F; M = opM, itmax = Int(round(n / 2)), verbose = 1)
         U = Vector(idKs * U)
     elseif solver == :skyline
         I, J, V = findnz(K)
@@ -269,19 +263,23 @@ function stubby_corbel_H8_big_1(n = 10, solver = :suitesparse)
         n = size(K, 1)
         Kd = Diagonal(diag(K))
         Krd = fill(0.0, size(K, 1))
-        for i in 1:size(K, 1)
+        for i = 1:size(K, 1)
             Krd = Phi[i, :] * Kr * PhiT[i, :]
         end
-        trace1 = scatter(x = 1:length(Krd),
+        trace1 = scatter(
+            x = 1:length(Krd),
             y = Krd,
             mode = "lines",
             line_width = 1.5,
-            line_color = "RoyalBlue")
-        trace2 = scatter(x = 1:length(Krd),
+            line_color = "RoyalBlue",
+        )
+        trace2 = scatter(
+            x = 1:length(Krd),
             y = diag(K),
             mode = "lines",
             line_width = 1.5,
-            line_color = "red")
+            line_color = "red",
+        )
         data = [trace1, trace2]
         layout = Layout(; title = "Data Labels Hover")
 
@@ -317,7 +315,7 @@ function stubby_corbel_H8_big_1(n = 10, solver = :suitesparse)
     # stressfields = ElementalField[modeldata["postprocessing"]["exported"][1]["field"]]
 
     true
-end # stubby_corbel_H8_big
+end # stubby_corbel_H8_big_iso
 
 function _cg(A, b, x0, maxiter)
     x = deepcopy(x0)
@@ -335,7 +333,7 @@ function _cg(A, b, x0, maxiter)
     return x
 end
 
-function stubby_corbel_H8_big(n = 10, solver = :suitesparse)
+function stubby_corbel_H8_big_ms(n = 10, solver = :suitesparse)
     elementtag = "H8"
     println("""
     Stubby corbel example. Element: $(elementtag)
@@ -355,9 +353,9 @@ function stubby_corbel_H8_big(n = 10, solver = :suitesparse)
     material = MatDeforElastIso(MR, 0.0, E, nu, CTE)
 
     # Material orientation matrix
-    csmat = [i == j ? one(FFlt) : zero(FFlt) for i in 1:3, j in 1:3]
+    csmat = [i == j ? one(Float64) : zero(Float64) for i = 1:3, j = 1:3]
 
-    function updatecs!(csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, fe_label::FInt)
+    function updatecs!(csmatout, XYZ, tangents, feid, qpid)
         copyto!(csmatout, csmat)
     end
 
@@ -388,16 +386,19 @@ function stubby_corbel_H8_big(n = 10, solver = :suitesparse)
     applyebc!(u)
     numberdofs!(u, perm)
     # numberdofs!(u)
-    println("u.nfreedofs = $(u.nfreedofs)")
+    println("nfreedofs(u) = $(nfreedofs(u))")
 
     fi = ForceIntensity(Float64, 3, getfrcL!)
     el2femm = FEMMBase(IntegDomain(subset(bfes, sectionL), GaussRule(2, 2)))
     F = distribloads(el2femm, geom, u, fi, 2)
+    F_f = vector_blocked_f(F, nfreedofs(u))
     associategeometry!(femm, geom)
     K = stiffness(femm, geom, u)
-    println("Stiffness: number of non zeros = $(nnz(K)) [ND]")
-    println("Sparsity = $(nnz(K)/size(K, 1)/size(K, 2)) [ND]")
-    display(spy(K, canvas = DotCanvas))
+    K_ff = matrix_blocked_ff(K, nfreedofs(u))
+    K = nothing
+    println("Stiffness: number of non zeros = $(nnz(K_ff)) [ND]")
+    println("Sparsity = $(nnz(K_ff)/size(K_ff, 1)/size(K_ff, 2)) [ND]")
+    display(spy(K_ff, canvas = DotCanvas))
     # DataDrop.store_matrix("K$(size(K, 1))", K)
     # DataDrop.store_matrix("F$(size(F, 1))", F)
 
@@ -412,14 +413,14 @@ function stubby_corbel_H8_big(n = 10, solver = :suitesparse)
         # @time K = cholesky(K)
         @time U = K \ (F)
     elseif solver == :cg
-        n = size(K, 1)
-        mKd = mean(diag(K))
-        # @time factor = ilu(K, τ = mKd / 100.0) # This may work for compressible materials
-        @time factor = ilu(K, τ = mKd / 1000000.0) # This may work for incompressible materials
+        n = size(K_ff, 1)
+        mK_ffd = mean(diag(K_ff))
+        @time factor = ilu(K_ff, τ = mK_ffd / 100.0) # This may work for compressible materials
+        # @time factor = ilu(K, τ = mKd / 1000000.0) # This may work for incompressible materials
         # factor = ilu0(K)
-        @show nnz(factor) / nnz(K)
+        @show nnz(factor) / nnz(K_ff)
         opM = LinearOperator(Float64, n, n, false, false, (y, v) -> ldiv!(y, factor, v))
-        @time (U, stats) = Krylov.cg(K, F; M = opM, itmax = Int(round(n / 2)), verbose = 1)
+        @time (U, stats) = Krylov.cg(K_ff, F_f; M = opM, itmax = Int(round(n / 2)), verbose = 1)
     elseif solver == :cgldl
         n = size(K, 1)
         atol = 1e-10
@@ -439,11 +440,8 @@ function stubby_corbel_H8_big(n = 10, solver = :suitesparse)
         # @time factor = ilu0(sK)
         @show nnz(factor) / nnz(K)
         opM = LinearOperator(Float64, n, n, false, false, (y, v) -> ldiv!(y, factor, v))
-        @time (U, stats) = Krylov.cg(sK,
-            idKs * F;
-            M = opM,
-            itmax = Int(round(n / 2)),
-            verbose = 1)
+        @time (U, stats) =
+            Krylov.cg(sK, idKs * F; M = opM, itmax = Int(round(n / 2)), verbose = 1)
         U = Vector(idKs * U)
     elseif solver == :skyline
         I, J, V = findnz(K)
@@ -489,7 +487,7 @@ function stubby_corbel_H8_big(n = 10, solver = :suitesparse)
         end
         opM = LinearOperator(Float64, n, n, false, false, morprecond)
         U = deepcopy(Ur)
-        for iter in 1:50
+        for iter = 1:50
             @show iter
             (DU, stats) = Krylov.cg(K, F - K * U; M = opM, itmax = 5, verbose = 0)
             U += DU
@@ -540,15 +538,17 @@ function stubby_corbel_H8_big(n = 10, solver = :suitesparse)
         # morprecondnomix(y, v) = begin
         #     y .= (Kdinv .* v) - (invKrd .* v) + (Phi * (Krfactor \ (PhiT * v)))
         # end
-        opM = LinearOperator(Float64,
+        opM = LinearOperator(
+            Float64,
             n,
             n,
             false,
             false,
-            (y, v) -> y .= mixprop .* (Kdinv .* v) .+ (Phi * (Krfactor \ (PhiT * v))))
+            (y, v) -> y .= mixprop .* (Kdinv .* v) .+ (Phi * (Krfactor \ (PhiT * v))),
+        )
         U = deepcopy(Ur)
         utipprev = utip
-        @time for iter in 1:50
+        @time for iter = 1:50
             @show iter
             (DU, stats) = Krylov.cg(K, F - K * U; M = opM, itmax = 5, verbose = 0)
             U += DU
@@ -580,18 +580,20 @@ function stubby_corbel_H8_big(n = 10, solver = :suitesparse)
         Kd = Diagonal(diag(K))
         n = size(K, 1)
 
-        for iter in 1:50
+        for iter = 1:50
             @show iter
             Kr = transfm(K, Phi, Phi')
             # Krd = Diagonal(diag(Phi * Kr * Phi'))
             # @show mean(diag(Kd)), mean(diag(Krd))
             # @show norm(diag(Kd) - diag(Krd)), norm(diag(Kd))
-            opM = LinearOperator(Float64,
+            opM = LinearOperator(
+                Float64,
                 n,
                 n,
                 false,
                 false,
-                (y, v) -> morprecond3nomix(y, v, Phi, Kd, Kr, mixprop))
+                (y, v) -> morprecond3nomix(y, v, Phi, Kd, Kr, mixprop),
+            )
             @time (DU, stats) = Krylov.cg(K, F - K * U; M = opM, itmax = 10, verbose = 0)
             @show norm(DU) / norm(U)
             Phi = hcat(Phi, DU)
@@ -611,7 +613,7 @@ function stubby_corbel_H8_big(n = 10, solver = :suitesparse)
     utip = mean(u.values[Tipl, 3], dims = 1)
     println("Deflection: $(utip), compared to $(uzex)")
 
-    File = "stubby_corbel_H8_big.vtk"
+    File = "stubby_corbel_H8_big_ms.vtk"
     vtkexportmesh(File, fens, fes; vectors = [("u", u.values)])
     @async run(`"paraview.exe" $File`)
 
@@ -625,7 +627,7 @@ function stubby_corbel_H8_big(n = 10, solver = :suitesparse)
     # stressfields = ElementalField[modeldata["postprocessing"]["exported"][1]["field"]]
 
     true
-end # stubby_corbel_H8_big
+end # stubby_corbel_H8_big_ms
 
 function allrun()
     println("#####################################################")

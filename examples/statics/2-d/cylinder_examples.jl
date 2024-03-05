@@ -76,8 +76,13 @@ function cylinder_bend()
     println("Minimum/maximum = $(minimum(fld.values))/$(maximum(fld.values))")
 
     File = "cylinder_bend_sigmaz.vtk"
-    vtkexportmesh(File, fens, fes; scalars = [("sigmaz", fld.values)],
-        vectors = [("u", u.values)])
+    vtkexportmesh(
+        File,
+        fens,
+        fes;
+        scalars = [("sigmaz", fld.values)],
+        vectors = [("u", u.values)],
+    )
     @async run(`"paraview.exe" $File`)
 end # cylinder_bend
 
@@ -150,8 +155,13 @@ function cylinder_pull()
     println("Minimum/maximum = $(minimum(fld.values))/$(maximum(fld.values))")
 
     File = "orthoballoon_sigmaz.vtk"
-    vtkexportmesh(File, fens, fes; scalars = [("sigmaz", fld.values)],
-        vectors = [("u", u.values)])
+    vtkexportmesh(
+        File,
+        fens,
+        fes;
+        scalars = [("sigmaz", fld.values)],
+        vectors = [("u", u.values)],
+    )
     @async run(`"paraview.exe" $File`)
 end # cylinder_pull
 
@@ -207,8 +217,8 @@ function cylinder_pull_algo()
     region = FDataDict("femm" => femm)
 
     # Make model data
-    modeldata = FDataDict("fens" => fens, "regions" => [region],
-        "essential_bcs" => [e1, e2])
+    modeldata =
+        FDataDict("fens" => fens, "regions" => [region], "essential_bcs" => [e1, e2])
 
     # Call the solver
     modeldata = AlgoDeforLinearModule.linearstatics(modeldata)
@@ -223,8 +233,13 @@ function cylinder_pull_algo()
     println("Minimum/maximum = $(minimum(fld.values))/$(maximum(fld.values))")
 
     File = "orthoballoon_sigmaz.vtk"
-    vtkexportmesh(File, fens, fes; scalars = [("sigmaz", fld.values)],
-        vectors = [("u", u.values)])
+    vtkexportmesh(
+        File,
+        fens,
+        fes;
+        scalars = [("sigmaz", fld.values)],
+        vectors = [("u", u.values)],
+    )
     @async run(`"paraview.exe" $File`)
 end # cylinder_pull_algo
 

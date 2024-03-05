@@ -3,8 +3,8 @@ using FinEtools
 using FinEtoolsDeforLinear
 using FinEtoolsDeforLinear.AlgoDeforLinearModule
 using FinEtools.AlgoBaseModule: evalconvergencestudy
-using FinEtoolsDeforLinear.AlgoDeforLinearModule: linearstatics,
-    exportstresselementwise, exportstress
+using FinEtoolsDeforLinear.AlgoDeforLinearModule:
+    linearstatics, exportstresselementwise, exportstress
 using Statistics: mean
 using LinearAlgebra: Symmetric, cholesky
 
@@ -41,16 +41,18 @@ function evaluateerrors(filebase, modeldatasequence)
     println("Normalized Approximate Error = $(errornorms)")
 
     f = log.(vec(errornorms))
-    A = hcat(log.(vec(elementsizes[1:(end - 1)])), ones(size(f)))
+    A = hcat(log.(vec(elementsizes[1:(end-1)])), ones(size(f)))
     p = A \ f
     println("Linear log-log fit: p = $(p)")
 
     csvFile = filebase * "_Stress" * ".CSV"
-    savecsv(csvFile,
-        elementsizes = vec(elementsizes[1:(end - 1)]),
-        elementsizes2 = vec(elementsizes[1:(end - 1)] .^ 2),
-        elementsizes3 = vec(elementsizes[1:(end - 1)] .^ 3),
-        errornorms = vec(errornorms))
+    savecsv(
+        csvFile,
+        elementsizes = vec(elementsizes[1:(end-1)]),
+        elementsizes2 = vec(elementsizes[1:(end-1)] .^ 2),
+        elementsizes3 = vec(elementsizes[1:(end-1)] .^ 3),
+        errornorms = vec(errornorms),
+    )
     println("Wrote $csvFile")
 
     println("")
@@ -63,16 +65,18 @@ function evaluateerrors(filebase, modeldatasequence)
     println("Normalized Approximate Error = $(errornorms)")
 
     f = log.(vec(errornorms))
-    A = hcat(log.(vec(elementsizes[1:(end - 1)])), ones(size(f)))
+    A = hcat(log.(vec(elementsizes[1:(end-1)])), ones(size(f)))
     p = A \ f
     println("Linear log-log fit: p = $(p)")
 
     csvFile = filebase * "_Displ" * ".CSV"
-    savecsv(csvFile,
-        elementsizes = vec(elementsizes[1:(end - 1)]),
-        elementsizes2 = vec(elementsizes[1:(end - 1)] .^ 2),
-        elementsizes3 = vec(elementsizes[1:(end - 1)] .^ 3),
-        errornorms = vec(errornorms))
+    savecsv(
+        csvFile,
+        elementsizes = vec(elementsizes[1:(end-1)]),
+        elementsizes2 = vec(elementsizes[1:(end-1)] .^ 2),
+        elementsizes3 = vec(elementsizes[1:(end-1)] .^ 3),
+        errornorms = vec(errornorms),
+    )
     println("Wrote $csvFile")
 end
 
@@ -89,9 +93,12 @@ function hughes_cantilever_stresses_H8_by_hand()
         (P / (6 * E1 * I) * (-y) * (3 * (L^2 - (L - x)^2) + (2 + nu1) * (y^2 - c^2)))
     end
     function exactuy(x, y)
-        (P / (6 * E1 * I) *
-         (((L - x)^3 - L^3) - ((4 + 5 * nu1) * c^2 + 3 * L^2) * (L - x - L) +
-          3 * nu1 * (L - x) * y^2))
+        (
+            P / (6 * E1 * I) * (
+                ((L - x)^3 - L^3) - ((4 + 5 * nu1) * c^2 + 3 * L^2) * (L - x - L) +
+                3 * nu1 * (L - x) * y^2
+            )
+        )
     end
 
     n = 2 #
@@ -114,7 +121,7 @@ function hughes_cantilever_stresses_H8_by_hand()
     material = MatDeforElastIso(MR, 0.0, E, nu, CTE)
 
     # Material orientation matrix
-    csmat = [i == j ? one(FFlt) : zero(FFlt) for i in 1:3, j in 1:3]
+    csmat = [i == j ? one(FFlt) : zero(FFlt) for i = 1:3, j = 1:3]
 
     function updatecs!(csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, fe_label::FInt)
         copyto!(csmatout, csmat)
@@ -184,9 +191,12 @@ function hughes_cantilever_stresses_H20_by_hand()
         (P / (6 * E1 * I) * (-y) * (3 * (L^2 - (L - x)^2) + (2 + nu1) * (y^2 - c^2)))
     end
     function exactuy(x, y)
-        (P / (6 * E1 * I) *
-         (((L - x)^3 - L^3) - ((4 + 5 * nu1) * c^2 + 3 * L^2) * (L - x - L) +
-          3 * nu1 * (L - x) * y^2))
+        (
+            P / (6 * E1 * I) * (
+                ((L - x)^3 - L^3) - ((4 + 5 * nu1) * c^2 + 3 * L^2) * (L - x - L) +
+                3 * nu1 * (L - x) * y^2
+            )
+        )
     end
 
     n = 8 #
@@ -209,7 +219,7 @@ function hughes_cantilever_stresses_H20_by_hand()
     material = MatDeforElastIso(MR, 0.0, E, nu, CTE)
 
     # Material orientation matrix
-    csmat = [i == j ? one(FFlt) : zero(FFlt) for i in 1:3, j in 1:3]
+    csmat = [i == j ? one(FFlt) : zero(FFlt) for i = 1:3, j = 1:3]
 
     function updatecs!(csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, fe_label::FInt)
         copyto!(csmatout, csmat)
@@ -280,9 +290,12 @@ function hughes_cantilever_stresses_T10_by_hand()
         (P / (6 * E1 * I) * (-y) * (3 * (L^2 - (L - x)^2) + (2 + nu1) * (y^2 - c^2)))
     end
     function exactuy(x, y)
-        (P / (6 * E1 * I) *
-         (((L - x)^3 - L^3) - ((4 + 5 * nu1) * c^2 + 3 * L^2) * (L - x - L) +
-          3 * nu1 * (L - x) * y^2))
+        (
+            P / (6 * E1 * I) * (
+                ((L - x)^3 - L^3) - ((4 + 5 * nu1) * c^2 + 3 * L^2) * (L - x - L) +
+                3 * nu1 * (L - x) * y^2
+            )
+        )
     end
 
     n = 2 #
@@ -304,7 +317,7 @@ function hughes_cantilever_stresses_T10_by_hand()
     material = MatDeforElastIso(MR, 0.0, E, nu, CTE)
 
     # Material orientation matrix
-    csmat = [i == j ? one(FFlt) : zero(FFlt) for i in 1:3, j in 1:3]
+    csmat = [i == j ? one(FFlt) : zero(FFlt) for i = 1:3, j = 1:3]
 
     function updatecs!(csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, fe_label::FInt)
         copyto!(csmatout, csmat)
@@ -375,9 +388,12 @@ function hughes_cantilever_stresses_MST10_by_hand()
         (P / (6 * E1 * I) * (-y) * (3 * (L^2 - (L - x)^2) + (2 + nu1) * (y^2 - c^2)))
     end
     function exactuy(x, y)
-        (P / (6 * E1 * I) *
-         (((L - x)^3 - L^3) - ((4 + 5 * nu1) * c^2 + 3 * L^2) * (L - x - L) +
-          3 * nu1 * (L - x) * y^2))
+        (
+            P / (6 * E1 * I) * (
+                ((L - x)^3 - L^3) - ((4 + 5 * nu1) * c^2 + 3 * L^2) * (L - x - L) +
+                3 * nu1 * (L - x) * y^2
+            )
+        )
     end
 
     n = 2 #
@@ -399,7 +415,7 @@ function hughes_cantilever_stresses_MST10_by_hand()
     material = MatDeforElastIso(MR, 0.0, E, nu, CTE)
 
     # Material orientation matrix
-    csmat = [i == j ? one(FFlt) : zero(FFlt) for i in 1:3, j in 1:3]
+    csmat = [i == j ? one(FFlt) : zero(FFlt) for i = 1:3, j = 1:3]
 
     function updatecs!(csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, fe_label::FInt)
         copyto!(csmatout, csmat)
@@ -467,9 +483,12 @@ function hughes_cantilever_stresses_MST10()
         (P / (6 * E1 * I) * (-y) * (3 * (L^2 - (L - x)^2) + (2 + nu1) * (y^2 - c^2)))
     end
     function exactuy(x, y)
-        (P / (6 * E1 * I) *
-         (((L - x)^3 - L^3) - ((4 + 5 * nu1) * c^2 + 3 * L^2) * (L - x - L) +
-          3 * nu1 * (L - x) * y^2))
+        (
+            P / (6 * E1 * I) * (
+                ((L - x)^3 - L^3) - ((4 + 5 * nu1) * c^2 + 3 * L^2) * (L - x - L) +
+                3 * nu1 * (L - x) * y^2
+            )
+        )
     end
 
     modeldatasequence = FDataDict[]
@@ -491,20 +510,21 @@ function hughes_cantilever_stresses_MST10()
         material = MatDeforElastIso(MR, 0.0, E, nu, CTE)
 
         # Material orientation matrix
-        csmat = [i == j ? one(FFlt) : zero(FFlt) for i in 1:3, j in 1:3]
+        csmat = [i == j ? one(FFlt) : zero(FFlt) for i = 1:3, j = 1:3]
 
-        function updatecs!(csmatout::FFltMat,
+        function updatecs!(
+            csmatout::FFltMat,
             XYZ::FFltMat,
             tangents::FFltMat,
-            fe_label::FInt)
+            fe_label::FInt,
+        )
             copyto!(csmatout, csmat)
         end
 
         gr = SimplexRule(3, 4)
 
-        region = FDataDict("femm" => FEMMDeforLinearMST10(MR,
-            IntegDomain(fes, gr),
-            material))
+        region =
+            FDataDict("femm" => FEMMDeforLinearMST10(MR, IntegDomain(fes, gr), material))
 
         lx0 = selectnode(fens, box = [0.0 0.0 0.0 0.0 0.0 0.0], inflate = tolerance)
         # println("lx0 = $(lx0)")
@@ -514,26 +534,36 @@ function hughes_cantilever_stresses_MST10()
         lx1 = selectnode(fens, box = [0.0 0.0 0.0 0.0 c c], inflate = tolerance)
         lx2 = selectnode(fens, box = [0.0 0.0 0.0 0.0 -c -c], inflate = tolerance)
         # println("vcat(lx1, lx2) = $(vcat(lx1, lx2))")
-        ex04 = FDataDict("displacement" => 0.0,
+        ex04 = FDataDict(
+            "displacement" => 0.0,
             "component" => 1,
-            "node_list" => vcat(lx1, lx2))
+            "node_list" => vcat(lx1, lx2),
+        )
         ly1 = selectnode(fens, box = [-Inf Inf 0.0 0.0 -Inf Inf], inflate = tolerance)
         ly2 = selectnode(fens, box = [-Inf Inf h h -Inf Inf], inflate = tolerance)
         # println("vcat(ly1, ly2) = $(vcat(ly1, ly2))")
-        ey01 = FDataDict("displacement" => 0.0,
+        ey01 = FDataDict(
+            "displacement" => 0.0,
             "component" => 2,
-            "node_list" => vcat(ly1, ly2))
+            "node_list" => vcat(ly1, ly2),
+        )
 
-        Trac0 = FDataDict("traction_vector" => getfrc0!,
-            "femm" => FEMMBase(IntegDomain(subset(bfes, sshear0), SimplexRule(2, 3))))
-        TracL = FDataDict("traction_vector" => getfrcL!,
-            "femm" => FEMMBase(IntegDomain(subset(bfes, sshearL), SimplexRule(2, 3))))
+        Trac0 = FDataDict(
+            "traction_vector" => getfrc0!,
+            "femm" => FEMMBase(IntegDomain(subset(bfes, sshear0), SimplexRule(2, 3))),
+        )
+        TracL = FDataDict(
+            "traction_vector" => getfrcL!,
+            "femm" => FEMMBase(IntegDomain(subset(bfes, sshearL), SimplexRule(2, 3))),
+        )
 
-        modeldata = FDataDict("fens" => fens,
+        modeldata = FDataDict(
+            "fens" => fens,
             "regions" => [region],
             "essential_bcs" => [ex01, ex02, ex03, ex04, ey01],
             "traction_bcs" => [Trac0, TracL],
-            "temperature_change" => FDataDict("temperature" => 0.0))
+            "temperature_change" => FDataDict("temperature" => 0.0),
+        )
         modeldata = linearstatics(modeldata)
 
         u = modeldata["u"]
@@ -543,15 +573,20 @@ function hughes_cantilever_stresses_MST10()
         utip = mean(u.values[Tipl, 3])
         println("Deflection: $(utip), compared to $(exactuy(L,0.0))")
 
-        modeldata["postprocessing"] = FDataDict("file" => "hughes_cantilever_stresses_$(elementtag)",
+        modeldata["postprocessing"] = FDataDict(
+            "file" => "hughes_cantilever_stresses_$(elementtag)",
             "outputcsys" => CSys(3, 3, updatecs!),
             "quantity" => :Cauchy,
-            "component" => [5])
+            "component" => [5],
+        )
         modeldata = exportstresselementwise(modeldata)
 
-        modeldata["postprocessing"] = FDataDict("file" => "hughes_cantilever_stresses_$(elementtag)",
-            "outputcsys" => CSys(3, 3, updatecs!), "quantity" => :Cauchy,
-            "component" => collect(1:6))
+        modeldata["postprocessing"] = FDataDict(
+            "file" => "hughes_cantilever_stresses_$(elementtag)",
+            "outputcsys" => CSys(3, 3, updatecs!),
+            "quantity" => :Cauchy,
+            "component" => collect(1:6),
+        )
         modeldata = exportstresselementwise(modeldata)
         stressfields = ElementalField[modeldata["postprocessing"]["exported"][1]["field"]]
 
@@ -579,9 +614,12 @@ function hughes_cantilever_stresses_MST10_incompressible()
         (P / (6 * E1 * I) * (-y) * (3 * (L^2 - (L - x)^2) + (2 + nu1) * (y^2 - c^2)))
     end
     function exactuy(x, y)
-        (P / (6 * E1 * I) *
-         (((L - x)^3 - L^3) - ((4 + 5 * nu1) * c^2 + 3 * L^2) * (L - x - L) +
-          3 * nu1 * (L - x) * y^2))
+        (
+            P / (6 * E1 * I) * (
+                ((L - x)^3 - L^3) - ((4 + 5 * nu1) * c^2 + 3 * L^2) * (L - x - L) +
+                3 * nu1 * (L - x) * y^2
+            )
+        )
     end
 
     modeldatasequence = FDataDict[]
@@ -603,19 +641,21 @@ function hughes_cantilever_stresses_MST10_incompressible()
         material = MatDeforElastIso(MR, 0.0, E, nu, CTE)
 
         # Material orientation matrix
-        csmat = [i == j ? one(FFlt) : zero(FFlt) for i in 1:3, j in 1:3]
+        csmat = [i == j ? one(FFlt) : zero(FFlt) for i = 1:3, j = 1:3]
 
-        function updatecs!(csmatout::FFltMat,
+        function updatecs!(
+            csmatout::FFltMat,
             XYZ::FFltMat,
             tangents::FFltMat,
-            fe_label::FInt)
+            fe_label::FInt,
+        )
             copyto!(csmatout, csmat)
         end
 
         gr = SimplexRule(3, 4)
 
-        region = FDataDict("femm" => FEMMDeforLinearMST10(MR,
-            IntegDomain(fes, gr), material))
+        region =
+            FDataDict("femm" => FEMMDeforLinearMST10(MR, IntegDomain(fes, gr), material))
 
         lx0 = selectnode(fens, box = [0.0 0.0 0.0 0.0 0.0 0.0], inflate = tolerance)
         # println("lx0 = $(lx0)")
@@ -625,26 +665,36 @@ function hughes_cantilever_stresses_MST10_incompressible()
         lx1 = selectnode(fens, box = [0.0 0.0 0.0 0.0 c c], inflate = tolerance)
         lx2 = selectnode(fens, box = [0.0 0.0 0.0 0.0 -c -c], inflate = tolerance)
         # println("vcat(lx1, lx2) = $(vcat(lx1, lx2))")
-        ex04 = FDataDict("displacement" => 0.0,
+        ex04 = FDataDict(
+            "displacement" => 0.0,
             "component" => 1,
-            "node_list" => vcat(lx1, lx2))
+            "node_list" => vcat(lx1, lx2),
+        )
         ly1 = selectnode(fens, box = [-Inf Inf 0.0 0.0 -Inf Inf], inflate = tolerance)
         ly2 = selectnode(fens, box = [-Inf Inf h h -Inf Inf], inflate = tolerance)
         # println("vcat(ly1, ly2) = $(vcat(ly1, ly2))")
-        ey01 = FDataDict("displacement" => 0.0,
+        ey01 = FDataDict(
+            "displacement" => 0.0,
             "component" => 2,
-            "node_list" => vcat(ly1, ly2))
+            "node_list" => vcat(ly1, ly2),
+        )
 
-        Trac0 = FDataDict("traction_vector" => getfrc0!,
-            "femm" => FEMMBase(IntegDomain(subset(bfes, sshear0), SimplexRule(2, 3))))
-        TracL = FDataDict("traction_vector" => getfrcL!,
-            "femm" => FEMMBase(IntegDomain(subset(bfes, sshearL), SimplexRule(2, 3))))
+        Trac0 = FDataDict(
+            "traction_vector" => getfrc0!,
+            "femm" => FEMMBase(IntegDomain(subset(bfes, sshear0), SimplexRule(2, 3))),
+        )
+        TracL = FDataDict(
+            "traction_vector" => getfrcL!,
+            "femm" => FEMMBase(IntegDomain(subset(bfes, sshearL), SimplexRule(2, 3))),
+        )
 
-        modeldata = FDataDict("fens" => fens,
+        modeldata = FDataDict(
+            "fens" => fens,
             "regions" => [region],
             "essential_bcs" => [ex01, ex02, ex03, ex04, ey01],
             "traction_bcs" => [Trac0, TracL],
-            "temperature_change" => FDataDict("temperature" => 0.0))
+            "temperature_change" => FDataDict("temperature" => 0.0),
+        )
         modeldata = linearstatics(modeldata)
 
         u = modeldata["u"]
@@ -654,14 +704,20 @@ function hughes_cantilever_stresses_MST10_incompressible()
         utip = mean(u.values[Tipl, 3])
         println("Deflection: $(utip), compared to $(exactuy(L,0.0))")
 
-        modeldata["postprocessing"] = FDataDict("file" => "hughes_cantilever_stresses_$(elementtag)",
-            "outputcsys" => CSys(3, 3, updatecs!), "quantity" => :Cauchy,
-            "component" => [5])
+        modeldata["postprocessing"] = FDataDict(
+            "file" => "hughes_cantilever_stresses_$(elementtag)",
+            "outputcsys" => CSys(3, 3, updatecs!),
+            "quantity" => :Cauchy,
+            "component" => [5],
+        )
         modeldata = exportstresselementwise(modeldata)
 
-        modeldata["postprocessing"] = FDataDict("file" => "hughes_cantilever_stresses_$(elementtag)",
-            "outputcsys" => CSys(3, 3, updatecs!), "quantity" => :Cauchy,
-            "component" => collect(1:6))
+        modeldata["postprocessing"] = FDataDict(
+            "file" => "hughes_cantilever_stresses_$(elementtag)",
+            "outputcsys" => CSys(3, 3, updatecs!),
+            "quantity" => :Cauchy,
+            "component" => collect(1:6),
+        )
         modeldata = exportstresselementwise(modeldata)
         stressfields = ElementalField[modeldata["postprocessing"]["exported"][1]["field"]]
 
@@ -689,9 +745,12 @@ function hughes_cantilever_stresses_nodal_MST10()
         (P / (6 * E1 * I) * (-y) * (3 * (L^2 - (L - x)^2) + (2 + nu1) * (y^2 - c^2)))
     end
     function exactuy(x, y)
-        (P / (6 * E1 * I) *
-         (((L - x)^3 - L^3) - ((4 + 5 * nu1) * c^2 + 3 * L^2) * (L - x - L) +
-          3 * nu1 * (L - x) * y^2))
+        (
+            P / (6 * E1 * I) * (
+                ((L - x)^3 - L^3) - ((4 + 5 * nu1) * c^2 + 3 * L^2) * (L - x - L) +
+                3 * nu1 * (L - x) * y^2
+            )
+        )
     end
 
     modeldatasequence = FDataDict[]
@@ -713,19 +772,21 @@ function hughes_cantilever_stresses_nodal_MST10()
         material = MatDeforElastIso(MR, 0.0, E, nu, CTE)
 
         # Material orientation matrix
-        csmat = [i == j ? one(FFlt) : zero(FFlt) for i in 1:3, j in 1:3]
+        csmat = [i == j ? one(FFlt) : zero(FFlt) for i = 1:3, j = 1:3]
 
-        function updatecs!(csmatout::FFltMat,
+        function updatecs!(
+            csmatout::FFltMat,
             XYZ::FFltMat,
             tangents::FFltMat,
-            fe_label::FInt)
+            fe_label::FInt,
+        )
             copyto!(csmatout, csmat)
         end
 
         gr = SimplexRule(3, 4) # rule for tetrahedral meshes
 
-        region = FDataDict("femm" => FEMMDeforLinearMST10(MR,
-            IntegDomain(fes, gr), material))
+        region =
+            FDataDict("femm" => FEMMDeforLinearMST10(MR, IntegDomain(fes, gr), material))
 
         lx0 = selectnode(fens, box = [0.0 0.0 0.0 0.0 0.0 0.0], inflate = tolerance)
         # println("lx0 = $(lx0)")
@@ -735,26 +796,36 @@ function hughes_cantilever_stresses_nodal_MST10()
         lx1 = selectnode(fens, box = [0.0 0.0 0.0 0.0 c c], inflate = tolerance)
         lx2 = selectnode(fens, box = [0.0 0.0 0.0 0.0 -c -c], inflate = tolerance)
         # println("vcat(lx1, lx2) = $(vcat(lx1, lx2))")
-        ex04 = FDataDict("displacement" => 0.0,
+        ex04 = FDataDict(
+            "displacement" => 0.0,
             "component" => 1,
-            "node_list" => vcat(lx1, lx2))
+            "node_list" => vcat(lx1, lx2),
+        )
         ly1 = selectnode(fens, box = [-Inf Inf 0.0 0.0 -Inf Inf], inflate = tolerance)
         ly2 = selectnode(fens, box = [-Inf Inf h h -Inf Inf], inflate = tolerance)
         # println("vcat(ly1, ly2) = $(vcat(ly1, ly2))")
-        ey01 = FDataDict("displacement" => 0.0,
+        ey01 = FDataDict(
+            "displacement" => 0.0,
             "component" => 2,
-            "node_list" => vcat(ly1, ly2))
+            "node_list" => vcat(ly1, ly2),
+        )
 
-        Trac0 = FDataDict("traction_vector" => getfrc0!,
-            "femm" => FEMMBase(IntegDomain(subset(bfes, sshear0), SimplexRule(2, 3))))
-        TracL = FDataDict("traction_vector" => getfrcL!,
-            "femm" => FEMMBase(IntegDomain(subset(bfes, sshearL), SimplexRule(2, 3))))
+        Trac0 = FDataDict(
+            "traction_vector" => getfrc0!,
+            "femm" => FEMMBase(IntegDomain(subset(bfes, sshear0), SimplexRule(2, 3))),
+        )
+        TracL = FDataDict(
+            "traction_vector" => getfrcL!,
+            "femm" => FEMMBase(IntegDomain(subset(bfes, sshearL), SimplexRule(2, 3))),
+        )
 
-        modeldata = FDataDict("fens" => fens,
+        modeldata = FDataDict(
+            "fens" => fens,
             "regions" => [region],
             "essential_bcs" => [ex01, ex02, ex03, ex04, ey01],
             "traction_bcs" => [Trac0, TracL],
-            "temperature_change" => FDataDict("temperature" => 0.0))
+            "temperature_change" => FDataDict("temperature" => 0.0),
+        )
         modeldata = linearstatics(modeldata)
 
         u = modeldata["u"]
@@ -764,10 +835,14 @@ function hughes_cantilever_stresses_nodal_MST10()
         utip = mean(u.values[Tipl, 3])
         println("Deflection: $(utip), compared to $(exactuy(L,0.0))")
 
-        modeldata["postprocessing"] = FDataDict("file" => "hughes_cantilever_stresses_nodal_$(elementtag)",
-            "outputcsys" => CSys(3, 3, updatecs!), "quantity" => :Cauchy,
-            "component" => collect(1:6), "nodevalmethod" => :averaging,
-            "reportat" => :extraptrend)
+        modeldata["postprocessing"] = FDataDict(
+            "file" => "hughes_cantilever_stresses_nodal_$(elementtag)",
+            "outputcsys" => CSys(3, 3, updatecs!),
+            "quantity" => :Cauchy,
+            "component" => collect(1:6),
+            "nodevalmethod" => :averaging,
+            "reportat" => :extraptrend,
+        )
         modeldata = exportstress(modeldata)
         stressfields = NodalField[modeldata["postprocessing"]["exported"][1]["field"]]
 
@@ -795,9 +870,12 @@ function hughes_cantilever_stresses_nodal_T10()
         (P / (6 * E1 * I) * (-y) * (3 * (L^2 - (L - x)^2) + (2 + nu1) * (y^2 - c^2)))
     end
     function exactuy(x, y)
-        (P / (6 * E1 * I) *
-         (((L - x)^3 - L^3) - ((4 + 5 * nu1) * c^2 + 3 * L^2) * (L - x - L) +
-          3 * nu1 * (L - x) * y^2))
+        (
+            P / (6 * E1 * I) * (
+                ((L - x)^3 - L^3) - ((4 + 5 * nu1) * c^2 + 3 * L^2) * (L - x - L) +
+                3 * nu1 * (L - x) * y^2
+            )
+        )
     end
 
     modeldatasequence = FDataDict[]
@@ -816,23 +894,23 @@ function hughes_cantilever_stresses_nodal_T10()
         sshear0 = selectelem(fens, bfes; facing = true, direction = [-1.0 0.0 0.0])
 
         MR = DeforModelRed3D
-        material = MatDeforElastIso(MR,
-            0.0, E, nu, CTE)
+        material = MatDeforElastIso(MR, 0.0, E, nu, CTE)
 
         # Material orientation matrix
-        csmat = [i == j ? 1.0 : 0.0 for i in 1:3, j in 1:3]
+        csmat = [i == j ? 1.0 : 0.0 for i = 1:3, j = 1:3]
 
-        function updatecs!(csmatout::FFltMat,
+        function updatecs!(
+            csmatout::FFltMat,
             XYZ::FFltMat,
             tangents::FFltMat,
-            fe_label::FInt)
+            fe_label::FInt,
+        )
             copyto!(csmatout, csmat)
         end
 
         gr = SimplexRule(3, 4)
 
-        region = FDataDict("femm" => FEMMDeforLinear(MR,
-            IntegDomain(fes, gr), material))
+        region = FDataDict("femm" => FEMMDeforLinear(MR, IntegDomain(fes, gr), material))
 
         lx0 = selectnode(fens, box = [0.0 0.0 0.0 0.0 0.0 0.0], inflate = tolerance)
         # println("lx0 = $(lx0)")
@@ -842,26 +920,36 @@ function hughes_cantilever_stresses_nodal_T10()
         lx1 = selectnode(fens, box = [0.0 0.0 0.0 0.0 c c], inflate = tolerance)
         lx2 = selectnode(fens, box = [0.0 0.0 0.0 0.0 -c -c], inflate = tolerance)
         # println("vcat(lx1, lx2) = $(vcat(lx1, lx2))")
-        ex04 = FDataDict("displacement" => 0.0,
+        ex04 = FDataDict(
+            "displacement" => 0.0,
             "component" => 1,
-            "node_list" => vcat(lx1, lx2))
+            "node_list" => vcat(lx1, lx2),
+        )
         ly1 = selectnode(fens, box = [-Inf Inf 0.0 0.0 -Inf Inf], inflate = tolerance)
         ly2 = selectnode(fens, box = [-Inf Inf h h -Inf Inf], inflate = tolerance)
         # println("vcat(ly1, ly2) = $(vcat(ly1, ly2))")
-        ey01 = FDataDict("displacement" => 0.0,
+        ey01 = FDataDict(
+            "displacement" => 0.0,
             "component" => 2,
-            "node_list" => vcat(ly1, ly2))
+            "node_list" => vcat(ly1, ly2),
+        )
 
-        Trac0 = FDataDict("traction_vector" => getfrc0!,
-            "femm" => FEMMBase(IntegDomain(subset(bfes, sshear0), SimplexRule(2, 3))))
-        TracL = FDataDict("traction_vector" => getfrcL!,
-            "femm" => FEMMBase(IntegDomain(subset(bfes, sshearL), SimplexRule(2, 3))))
+        Trac0 = FDataDict(
+            "traction_vector" => getfrc0!,
+            "femm" => FEMMBase(IntegDomain(subset(bfes, sshear0), SimplexRule(2, 3))),
+        )
+        TracL = FDataDict(
+            "traction_vector" => getfrcL!,
+            "femm" => FEMMBase(IntegDomain(subset(bfes, sshearL), SimplexRule(2, 3))),
+        )
 
-        modeldata = FDataDict("fens" => fens,
+        modeldata = FDataDict(
+            "fens" => fens,
             "regions" => [region],
             "essential_bcs" => [ex01, ex02, ex03, ex04, ey01],
             "traction_bcs" => [Trac0, TracL],
-            "temperature_change" => FDataDict("temperature" => 0.0))
+            "temperature_change" => FDataDict("temperature" => 0.0),
+        )
         modeldata = linearstatics(modeldata)
 
         u = modeldata["u"]
@@ -871,9 +959,12 @@ function hughes_cantilever_stresses_nodal_T10()
         utip = mean(u.values[Tipl, 3])
         println("Deflection: $(utip), compared to $(exactuy(L,0.0))")
 
-        modeldata["postprocessing"] = FDataDict("file" => "hughes_cantilever_stresses_nodal_$(elementtag)",
-            "outputcsys" => CSys(3, 3, updatecs!), "quantity" => :Cauchy,
-            "component" => collect(1:6))
+        modeldata["postprocessing"] = FDataDict(
+            "file" => "hughes_cantilever_stresses_nodal_$(elementtag)",
+            "outputcsys" => CSys(3, 3, updatecs!),
+            "quantity" => :Cauchy,
+            "component" => collect(1:6),
+        )
         modeldata = exportstress(modeldata)
         stressfields = NodalField[modeldata["postprocessing"]["exported"][1]["field"]]
 
@@ -901,9 +992,12 @@ function hughes_cantilever_stresses_T10()
         (P / (6 * E1 * I) * (-y) * (3 * (L^2 - (L - x)^2) + (2 + nu1) * (y^2 - c^2)))
     end
     function exactuy(x, y)
-        (P / (6 * E1 * I) *
-         (((L - x)^3 - L^3) - ((4 + 5 * nu1) * c^2 + 3 * L^2) * (L - x - L) +
-          3 * nu1 * (L - x) * y^2))
+        (
+            P / (6 * E1 * I) * (
+                ((L - x)^3 - L^3) - ((4 + 5 * nu1) * c^2 + 3 * L^2) * (L - x - L) +
+                3 * nu1 * (L - x) * y^2
+            )
+        )
     end
 
     modeldatasequence = FDataDict[]
@@ -922,16 +1016,17 @@ function hughes_cantilever_stresses_T10()
         sshear0 = selectelem(fens, bfes; facing = true, direction = [-1.0 0.0 0.0])
 
         MR = DeforModelRed3D
-        material = MatDeforElastIso(MR,
-            0.0, E, nu, CTE)
+        material = MatDeforElastIso(MR, 0.0, E, nu, CTE)
 
         # Material orientation matrix
-        csmat = [i == j ? one(FFlt) : zero(FFlt) for i in 1:3, j in 1:3]
+        csmat = [i == j ? one(FFlt) : zero(FFlt) for i = 1:3, j = 1:3]
 
-        function updatecs!(csmatout::FFltMat,
+        function updatecs!(
+            csmatout::FFltMat,
             XYZ::FFltMat,
             tangents::FFltMat,
-            fe_label::FInt)
+            fe_label::FInt,
+        )
             copyto!(csmatout, csmat)
         end
 
@@ -947,26 +1042,36 @@ function hughes_cantilever_stresses_T10()
         lx1 = selectnode(fens, box = [0.0 0.0 0.0 0.0 c c], inflate = tolerance)
         lx2 = selectnode(fens, box = [0.0 0.0 0.0 0.0 -c -c], inflate = tolerance)
         # println("vcat(lx1, lx2) = $(vcat(lx1, lx2))")
-        ex04 = FDataDict("displacement" => 0.0,
+        ex04 = FDataDict(
+            "displacement" => 0.0,
             "component" => 1,
-            "node_list" => vcat(lx1, lx2))
+            "node_list" => vcat(lx1, lx2),
+        )
         ly1 = selectnode(fens, box = [-Inf Inf 0.0 0.0 -Inf Inf], inflate = tolerance)
         ly2 = selectnode(fens, box = [-Inf Inf h h -Inf Inf], inflate = tolerance)
         # println("vcat(ly1, ly2) = $(vcat(ly1, ly2))")
-        ey01 = FDataDict("displacement" => 0.0,
+        ey01 = FDataDict(
+            "displacement" => 0.0,
             "component" => 2,
-            "node_list" => vcat(ly1, ly2))
+            "node_list" => vcat(ly1, ly2),
+        )
 
-        Trac0 = FDataDict("traction_vector" => getfrc0!,
-            "femm" => FEMMBase(IntegDomain(subset(bfes, sshear0), SimplexRule(2, 3))))
-        TracL = FDataDict("traction_vector" => getfrcL!,
-            "femm" => FEMMBase(IntegDomain(subset(bfes, sshearL), SimplexRule(2, 3))))
+        Trac0 = FDataDict(
+            "traction_vector" => getfrc0!,
+            "femm" => FEMMBase(IntegDomain(subset(bfes, sshear0), SimplexRule(2, 3))),
+        )
+        TracL = FDataDict(
+            "traction_vector" => getfrcL!,
+            "femm" => FEMMBase(IntegDomain(subset(bfes, sshearL), SimplexRule(2, 3))),
+        )
 
-        modeldata = FDataDict("fens" => fens,
+        modeldata = FDataDict(
+            "fens" => fens,
             "regions" => [region],
             "essential_bcs" => [ex01, ex02, ex03, ex04, ey01],
             "traction_bcs" => [Trac0, TracL],
-            "temperature_change" => FDataDict("temperature" => 0.0))
+            "temperature_change" => FDataDict("temperature" => 0.0),
+        )
         modeldata = linearstatics(modeldata)
 
         u = modeldata["u"]
@@ -976,14 +1081,20 @@ function hughes_cantilever_stresses_T10()
         utip = mean(u.values[Tipl, 3])
         println("Deflection: $(utip), compared to $(exactuy(L,0.0))")
 
-        modeldata["postprocessing"] = FDataDict("file" => "hughes_cantilever_stresses_$(elementtag)",
-            "outputcsys" => CSys(3, 3, updatecs!), "quantity" => :Cauchy,
-            "component" => [5])
+        modeldata["postprocessing"] = FDataDict(
+            "file" => "hughes_cantilever_stresses_$(elementtag)",
+            "outputcsys" => CSys(3, 3, updatecs!),
+            "quantity" => :Cauchy,
+            "component" => [5],
+        )
         modeldata = exportstresselementwise(modeldata)
 
-        modeldata["postprocessing"] = FDataDict("file" => "hughes_cantilever_stresses_$(elementtag)",
-            "outputcsys" => CSys(3, 3, updatecs!), "quantity" => :Cauchy,
-            "component" => collect(1:6))
+        modeldata["postprocessing"] = FDataDict(
+            "file" => "hughes_cantilever_stresses_$(elementtag)",
+            "outputcsys" => CSys(3, 3, updatecs!),
+            "quantity" => :Cauchy,
+            "component" => collect(1:6),
+        )
         modeldata = exportstresselementwise(modeldata)
         stressfields = ElementalField[modeldata["postprocessing"]["exported"][1]["field"]]
 
@@ -1011,9 +1122,12 @@ function hughes_cantilever_stresses_T10_incompressible()
         (P / (6 * E1 * I) * (-y) * (3 * (L^2 - (L - x)^2) + (2 + nu1) * (y^2 - c^2)))
     end
     function exactuy(x, y)
-        (P / (6 * E1 * I) *
-         (((L - x)^3 - L^3) - ((4 + 5 * nu1) * c^2 + 3 * L^2) * (L - x - L) +
-          3 * nu1 * (L - x) * y^2))
+        (
+            P / (6 * E1 * I) * (
+                ((L - x)^3 - L^3) - ((4 + 5 * nu1) * c^2 + 3 * L^2) * (L - x - L) +
+                3 * nu1 * (L - x) * y^2
+            )
+        )
     end
 
     modeldatasequence = FDataDict[]
@@ -1035,19 +1149,20 @@ function hughes_cantilever_stresses_T10_incompressible()
         material = MatDeforElastIso(MR, 0.0, E, nu, CTE)
 
         # Material orientation matrix
-        csmat = [i == j ? one(FFlt) : zero(FFlt) for i in 1:3, j in 1:3]
+        csmat = [i == j ? one(FFlt) : zero(FFlt) for i = 1:3, j = 1:3]
 
-        function updatecs!(csmatout::FFltMat,
+        function updatecs!(
+            csmatout::FFltMat,
             XYZ::FFltMat,
             tangents::FFltMat,
-            fe_label::FInt)
+            fe_label::FInt,
+        )
             copyto!(csmatout, csmat)
         end
 
         gr = SimplexRule(3, 4)
 
-        region = FDataDict("femm" => FEMMDeforLinear(MR,
-            IntegDomain(fes, gr), material))
+        region = FDataDict("femm" => FEMMDeforLinear(MR, IntegDomain(fes, gr), material))
 
         lx0 = selectnode(fens, box = [0.0 0.0 0.0 0.0 0.0 0.0], inflate = tolerance)
         # println("lx0 = $(lx0)")
@@ -1057,26 +1172,36 @@ function hughes_cantilever_stresses_T10_incompressible()
         lx1 = selectnode(fens, box = [0.0 0.0 0.0 0.0 c c], inflate = tolerance)
         lx2 = selectnode(fens, box = [0.0 0.0 0.0 0.0 -c -c], inflate = tolerance)
         # println("vcat(lx1, lx2) = $(vcat(lx1, lx2))")
-        ex04 = FDataDict("displacement" => 0.0,
+        ex04 = FDataDict(
+            "displacement" => 0.0,
             "component" => 1,
-            "node_list" => vcat(lx1, lx2))
+            "node_list" => vcat(lx1, lx2),
+        )
         ly1 = selectnode(fens, box = [-Inf Inf 0.0 0.0 -Inf Inf], inflate = tolerance)
         ly2 = selectnode(fens, box = [-Inf Inf h h -Inf Inf], inflate = tolerance)
         # println("vcat(ly1, ly2) = $(vcat(ly1, ly2))")
-        ey01 = FDataDict("displacement" => 0.0,
+        ey01 = FDataDict(
+            "displacement" => 0.0,
             "component" => 2,
-            "node_list" => vcat(ly1, ly2))
+            "node_list" => vcat(ly1, ly2),
+        )
 
-        Trac0 = FDataDict("traction_vector" => getfrc0!,
-            "femm" => FEMMBase(IntegDomain(subset(bfes, sshear0), SimplexRule(2, 3))))
-        TracL = FDataDict("traction_vector" => getfrcL!,
-            "femm" => FEMMBase(IntegDomain(subset(bfes, sshearL), SimplexRule(2, 3))))
+        Trac0 = FDataDict(
+            "traction_vector" => getfrc0!,
+            "femm" => FEMMBase(IntegDomain(subset(bfes, sshear0), SimplexRule(2, 3))),
+        )
+        TracL = FDataDict(
+            "traction_vector" => getfrcL!,
+            "femm" => FEMMBase(IntegDomain(subset(bfes, sshearL), SimplexRule(2, 3))),
+        )
 
-        modeldata = FDataDict("fens" => fens,
+        modeldata = FDataDict(
+            "fens" => fens,
             "regions" => [region],
             "essential_bcs" => [ex01, ex02, ex03, ex04, ey01],
             "traction_bcs" => [Trac0, TracL],
-            "temperature_change" => FDataDict("temperature" => 0.0))
+            "temperature_change" => FDataDict("temperature" => 0.0),
+        )
         modeldata = linearstatics(modeldata)
 
         u = modeldata["u"]
@@ -1086,14 +1211,20 @@ function hughes_cantilever_stresses_T10_incompressible()
         utip = mean(u.values[Tipl, 3])
         println("Deflection: $(utip), compared to $(exactuy(L,0.0))")
 
-        modeldata["postprocessing"] = FDataDict("file" => "hughes_cantilever_stresses_$(elementtag)",
-            "outputcsys" => CSys(3, 3, updatecs!), "quantity" => :Cauchy,
-            "component" => [5])
+        modeldata["postprocessing"] = FDataDict(
+            "file" => "hughes_cantilever_stresses_$(elementtag)",
+            "outputcsys" => CSys(3, 3, updatecs!),
+            "quantity" => :Cauchy,
+            "component" => [5],
+        )
         modeldata = exportstresselementwise(modeldata)
 
-        modeldata["postprocessing"] = FDataDict("file" => "hughes_cantilever_stresses_$(elementtag)",
-            "outputcsys" => CSys(3, 3, updatecs!), "quantity" => :Cauchy,
-            "component" => collect(1:6))
+        modeldata["postprocessing"] = FDataDict(
+            "file" => "hughes_cantilever_stresses_$(elementtag)",
+            "outputcsys" => CSys(3, 3, updatecs!),
+            "quantity" => :Cauchy,
+            "component" => collect(1:6),
+        )
         modeldata = exportstresselementwise(modeldata)
         stressfields = ElementalField[modeldata["postprocessing"]["exported"][1]["field"]]
 

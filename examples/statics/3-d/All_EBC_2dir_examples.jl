@@ -40,7 +40,8 @@ function updatecs!(csmatout::FFltMat, XYZ::FFltMat, tangents::FFltMat, fe_label:
 end
 
 function displacement_fun_x(x)
-    dot([0.0, 0.001, 0.0, 0.001, 0.0, -0.001, 0.0, 0.002, 0.0, 0.001],
+    dot(
+        [0.0, 0.001, 0.0, 0.001, 0.0, -0.001, 0.0, 0.002, 0.0, 0.001],
         [
             1.0,
             x[1],
@@ -52,10 +53,12 @@ function displacement_fun_x(x)
             x[1]^2,
             x[2]^2,
             x[3]^2,
-        ])
+        ],
+    )
 end
 function displacement_fun_y(x)
-    dot([0.0, 0.0, 0.0003, 0.0, 0.003, -0.002, 0.007, 0.0, 0.008, -0.007],
+    dot(
+        [0.0, 0.0, 0.0003, 0.0, 0.003, -0.002, 0.007, 0.0, 0.008, -0.007],
         [
             1.0,
             x[1],
@@ -67,10 +70,12 @@ function displacement_fun_y(x)
             x[1]^2,
             x[2]^2,
             x[3]^2,
-        ])
+        ],
+    )
 end
 function displacement_fun_z(x)
-    dot([0.0, 0.0, 0.0, 0.00007, 0.008, 0.003, -0.015, 0.002, -0.003, 0.0001],
+    dot(
+        [0.0, 0.0, 0.0, 0.00007, 0.008, 0.003, -0.015, 0.002, -0.003, 0.0001],
         [
             1.0,
             x[1],
@@ -82,7 +87,8 @@ function displacement_fun_z(x)
             x[1]^2,
             x[2]^2,
             x[3]^2,
-        ])
+        ],
+    )
 end
 
 function All_EBC_2dir_MST10_conv()
@@ -94,7 +100,8 @@ function All_EBC_2dir_MST10_conv()
     modeldatasequence = FDataDict[]
     for Refinement in Refinements
         MR = DeforModelRed3D
-        material = MatDeforElastOrtho(MR,
+        material = MatDeforElastOrtho(
+            MR,
             0.0,
             E1,
             E2,
@@ -107,7 +114,8 @@ function All_EBC_2dir_MST10_conv()
             G23,
             CTE1,
             CTE2,
-            CTE3)
+            CTE3,
+        )
 
         # Select how fine the mesh should be
         nts = Refinement * ones(Int, nLayers)# number of elements per layer
@@ -125,31 +133,45 @@ function All_EBC_2dir_MST10_conv()
 
         # We will create one region per layer
         regions = FDataDict[]
-        for layer in 1:nLayers
+        for layer = 1:nLayers
             rls = selectelem(fens, fes, label = layer)
-            push!(regions,
-                FDataDict("femm" => FEMMDeforLinearMST10(MR,
-                    IntegDomain(subset(fes, rls), gr),
-                    CSys(3, 3, updatecs!),
-                    material)))
+            push!(
+                regions,
+                FDataDict(
+                    "femm" => FEMMDeforLinearMST10(
+                        MR,
+                        IntegDomain(subset(fes, rls), gr),
+                        CSys(3, 3, updatecs!),
+                        material,
+                    ),
+                ),
+            )
         end
 
         # The essential boundary conditions: the entire surface
         bfes = meshboundary(fes)
         lx0 = connectednodes(bfes)
-        eclamped1 = FDataDict("displacement" => displacement_fun_x,
+        eclamped1 = FDataDict(
+            "displacement" => displacement_fun_x,
             "component" => 1,
-            "node_list" => lx0)
-        eclamped2 = FDataDict("displacement" => displacement_fun_y,
+            "node_list" => lx0,
+        )
+        eclamped2 = FDataDict(
+            "displacement" => displacement_fun_y,
             "component" => 2,
-            "node_list" => lx0)
-        eclamped3 = FDataDict("displacement" => displacement_fun_z,
+            "node_list" => lx0,
+        )
+        eclamped3 = FDataDict(
+            "displacement" => displacement_fun_z,
             "component" => 3,
-            "node_list" => lx0)
+            "node_list" => lx0,
+        )
 
-        modeldata = FDataDict("fens" => fens,
+        modeldata = FDataDict(
+            "fens" => fens,
             "regions" => regions,
-            "essential_bcs" => [eclamped1, eclamped2, eclamped3])
+            "essential_bcs" => [eclamped1, eclamped2, eclamped3],
+        )
         modeldata = AlgoDeforLinearModule.linearstatics(modeldata)
 
         modeldata["elementsize"] = t / Refinement
@@ -157,18 +179,20 @@ function All_EBC_2dir_MST10_conv()
         push!(modeldatasequence, modeldata)
     end # for refinement
 
-    for (extrap, nodevalmeth) in zip([:extrapmean, :extraptrend, :default],
-        [:averaging, :averaging, :invdistance])
+    for (extrap, nodevalmeth) in
+        zip([:extrapmean, :extraptrend, :default], [:averaging, :averaging, :invdistance])
         filebase = "All_EBC_2dir_$(elementtag)_$(extrap)"
         for modeldata in modeldatasequence
             u = modeldata["u"]
             geom = modeldata["geom"]
-            modeldata["postprocessing"] = FDataDict("file" => filebase * "-s",
+            modeldata["postprocessing"] = FDataDict(
+                "file" => filebase * "-s",
                 "quantity" => :Cauchy,
                 "component" => collect(1:6),
                 "outputcsys" => CSys(3),
                 "nodevalmethod" => nodevalmeth,
-                "reportat" => extrap)
+                "reportat" => extrap,
+            )
             modeldata = AlgoDeforLinearModule.exportstress(modeldata)
         end
 
@@ -182,16 +206,18 @@ function All_EBC_2dir_MST10_conv()
         println("Normalized Approximate Error = $(errornorms)")
 
         f = log.(vec(errornorms))
-        A = hcat(log.(vec(elementsizes[1:(end - 1)])), ones(size(f)))
+        A = hcat(log.(vec(elementsizes[1:(end-1)])), ones(size(f)))
         p = A \ f
         println("Linear log-log fit: p = $(p)")
 
         csvFile = filebase * "_Stress" * ".CSV"
-        savecsv(csvFile,
-            elementsizes = vec(elementsizes[1:(end - 1)]),
-            elementsizes2 = vec(elementsizes[1:(end - 1)] .^ 2),
-            elementsizes3 = vec(elementsizes[1:(end - 1)] .^ 3),
-            errornorms = vec(errornorms))
+        savecsv(
+            csvFile,
+            elementsizes = vec(elementsizes[1:(end-1)]),
+            elementsizes2 = vec(elementsizes[1:(end-1)] .^ 2),
+            elementsizes3 = vec(elementsizes[1:(end-1)] .^ 3),
+            errornorms = vec(errornorms),
+        )
         println("Wrote $csvFile")
 
         println("")
@@ -204,16 +230,18 @@ function All_EBC_2dir_MST10_conv()
         println("Normalized Approximate Error = $(errornorms)")
 
         f = log.(vec(errornorms))
-        A = hcat(log.(vec(elementsizes[1:(end - 1)])), ones(size(f)))
+        A = hcat(log.(vec(elementsizes[1:(end-1)])), ones(size(f)))
         p = A \ f
         println("Linear log-log fit: p = $(p)")
 
         csvFile = filebase * "_Displ" * ".CSV"
-        savecsv(csvFile,
-            elementsizes = vec(elementsizes[1:(end - 1)]),
-            elementsizes2 = vec(elementsizes[1:(end - 1)] .^ 2),
-            elementsizes3 = vec(elementsizes[1:(end - 1)] .^ 3),
-            errornorms = vec(errornorms))
+        savecsv(
+            csvFile,
+            elementsizes = vec(elementsizes[1:(end-1)]),
+            elementsizes2 = vec(elementsizes[1:(end-1)] .^ 2),
+            elementsizes3 = vec(elementsizes[1:(end-1)] .^ 3),
+            errornorms = vec(errornorms),
+        )
         println("Wrote $csvFile")
     end
     println("Done")
@@ -230,7 +258,8 @@ function All_EBC_2dir_MSH8_conv()
 
         # This is the material  model
         MR = DeforModelRed3D
-        material = MatDeforElastOrtho(MR,
+        material = MatDeforElastOrtho(
+            MR,
             0.0,
             E1,
             E2,
@@ -243,7 +272,8 @@ function All_EBC_2dir_MSH8_conv()
             G23,
             CTE1,
             CTE2,
-            CTE3)
+            CTE3,
+        )
 
         # Select how fine the mesh should be
         nts = Refinement * ones(Int, nLayers)# number of elements per layer
@@ -261,31 +291,45 @@ function All_EBC_2dir_MSH8_conv()
 
         # We will create one region per layer
         regions = FDataDict[]
-        for layer in 1:nLayers
+        for layer = 1:nLayers
             rls = selectelem(fens, fes, label = layer)
-            push!(regions,
-                FDataDict("femm" => FEMMDeforLinearMSH8(MR,
-                    IntegDomain(subset(fes, rls), gr),
-                    CSys(3, 3, updatecs!),
-                    material)))
+            push!(
+                regions,
+                FDataDict(
+                    "femm" => FEMMDeforLinearMSH8(
+                        MR,
+                        IntegDomain(subset(fes, rls), gr),
+                        CSys(3, 3, updatecs!),
+                        material,
+                    ),
+                ),
+            )
         end
 
         # The essential boundary conditions: the entire surface
         bfes = meshboundary(fes)
         lx0 = connectednodes(bfes)
-        eclamped1 = FDataDict("displacement" => displacement_fun_x,
+        eclamped1 = FDataDict(
+            "displacement" => displacement_fun_x,
             "component" => 1,
-            "node_list" => lx0)
-        eclamped2 = FDataDict("displacement" => displacement_fun_y,
+            "node_list" => lx0,
+        )
+        eclamped2 = FDataDict(
+            "displacement" => displacement_fun_y,
             "component" => 2,
-            "node_list" => lx0)
-        eclamped3 = FDataDict("displacement" => displacement_fun_z,
+            "node_list" => lx0,
+        )
+        eclamped3 = FDataDict(
+            "displacement" => displacement_fun_z,
             "component" => 3,
-            "node_list" => lx0)
+            "node_list" => lx0,
+        )
 
-        modeldata = FDataDict("fens" => fens,
+        modeldata = FDataDict(
+            "fens" => fens,
             "regions" => regions,
-            "essential_bcs" => [eclamped1, eclamped2, eclamped3])
+            "essential_bcs" => [eclamped1, eclamped2, eclamped3],
+        )
         modeldata = AlgoDeforLinearModule.linearstatics(modeldata)
 
         modeldata["elementsize"] = t / Refinement
@@ -293,18 +337,20 @@ function All_EBC_2dir_MSH8_conv()
         push!(modeldatasequence, modeldata)
     end # for refinement
 
-    for (extrap, nodevalmeth) in zip([:extrapmean, :extraptrend, :default],
-        [:averaging, :averaging, :invdistance])
+    for (extrap, nodevalmeth) in
+        zip([:extrapmean, :extraptrend, :default], [:averaging, :averaging, :invdistance])
         filebase = "All_EBC_2dir_$(elementtag)_$(extrap)"
         for modeldata in modeldatasequence
             u = modeldata["u"]
             geom = modeldata["geom"]
-            modeldata["postprocessing"] = FDataDict("file" => filebase * "-s",
+            modeldata["postprocessing"] = FDataDict(
+                "file" => filebase * "-s",
                 "quantity" => :Cauchy,
                 "component" => collect(1:6),
                 "outputcsys" => CSys(3),
                 "nodevalmethod" => nodevalmeth,
-                "reportat" => extrap)
+                "reportat" => extrap,
+            )
             modeldata = AlgoDeforLinearModule.exportstress(modeldata)
         end
 
@@ -318,16 +364,18 @@ function All_EBC_2dir_MSH8_conv()
         println("Normalized Approximate Error = $(errornorms)")
 
         f = log.(vec(errornorms))
-        A = hcat(log.(vec(elementsizes[1:(end - 1)])), ones(size(f)))
+        A = hcat(log.(vec(elementsizes[1:(end-1)])), ones(size(f)))
         p = A \ f
         println("Linear log-log fit: p = $(p)")
 
         csvFile = filebase * "_Stress" * ".CSV"
-        savecsv(csvFile,
-            elementsizes = vec(elementsizes[1:(end - 1)]),
-            elementsizes2 = vec(elementsizes[1:(end - 1)] .^ 2),
-            elementsizes3 = vec(elementsizes[1:(end - 1)] .^ 3),
-            errornorms = vec(errornorms))
+        savecsv(
+            csvFile,
+            elementsizes = vec(elementsizes[1:(end-1)]),
+            elementsizes2 = vec(elementsizes[1:(end-1)] .^ 2),
+            elementsizes3 = vec(elementsizes[1:(end-1)] .^ 3),
+            errornorms = vec(errornorms),
+        )
         println("Wrote $csvFile")
 
         println("")
@@ -340,16 +388,18 @@ function All_EBC_2dir_MSH8_conv()
         println("Normalized Approximate Error = $(errornorms)")
 
         f = log.(vec(errornorms))
-        A = hcat(log.(vec(elementsizes[1:(end - 1)])), ones(size(f)))
+        A = hcat(log.(vec(elementsizes[1:(end-1)])), ones(size(f)))
         p = A \ f
         println("Linear log-log fit: p = $(p)")
 
         csvFile = filebase * "_Displ" * ".CSV"
-        savecsv(csvFile,
-            elementsizes = vec(elementsizes[1:(end - 1)]),
-            elementsizes2 = vec(elementsizes[1:(end - 1)] .^ 2),
-            elementsizes3 = vec(elementsizes[1:(end - 1)] .^ 3),
-            errornorms = vec(errornorms))
+        savecsv(
+            csvFile,
+            elementsizes = vec(elementsizes[1:(end-1)]),
+            elementsizes2 = vec(elementsizes[1:(end-1)] .^ 2),
+            elementsizes3 = vec(elementsizes[1:(end-1)] .^ 3),
+            errornorms = vec(errornorms),
+        )
         println("Wrote $csvFile")
 
         # @async run(`"paraview.exe" $csvFile`)
@@ -368,7 +418,8 @@ function All_EBC_2dir_MSH8_conv_alt()
 
         # This is the material  model
         MR = DeforModelRed3D
-        material = MatDeforElastOrtho(MR,
+        material = MatDeforElastOrtho(
+            MR,
             0.0,
             E1,
             E2,
@@ -381,7 +432,8 @@ function All_EBC_2dir_MSH8_conv_alt()
             G23,
             CTE1,
             CTE2,
-            CTE3)
+            CTE3,
+        )
 
         # Select how fine the mesh should be
         nts = Refinement * ones(Int, nLayers)# number of elements per layer
@@ -399,31 +451,45 @@ function All_EBC_2dir_MSH8_conv_alt()
 
         # We will create one region per layer
         regions = FDataDict[]
-        for layer in 1:nLayers
+        for layer = 1:nLayers
             rls = selectelem(fens, fes, label = layer)
-            push!(regions,
-                FDataDict("femm" => FEMMDeforLinearMSH8(MR,
-                    IntegDomain(subset(fes, rls), gr),
-                    CSys(3, 3, updatecs!),
-                    material)))
+            push!(
+                regions,
+                FDataDict(
+                    "femm" => FEMMDeforLinearMSH8(
+                        MR,
+                        IntegDomain(subset(fes, rls), gr),
+                        CSys(3, 3, updatecs!),
+                        material,
+                    ),
+                ),
+            )
         end
 
         # The essential boundary conditions: the entire surface
         bfes = meshboundary(fes)
         lx0 = connectednodes(bfes)
-        eclamped1 = FDataDict("displacement" => displacement_fun_x,
+        eclamped1 = FDataDict(
+            "displacement" => displacement_fun_x,
             "component" => 1,
-            "node_list" => lx0)
-        eclamped2 = FDataDict("displacement" => displacement_fun_y,
+            "node_list" => lx0,
+        )
+        eclamped2 = FDataDict(
+            "displacement" => displacement_fun_y,
             "component" => 2,
-            "node_list" => lx0)
-        eclamped3 = FDataDict("displacement" => displacement_fun_z,
+            "node_list" => lx0,
+        )
+        eclamped3 = FDataDict(
+            "displacement" => displacement_fun_z,
             "component" => 3,
-            "node_list" => lx0)
+            "node_list" => lx0,
+        )
 
-        modeldata = FDataDict("fens" => fens,
+        modeldata = FDataDict(
+            "fens" => fens,
             "regions" => regions,
-            "essential_bcs" => [eclamped1, eclamped2, eclamped3])
+            "essential_bcs" => [eclamped1, eclamped2, eclamped3],
+        )
         modeldata = AlgoDeforLinearModule.linearstatics(modeldata)
 
         modeldata["elementsize"] = t / Refinement
@@ -431,18 +497,20 @@ function All_EBC_2dir_MSH8_conv_alt()
         push!(modeldatasequence, modeldata)
     end # for refinement
 
-    for (extrap, nodevalmeth) in zip([:extrapmean, :extraptrend, :default],
-        [:averaging, :averaging, :invdistance])
+    for (extrap, nodevalmeth) in
+        zip([:extrapmean, :extraptrend, :default], [:averaging, :averaging, :invdistance])
         filebase = "All_EBC_2dir_$(elementtag)_$(extrap)_trapezoidal"
         for modeldata in modeldatasequence
             u = modeldata["u"]
             geom = modeldata["geom"]
-            modeldata["postprocessing"] = FDataDict("file" => filebase * "-s",
+            modeldata["postprocessing"] = FDataDict(
+                "file" => filebase * "-s",
                 "quantity" => :Cauchy,
                 "component" => collect(1:6),
                 "outputcsys" => CSys(3),
                 "nodevalmethod" => nodevalmeth,
-                "reportat" => extrap)
+                "reportat" => extrap,
+            )
             modeldata = AlgoDeforLinearModule.exportstress(modeldata)
         end
 
@@ -456,16 +524,18 @@ function All_EBC_2dir_MSH8_conv_alt()
         println("Normalized Approximate Error = $(errornorms)")
 
         f = log.(vec(errornorms))
-        A = hcat(log.(vec(elementsizes[1:(end - 1)])), ones(size(f)))
+        A = hcat(log.(vec(elementsizes[1:(end-1)])), ones(size(f)))
         p = A \ f
         println("Linear log-log fit: p = $(p)")
 
         csvFile = filebase * "_Stress" * ".CSV"
-        savecsv(csvFile,
-            elementsizes = vec(elementsizes[1:(end - 1)]),
-            elementsizes2 = vec(elementsizes[1:(end - 1)] .^ 2),
-            elementsizes3 = vec(elementsizes[1:(end - 1)] .^ 3),
-            errornorms = vec(errornorms))
+        savecsv(
+            csvFile,
+            elementsizes = vec(elementsizes[1:(end-1)]),
+            elementsizes2 = vec(elementsizes[1:(end-1)] .^ 2),
+            elementsizes3 = vec(elementsizes[1:(end-1)] .^ 3),
+            errornorms = vec(errornorms),
+        )
         println("Wrote $csvFile")
 
         println("")
@@ -478,16 +548,18 @@ function All_EBC_2dir_MSH8_conv_alt()
         println("Normalized Approximate Error = $(errornorms)")
 
         f = log.(vec(errornorms))
-        A = hcat(log.(vec(elementsizes[1:(end - 1)])), ones(size(f)))
+        A = hcat(log.(vec(elementsizes[1:(end-1)])), ones(size(f)))
         p = A \ f
         println("Linear log-log fit: p = $(p)")
 
         csvFile = filebase * "_Displ" * ".CSV"
-        savecsv(csvFile,
-            elementsizes = vec(elementsizes[1:(end - 1)]),
-            elementsizes2 = vec(elementsizes[1:(end - 1)] .^ 2),
-            elementsizes3 = vec(elementsizes[1:(end - 1)] .^ 3),
-            errornorms = vec(errornorms))
+        savecsv(
+            csvFile,
+            elementsizes = vec(elementsizes[1:(end-1)]),
+            elementsizes2 = vec(elementsizes[1:(end-1)] .^ 2),
+            elementsizes3 = vec(elementsizes[1:(end-1)] .^ 3),
+            errornorms = vec(errornorms),
+        )
         println("Wrote $csvFile")
 
         # @async run(`"paraview.exe" $csvFile`)
@@ -506,7 +578,8 @@ function All_EBC_2dir_T10_conv()
 
         # This is the material  model
         MR = DeforModelRed3D
-        material = MatDeforElastOrtho(MR,
+        material = MatDeforElastOrtho(
+            MR,
             0.0,
             E1,
             E2,
@@ -519,7 +592,8 @@ function All_EBC_2dir_T10_conv()
             G23,
             CTE1,
             CTE2,
-            CTE3)
+            CTE3,
+        )
 
         # Select how fine the mesh should be
         nts = Refinement * ones(Int, nLayers)# number of elements per layer
@@ -537,31 +611,45 @@ function All_EBC_2dir_T10_conv()
 
         # We will create one region per layer
         regions = FDataDict[]
-        for layer in 1:nLayers
+        for layer = 1:nLayers
             rls = selectelem(fens, fes, label = layer)
-            push!(regions,
-                FDataDict("femm" => FEMMDeforLinear(MR,
-                    IntegDomain(subset(fes, rls), gr),
-                    CSys(3, 3, updatecs!),
-                    material)))
+            push!(
+                regions,
+                FDataDict(
+                    "femm" => FEMMDeforLinear(
+                        MR,
+                        IntegDomain(subset(fes, rls), gr),
+                        CSys(3, 3, updatecs!),
+                        material,
+                    ),
+                ),
+            )
         end
 
         # The essential boundary conditions: the entire surface
         bfes = meshboundary(fes)
         lx0 = connectednodes(bfes)
-        eclamped1 = FDataDict("displacement" => displacement_fun_x,
+        eclamped1 = FDataDict(
+            "displacement" => displacement_fun_x,
             "component" => 1,
-            "node_list" => lx0)
-        eclamped2 = FDataDict("displacement" => displacement_fun_y,
+            "node_list" => lx0,
+        )
+        eclamped2 = FDataDict(
+            "displacement" => displacement_fun_y,
             "component" => 2,
-            "node_list" => lx0)
-        eclamped3 = FDataDict("displacement" => displacement_fun_z,
+            "node_list" => lx0,
+        )
+        eclamped3 = FDataDict(
+            "displacement" => displacement_fun_z,
             "component" => 3,
-            "node_list" => lx0)
+            "node_list" => lx0,
+        )
 
-        modeldata = FDataDict("fens" => fens,
+        modeldata = FDataDict(
+            "fens" => fens,
             "regions" => regions,
-            "essential_bcs" => [eclamped1, eclamped2, eclamped3])
+            "essential_bcs" => [eclamped1, eclamped2, eclamped3],
+        )
         modeldata = AlgoDeforLinearModule.linearstatics(modeldata)
 
         modeldata["elementsize"] = t / Refinement
@@ -574,12 +662,14 @@ function All_EBC_2dir_T10_conv()
         for modeldata in modeldatasequence
             u = modeldata["u"]
             geom = modeldata["geom"]
-            modeldata["postprocessing"] = FDataDict("file" => filebase * "-s",
+            modeldata["postprocessing"] = FDataDict(
+                "file" => filebase * "-s",
                 "quantity" => :Cauchy,
                 "component" => collect(1:6),
                 "outputcsys" => CSys(3),
                 "nodevalmethod" => nodevalmeth,
-                "reportat" => extrap)
+                "reportat" => extrap,
+            )
             modeldata = AlgoDeforLinearModule.exportstress(modeldata)
         end
 
@@ -593,16 +683,18 @@ function All_EBC_2dir_T10_conv()
         println("Normalized Approximate Error = $(errornorms)")
 
         f = log.(vec(errornorms))
-        A = hcat(log.(vec(elementsizes[1:(end - 1)])), ones(size(f)))
+        A = hcat(log.(vec(elementsizes[1:(end-1)])), ones(size(f)))
         p = A \ f
         println("Linear log-log fit: p = $(p)")
 
         csvFile = filebase * "_Stress" * ".CSV"
-        savecsv(csvFile,
-            elementsizes = vec(elementsizes[1:(end - 1)]),
-            elementsizes2 = vec(elementsizes[1:(end - 1)] .^ 2),
-            elementsizes3 = vec(elementsizes[1:(end - 1)] .^ 3),
-            errornorms = vec(errornorms))
+        savecsv(
+            csvFile,
+            elementsizes = vec(elementsizes[1:(end-1)]),
+            elementsizes2 = vec(elementsizes[1:(end-1)] .^ 2),
+            elementsizes3 = vec(elementsizes[1:(end-1)] .^ 3),
+            errornorms = vec(errornorms),
+        )
         println("Wrote $csvFile")
 
         println("")
@@ -615,16 +707,18 @@ function All_EBC_2dir_T10_conv()
         println("Normalized Approximate Error = $(errornorms)")
 
         f = log.(vec(errornorms))
-        A = hcat(log.(vec(elementsizes[1:(end - 1)])), ones(size(f)))
+        A = hcat(log.(vec(elementsizes[1:(end-1)])), ones(size(f)))
         p = A \ f
         println("Linear log-log fit: p = $(p)")
 
         csvFile = filebase * "_Displ" * ".CSV"
-        savecsv(csvFile,
-            elementsizes = vec(elementsizes[1:(end - 1)]),
-            elementsizes2 = vec(elementsizes[1:(end - 1)] .^ 2),
-            elementsizes3 = vec(elementsizes[1:(end - 1)] .^ 3),
-            errornorms = vec(errornorms))
+        savecsv(
+            csvFile,
+            elementsizes = vec(elementsizes[1:(end-1)]),
+            elementsizes2 = vec(elementsizes[1:(end-1)] .^ 2),
+            elementsizes3 = vec(elementsizes[1:(end-1)] .^ 3),
+            errornorms = vec(errornorms),
+        )
         println("Wrote $csvFile")
 
         # @async run(`"paraview.exe" $csvFile`)
@@ -643,7 +737,8 @@ function All_EBC_2dir_H8_conv()
 
         # This is the material  model
         MR = DeforModelRed3D
-        material = MatDeforElastOrtho(MR,
+        material = MatDeforElastOrtho(
+            MR,
             0.0,
             E1,
             E2,
@@ -656,7 +751,8 @@ function All_EBC_2dir_H8_conv()
             G23,
             CTE1,
             CTE2,
-            CTE3)
+            CTE3,
+        )
 
         # Select how fine the mesh should be
         nts = Refinement * ones(Int, nLayers)# number of elements per layer
@@ -674,31 +770,45 @@ function All_EBC_2dir_H8_conv()
 
         # We will create one region per layer
         regions = FDataDict[]
-        for layer in 1:nLayers
+        for layer = 1:nLayers
             rls = selectelem(fens, fes, label = layer)
-            push!(regions,
-                FDataDict("femm" => FEMMDeforLinear(MR,
-                    IntegDomain(subset(fes, rls), gr),
-                    CSys(3, 3, updatecs!),
-                    material)))
+            push!(
+                regions,
+                FDataDict(
+                    "femm" => FEMMDeforLinear(
+                        MR,
+                        IntegDomain(subset(fes, rls), gr),
+                        CSys(3, 3, updatecs!),
+                        material,
+                    ),
+                ),
+            )
         end
 
         # The essential boundary conditions: the entire surface
         bfes = meshboundary(fes)
         lx0 = connectednodes(bfes)
-        eclamped1 = FDataDict("displacement" => displacement_fun_x,
+        eclamped1 = FDataDict(
+            "displacement" => displacement_fun_x,
             "component" => 1,
-            "node_list" => lx0)
-        eclamped2 = FDataDict("displacement" => displacement_fun_y,
+            "node_list" => lx0,
+        )
+        eclamped2 = FDataDict(
+            "displacement" => displacement_fun_y,
             "component" => 2,
-            "node_list" => lx0)
-        eclamped3 = FDataDict("displacement" => displacement_fun_z,
+            "node_list" => lx0,
+        )
+        eclamped3 = FDataDict(
+            "displacement" => displacement_fun_z,
             "component" => 3,
-            "node_list" => lx0)
+            "node_list" => lx0,
+        )
 
-        modeldata = FDataDict("fens" => fens,
+        modeldata = FDataDict(
+            "fens" => fens,
             "regions" => regions,
-            "essential_bcs" => [eclamped1, eclamped2, eclamped3])
+            "essential_bcs" => [eclamped1, eclamped2, eclamped3],
+        )
         modeldata = AlgoDeforLinearModule.linearstatics(modeldata)
 
         modeldata["elementsize"] = t / Refinement
@@ -711,12 +821,14 @@ function All_EBC_2dir_H8_conv()
         for modeldata in modeldatasequence
             u = modeldata["u"]
             geom = modeldata["geom"]
-            modeldata["postprocessing"] = FDataDict("file" => filebase * "-s",
+            modeldata["postprocessing"] = FDataDict(
+                "file" => filebase * "-s",
                 "quantity" => :Cauchy,
                 "component" => collect(1:6),
                 "outputcsys" => CSys(3),
                 "nodevalmethod" => nodevalmeth,
-                "reportat" => extrap)
+                "reportat" => extrap,
+            )
             modeldata = AlgoDeforLinearModule.exportstress(modeldata)
         end
 
@@ -730,16 +842,18 @@ function All_EBC_2dir_H8_conv()
         println("Normalized Approximate Error = $(errornorms)")
 
         f = log.(vec(errornorms))
-        A = hcat(log.(vec(elementsizes[1:(end - 1)])), ones(size(f)))
+        A = hcat(log.(vec(elementsizes[1:(end-1)])), ones(size(f)))
         p = A \ f
         println("Linear log-log fit: p = $(p)")
 
         csvFile = filebase * "_Stress" * ".CSV"
-        savecsv(csvFile,
-            elementsizes = vec(elementsizes[1:(end - 1)]),
-            elementsizes2 = vec(elementsizes[1:(end - 1)] .^ 2),
-            elementsizes3 = vec(elementsizes[1:(end - 1)] .^ 3),
-            errornorms = vec(errornorms))
+        savecsv(
+            csvFile,
+            elementsizes = vec(elementsizes[1:(end-1)]),
+            elementsizes2 = vec(elementsizes[1:(end-1)] .^ 2),
+            elementsizes3 = vec(elementsizes[1:(end-1)] .^ 3),
+            errornorms = vec(errornorms),
+        )
         println("Wrote $csvFile")
 
         println("")
@@ -752,16 +866,18 @@ function All_EBC_2dir_H8_conv()
         println("Normalized Approximate Error = $(errornorms)")
 
         f = log.(vec(errornorms))
-        A = hcat(log.(vec(elementsizes[1:(end - 1)])), ones(size(f)))
+        A = hcat(log.(vec(elementsizes[1:(end-1)])), ones(size(f)))
         p = A \ f
         println("Linear log-log fit: p = $(p)")
 
         csvFile = filebase * "_Displ" * ".CSV"
-        savecsv(csvFile,
-            elementsizes = vec(elementsizes[1:(end - 1)]),
-            elementsizes2 = vec(elementsizes[1:(end - 1)] .^ 2),
-            elementsizes3 = vec(elementsizes[1:(end - 1)] .^ 3),
-            errornorms = vec(errornorms))
+        savecsv(
+            csvFile,
+            elementsizes = vec(elementsizes[1:(end-1)]),
+            elementsizes2 = vec(elementsizes[1:(end-1)] .^ 2),
+            elementsizes3 = vec(elementsizes[1:(end-1)] .^ 3),
+            errornorms = vec(errornorms),
+        )
         println("Wrote $csvFile")
 
         # @async run(`"paraview.exe" $csvFile`)

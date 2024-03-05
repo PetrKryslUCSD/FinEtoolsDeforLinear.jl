@@ -21,11 +21,11 @@ function LE1NAFEMS()
 
     bdryfes = meshboundary(fes)
     icl = selectelem(fens, bdryfes, box = [1.0, 1.0, 0.0, pi / 2], inflate = tolerance)
-    for i in 1:count(fens)
+    for i = 1:count(fens)
         t = fens.xyz[i, 1]
         a = fens.xyz[i, 2]
-        fens.xyz[i, :] = [(t * 3.25 + (1 - t) * 2) * cos(a) (t * 2.75 + (1 - t) * 1) *
-                                                            sin(a)]
+        fens.xyz[i, :] =
+            [(t * 3.25 + (1 - t) * 2) * cos(a) (t * 2.75 + (1 - t) * 1) * sin(a)]
     end
 
     geom = NodalField(fens.xyz)
@@ -61,15 +61,23 @@ function LE1NAFEMS()
     thecorneru = zeros(FFlt, 1, 2)
     gathervalues_asmat!(u, thecorneru, nl)
     thecorneru = thecorneru / phun("mm")
-    println("$(time()-t0) [s];  displacement =$(thecorneru) [MM] as compared to reference [-0.10215,0] [MM]")
+    println(
+        "$(time()-t0) [s];  displacement =$(thecorneru) [MM] as compared to reference [-0.10215,0] [MM]",
+    )
 
     fld = fieldfromintegpoints(femm, geom, u, :Cauchy, 2)
-    println("  Target stress: $(fld.values[nl][1]/phun("MEGA*PA")) compared to $(sigma_yD/phun("MEGA*PA"))")
+    println(
+        "  Target stress: $(fld.values[nl][1]/phun("MEGA*PA")) compared to $(sigma_yD/phun("MEGA*PA"))",
+    )
 
     File = "a.vtk"
-    vtkexportmesh(File, fes.conn, geom.values,
+    vtkexportmesh(
+        File,
+        fes.conn,
+        geom.values,
         FinEtools.MeshExportModule.Q4;
-        vectors = [("u", u.values)])
+        vectors = [("u", u.values)],
+    )
     @async run(`"paraview.exe" $File`)
     true
 end # LE1NAFEMS
@@ -85,7 +93,7 @@ function LE1NAFEMS_Q4_convergence()
     Radius = 1.0 * phun("m")
     Thickness = 0.1 * phun("m")
 
-    sigyderrs = Dict{Symbol, FFltVec}()
+    sigyderrs = Dict{Symbol,FFltVec}()
     nelems = []
 
     for extrapolation in [:extrapmean]
@@ -97,17 +105,17 @@ function LE1NAFEMS_Q4_convergence()
             fens, fes = Q4block(1.0, pi / 2, n, n)
 
             bdryfes = meshboundary(fes)
-            icl = selectelem(fens,
+            icl = selectelem(
+                fens,
                 bdryfes,
                 box = [1.0, 1.0, 0.0, pi / 2],
-                inflate = tolerance)
-            for i in 1:count(fens)
+                inflate = tolerance,
+            )
+            for i = 1:count(fens)
                 t = fens.xyz[i, 1]
                 a = fens.xyz[i, 2]
-                fens.xyz[i, :] = [
-                    (t * 3.25 + (1 - t) * 2) * cos(a),
-                    (t * 2.75 + (1 - t) * 1) * sin(a),
-                ]
+                fens.xyz[i, :] =
+                    [(t * 3.25 + (1 - t) * 2) * cos(a), (t * 2.75 + (1 - t) * 1) * sin(a)]
             end
 
             geom = NodalField(fens.xyz)
@@ -121,13 +129,14 @@ function LE1NAFEMS_Q4_convergence()
             applyebc!(u)
             numberdofs!(u)
 
-            el1femm = FEMMBase(IntegDomain(subset(bdryfes, icl),
-                GaussRule(1, 2),
-                Thickness))
-            function pfun(forceout::FVec{T},
+            el1femm =
+                FEMMBase(IntegDomain(subset(bdryfes, icl), GaussRule(1, 2), Thickness))
+            function pfun(
+                forceout::FVec{T},
                 XYZ::FFltMat,
                 tangents::FFltMat,
-                fe_label::FInt) where {T}
+                fe_label::FInt,
+            ) where {T}
                 pt = [2.75 / 3.25 * XYZ[1], 3.25 / 2.75 * XYZ[2]]
                 forceout .= vec(p * pt / norm(pt))
                 return forceout
@@ -140,9 +149,8 @@ function LE1NAFEMS_Q4_convergence()
 
             material = MatDeforElastIso(MR, E, nu)
 
-            femm = FEMMDeforLinear(MR,
-                IntegDomain(fes, GaussRule(2, 2), Thickness),
-                material)
+            femm =
+                FEMMDeforLinear(MR, IntegDomain(fes, GaussRule(2, 2), Thickness), material)
 
             # The geometry field now needs to be associated with the FEMM
             femm = associategeometry!(femm, geom)
@@ -156,10 +164,14 @@ function LE1NAFEMS_Q4_convergence()
             thecorneru = zeros(FFlt, 1, 2)
             gathervalues_asmat!(u, thecorneru, nl)
             thecorneru = thecorneru / phun("mm")
-            println("$(time()-t0) [s];  displacement =$(thecorneru) [MM] as compared to reference [-0.10215,0] [MM]")
+            println(
+                "$(time()-t0) [s];  displacement =$(thecorneru) [MM] as compared to reference [-0.10215,0] [MM]",
+            )
 
             fld = fieldfromintegpoints(femm, geom, u, :Cauchy, 2)
-            println("Sigma_y =$(fld.values[nl,1][1]/phun("MPa")) vs $(sigma_yD/phun("MPa")) [MPa]")
+            println(
+                "Sigma_y =$(fld.values[nl,1][1]/phun("MPa")) vs $(sigma_yD/phun("MPa")) [MPa]",
+            )
 
             println("$(n), $(fld.values[nl,1][1]/phun("MPa"))")
             push!(nelems, count(fes))
@@ -172,13 +184,15 @@ function LE1NAFEMS_Q4_convergence()
         end
     end
 
-    @pgf a = LogLogAxis({
+    @pgf a = LogLogAxis(
+        {
             xlabel = "Number of elements",
             ylabel = "Norm. approx. error",
             title = "Convergence",
         },
         Plot(Table([:x => vec(Float64.(nelems)), :y => vec(sigyderrs[:extrapmean])])),
-        LegendEntry("Extrapolated stress"))
+        LegendEntry("Extrapolated stress"),
+    )
     display(a)
     true
 end # LE1NAFEMS_Q4_convergence
@@ -199,11 +213,11 @@ function LE1NAFEMS_Q8_stress()
 
     bdryfes = meshboundary(fes)
     icl = selectelem(fens, bdryfes, box = [1.0, 1.0, 0.0, pi / 2], inflate = tolerance)
-    for i in 1:count(fens)
+    for i = 1:count(fens)
         t = fens.xyz[i, 1]
         a = fens.xyz[i, 2]
-        fens.xyz[i, :] = [(t * 3.25 + (1 - t) * 2) * cos(a) (t * 2.75 + (1 - t) * 1) *
-                                                            sin(a)]
+        fens.xyz[i, :] =
+            [(t * 3.25 + (1 - t) * 2) * cos(a) (t * 2.75 + (1 - t) * 1) * sin(a)]
     end
 
     geom = NodalField(fens.xyz)
@@ -240,15 +254,24 @@ function LE1NAFEMS_Q8_stress()
     thecorneru = zeros(FFlt, 1, 2)
     gathervalues_asmat!(u, thecorneru, nl)
     thecorneru = thecorneru / phun("mm")
-    println("$(time()-t0) [s];  displacement =$(thecorneru) [MM] as compared to reference [-0.10215,0] [MM]")
+    println(
+        "$(time()-t0) [s];  displacement =$(thecorneru) [MM] as compared to reference [-0.10215,0] [MM]",
+    )
 
     fld = fieldfromintegpoints(femm, geom, u, :Cauchy, 2)
-    println("  Target stress: $(fld.values[nl][1]/phun("MEGA*PA")) compared to $(sigma_yD/phun("MEGA*PA"))")
+    println(
+        "  Target stress: $(fld.values[nl][1]/phun("MEGA*PA")) compared to $(sigma_yD/phun("MEGA*PA"))",
+    )
 
     File = "a.vtk"
-    vtkexportmesh(File, fes.conn, geom.values,
+    vtkexportmesh(
+        File,
+        fes.conn,
+        geom.values,
         FinEtools.MeshExportModule.Q8;
-        vectors = [("u", u.values)], scalars = [("sigy", fld.values)])
+        vectors = [("u", u.values)],
+        scalars = [("sigy", fld.values)],
+    )
     @async run(`"paraview.exe" $File`)
     true
 end # LE1NAFEMS_Q8_stress

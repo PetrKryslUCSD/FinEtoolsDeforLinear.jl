@@ -12,7 +12,8 @@ function coldata(inputcsv, theset)
     return contents[1][:, theset]
 end
 
-set(axis = "loglog",
+set(
+    axis = "loglog",
     plotstyle = "linespoints",
     linewidth = 2,
     pointsize = 2,
@@ -20,7 +21,8 @@ set(axis = "loglog",
     xlabel = "Element size",
     ylabel = "Approximate error",
     grid = "on",
-    title = "")
+    title = "",
+)
 
 # inputcsv = "All_EBC_2dir_T10_default_Stress.CSV"
 # x = coldata(inputcsv, 1)

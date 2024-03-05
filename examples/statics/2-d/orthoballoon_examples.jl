@@ -37,7 +37,7 @@ function orthoballoon()
     bdryfes = meshboundary(fes)
 
     icl = selectelem(fens, bdryfes, box = [0.0, 0.0, 0.0, pi / 2], inflate = tolerance)
-    for i in 1:count(fens)
+    for i = 1:count(fens)
         r = rin + fens.xyz[i, 1]
         a = fens.xyz[i, 2]
         fens.xyz[i, :] = [r * cos(a) r * sin(a)]
@@ -62,11 +62,13 @@ function orthoballoon()
     # direction.
 
     el1femm = FEMMBase(IntegDomain(subset(bdryfes, icl), GaussRule(1, 3), true))
-    function pressureloading!(forceout::FFltVec,
+    function pressureloading!(
+        forceout::FFltVec,
         XYZ::FFltMat,
         tangents::FFltMat,
         feid::FInt,
-        qpid::FInt)
+        qpid::FInt,
+    )
         copyto!(forceout, XYZ / norm(XYZ) * p)
         return forceout
     end
@@ -89,8 +91,13 @@ function orthoballoon()
     println("Minimum/maximum = $(minimum(fld.values))/$(maximum(fld.values))")
 
     File = "orthoballoon_sigmaz.vtk"
-    vtkexportmesh(File, fens, fes; scalars = [("sigmaz", fld.values)],
-        vectors = [("u", u.values)])
+    vtkexportmesh(
+        File,
+        fens,
+        fes;
+        scalars = [("sigmaz", fld.values)],
+        vectors = [("u", u.values)],
+    )
     @async run(`"paraview.exe" $File`)
     #pub_thick_pipe_axi()
 
@@ -120,7 +127,7 @@ function orthoballoon_penalty()
     bdryfes = meshboundary(fes)
 
     icl = selectelem(fens, bdryfes, box = [0.0, 0.0, 0.0, pi / 2], inflate = tolerance)
-    for i in 1:count(fens)
+    for i = 1:count(fens)
         r = rin + fens.xyz[i, 1]
         a = fens.xyz[i, 2]
         fens.xyz[i, :] = [r * cos(a) r * sin(a)]
@@ -144,11 +151,13 @@ function orthoballoon_penalty()
     # direction.
 
     el1femm = FEMMBase(IntegDomain(subset(bdryfes, icl), GaussRule(1, 3), true))
-    function pressureloading!(forceout::FFltVec,
+    function pressureloading!(
+        forceout::FFltVec,
         XYZ::FFltMat,
         tangents::FFltMat,
         feid::FInt,
-        qpid::FInt)
+        qpid::FInt,
+    )
         copyto!(forceout, XYZ / norm(XYZ) * p)
         return forceout
     end
@@ -169,7 +178,8 @@ function orthoballoon_penalty()
     springcoefficient = 1.0e9 / (abs(p) / E1)
     xsfemm = FEMMDeforWinkler(IntegDomain(subset(bdryfes, lx), GaussRule(1, 3), true))
     ysfemm = FEMMDeforWinkler(IntegDomain(subset(bdryfes, ly), GaussRule(1, 3), true))
-    H = surfacenormalspringstiffness(xsfemm, geom, u, springcoefficient, SurfaceNormal(3)) +
+    H =
+        surfacenormalspringstiffness(xsfemm, geom, u, springcoefficient, SurfaceNormal(3)) +
         surfacenormalspringstiffness(ysfemm, geom, u, springcoefficient, SurfaceNormal(3))
     K = stiffness(femm, geom, u)
 
@@ -183,8 +193,13 @@ function orthoballoon_penalty()
     println("Minimum/maximum = $(minimum(fld.values))/$(maximum(fld.values))")
 
     File = "orthoballoon_penalty_sigmaz.vtk"
-    vtkexportmesh(File, fens, fes; scalars = [("sigmaz", fld.values)],
-        vectors = [("u", u.values)])
+    vtkexportmesh(
+        File,
+        fens,
+        fes;
+        scalars = [("sigmaz", fld.values)],
+        vectors = [("u", u.values)],
+    )
     @async run(`"paraview.exe" $File`)
     #pub_thick_pipe_axi()
 

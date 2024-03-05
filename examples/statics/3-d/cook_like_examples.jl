@@ -23,10 +23,11 @@ function allrun()
     fens, fes = T10block(width, height, thickness, n, n, nt)
 
     # Reshape into a trapezoidal panel
-    for i in 1:count(fens)
-        fens.xyz[i, 2] = fens.xyz[i, 2] +
-                         (fens.xyz[i, 1] / width) *
-                         (height - fens.xyz[i, 2] / height * (height - free_height))
+    for i = 1:count(fens)
+        fens.xyz[i, 2] =
+            fens.xyz[i, 2] +
+            (fens.xyz[i, 1] / width) *
+            (height - fens.xyz[i, 2] / height * (height - free_height))
     end
 
     # Clamped edge of the membrane
@@ -37,24 +38,29 @@ function allrun()
 
     # Traction on the opposite edge
     boundaryfes = meshboundary(fes)
-    Toplist = selectelem(fens,
+    Toplist = selectelem(
+        fens,
         boundaryfes,
         box = [width, width, -Inf, Inf, -Inf, Inf],
-        inflate = tolerance)
+        inflate = tolerance,
+    )
     el1femm = FEMMBase(IntegDomain(subset(boundaryfes, Toplist), SimplexRule(2, 3)))
-    flux1 = FDataDict("traction_vector" => [0.0, 0.0, +magn],
-        "femm" => el1femm)
+    flux1 = FDataDict("traction_vector" => [0.0, 0.0, +magn], "femm" => el1femm)
 
     # Make the region
     MR = DeforModelRed3D
     material = MatDeforElastIso(MR, 0.0, E, nu, 0.0)
-    region1 = FDataDict("femm" => FEMMDeforLinearMST10(MR,
-        IntegDomain(fes, SimplexRule(3, 4)), material))
+    region1 = FDataDict(
+        "femm" =>
+            FEMMDeforLinearMST10(MR, IntegDomain(fes, SimplexRule(3, 4)), material),
+    )
 
-    modeldata = FDataDict("fens" => fens,
+    modeldata = FDataDict(
+        "fens" => fens,
         "regions" => [region1],
         "essential_bcs" => [ess1, ess2, ess3],
-        "traction_bcs" => [flux1])
+        "traction_bcs" => [flux1],
+    )
 
     # Call the solver
     modeldata = AlgoDeforLinearModule.linearstatics(modeldata)
@@ -63,46 +69,57 @@ function allrun()
     geom = modeldata["geom"]
 
     # Extract the solution
-    nl = selectnode(fens,
+    nl = selectnode(
+        fens,
         box = [Mid_edge[1], Mid_edge[1], Mid_edge[2], Mid_edge[2], -Inf, Inf],
-        inflate = tolerance)
+        inflate = tolerance,
+    )
     theutip = mean(u.values[nl, :], dims = 1)
     println("displacement =$(theutip[2]) ")
 
-    modeldata["postprocessing"] = FDataDict("file" => "cook_like-ew",
-        "quantity" => :Cauchy, "component" => :xy)
+    modeldata["postprocessing"] =
+        FDataDict("file" => "cook_like-ew", "quantity" => :Cauchy, "component" => :xy)
     modeldata = AlgoDeforLinearModule.exportstresselementwise(modeldata)
     fld = modeldata["postprocessing"]["exported"][1]["field"]
     println("range of Cauchy_xy = $((minimum(fld.values), maximum(fld.values)))")
     File = modeldata["postprocessing"]["exported"][1]["file"]
     @async run(`"paraview.exe" $File`)
 
-    modeldata["postprocessing"] = FDataDict("file" => "cook_like-ew-vm",
-        "quantity" => :vm, "component" => 1)
+    modeldata["postprocessing"] =
+        FDataDict("file" => "cook_like-ew-vm", "quantity" => :vm, "component" => 1)
     modeldata = AlgoDeforLinearModule.exportstresselementwise(modeldata)
     fld = modeldata["postprocessing"]["exported"][1]["field"]
     println("range of vm = $((minimum(fld.values), maximum(fld.values)))")
     File = modeldata["postprocessing"]["exported"][1]["file"]
     @async run(`"paraview.exe" $File`)
 
-    modeldata["postprocessing"] = FDataDict("file" => "cook_like-ew-pressure",
-        "quantity" => :pressure, "component" => 1)
+    modeldata["postprocessing"] = FDataDict(
+        "file" => "cook_like-ew-pressure",
+        "quantity" => :pressure,
+        "component" => 1,
+    )
     modeldata = AlgoDeforLinearModule.exportstresselementwise(modeldata)
     fld = modeldata["postprocessing"]["exported"][1]["field"]
     println("range of pressure = $((minimum(fld.values), maximum(fld.values)))")
     File = modeldata["postprocessing"]["exported"][1]["file"]
     @async run(`"paraview.exe" $File`)
 
-    modeldata["postprocessing"] = FDataDict("file" => "cook_like-ew-princ1",
-        "quantity" => :princCauchy, "component" => 1)
+    modeldata["postprocessing"] = FDataDict(
+        "file" => "cook_like-ew-princ1",
+        "quantity" => :princCauchy,
+        "component" => 1,
+    )
     modeldata = AlgoDeforLinearModule.exportstresselementwise(modeldata)
     fld = modeldata["postprocessing"]["exported"][1]["field"]
     println("range of princCauchy Max = $((minimum(fld.values), maximum(fld.values)))")
     File = modeldata["postprocessing"]["exported"][1]["file"]
     @async run(`"paraview.exe" $File`)
 
-    modeldata["postprocessing"] = FDataDict("file" => "cook_like-ew-princ3",
-        "quantity" => :princCauchy, "component" => 3)
+    modeldata["postprocessing"] = FDataDict(
+        "file" => "cook_like-ew-princ3",
+        "quantity" => :princCauchy,
+        "component" => 3,
+    )
     modeldata = AlgoDeforLinearModule.exportstresselementwise(modeldata)
     fld = modeldata["postprocessing"]["exported"][1]["field"]
     println("range of princCauchy Min = $((minimum(fld.values), maximum(fld.values)))")

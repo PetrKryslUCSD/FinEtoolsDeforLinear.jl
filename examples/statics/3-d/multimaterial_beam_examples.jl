@@ -36,10 +36,8 @@ function multimaterial_beam_algo()
 
     # Traction on the opposite edge
     boundaryfes = meshboundary(fes)
-    Toplist = selectelem(fens,
-        boundaryfes,
-        box = [L L -Inf Inf -Inf Inf],
-        inflate = tolerance)
+    Toplist =
+        selectelem(fens, boundaryfes, box = [L L -Inf Inf -Inf Inf], inflate = tolerance)
     el1femm = FEMMBase(IntegDomain(subset(boundaryfes, Toplist), GaussRule(2, 2)))
     flux1 = FDataDict("femm" => el1femm, "traction_vector" => loadv)
 
@@ -50,18 +48,30 @@ function multimaterial_beam_algo()
     MR = DeforModelRed3D
 
     # Make region 1
-    region1 = FDataDict("femm" => FEMMDeforLinear(MR,
-        IntegDomain(subset(fes, r1list), GaussRule(3, 2)),
-        MatDeforElastIso(MR, 0.0, E1, nu1, 0.0)))
+    region1 = FDataDict(
+        "femm" => FEMMDeforLinear(
+            MR,
+            IntegDomain(subset(fes, r1list), GaussRule(3, 2)),
+            MatDeforElastIso(MR, 0.0, E1, nu1, 0.0),
+        ),
+    )
 
     # Make region 2
-    region2 = FDataDict("femm" => FEMMDeforLinear(MR,
-        IntegDomain(subset(fes, r2list), GaussRule(3, 2)),
-        MatDeforElastIso(MR, 0.0, E2, nu2, 0.0)))
+    region2 = FDataDict(
+        "femm" => FEMMDeforLinear(
+            MR,
+            IntegDomain(subset(fes, r2list), GaussRule(3, 2)),
+            MatDeforElastIso(MR, 0.0, E2, nu2, 0.0),
+        ),
+    )
 
     # Make model data
-    modeldata = FDataDict("fens" => fens, "regions" => [region1, region2],
-        "essential_bcs" => [e1, e2, e3], "traction_bcs" => [flux1])
+    modeldata = FDataDict(
+        "fens" => fens,
+        "regions" => [region1, region2],
+        "essential_bcs" => [e1, e2, e3],
+        "traction_bcs" => [flux1],
+    )
 
     # Call the solver
     modeldata = AlgoDeforLinearModule.linearstatics(modeldata)
@@ -73,23 +83,29 @@ function multimaterial_beam_algo()
     modeldata = AlgoDeforLinearModule.exportdeformation(modeldata)
 
     # Write out mesh with stresses
-    modeldata["postprocessing"] = FDataDict("file" => "multimaterial_beam_xy",
-        "quantity" => :Cauchy, "component" => :xy)
+    modeldata["postprocessing"] = FDataDict(
+        "file" => "multimaterial_beam_xy",
+        "quantity" => :Cauchy,
+        "component" => :xy,
+    )
     modeldata = AlgoDeforLinearModule.exportstress(modeldata)
 
     # Write out mesh with stresses
-    modeldata["postprocessing"] = FDataDict("file" => "multimaterial_beam_xz",
-        "quantity" => :Cauchy, "component" => :xz)
+    modeldata["postprocessing"] = FDataDict(
+        "file" => "multimaterial_beam_xz",
+        "quantity" => :Cauchy,
+        "component" => :xz,
+    )
     modeldata = AlgoDeforLinearModule.exportstress(modeldata)
 
     # Write out mesh with von Mises stresses
-    modeldata["postprocessing"] = FDataDict("file" => "multimaterial_beam_vm",
-        "quantity" => :vm)
+    modeldata["postprocessing"] =
+        FDataDict("file" => "multimaterial_beam_vm", "quantity" => :vm)
     modeldata = AlgoDeforLinearModule.exportstress(modeldata)
 
     # Write out mesh with von Mises stresses, elementwise
-    modeldata["postprocessing"] = FDataDict("file" => "multimaterial_beam_vm-ew",
-        "quantity" => :vm)
+    modeldata["postprocessing"] =
+        FDataDict("file" => "multimaterial_beam_vm-ew", "quantity" => :vm)
     modeldata = AlgoDeforLinearModule.exportstresselementwise(modeldata)
 end # multimaterial_beam_algo
 

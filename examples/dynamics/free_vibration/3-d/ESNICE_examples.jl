@@ -80,18 +80,22 @@ function ESNICE_energies()
     b = 10^p[2]
     @show a, b
 
-    @pgf a = Axis({
+    @pgf a = Axis(
+        {
             xlabel = "Aspect ratio",
             ylabel = "Relative Potential Energy",
             grid = "major",
             legend_pos = "north east",
         },
         Plot({color = "red"}, Table([:x => log10.(vec(rs)), :y => log10.(vec(rPE))])),
-        Plot({"only marks", mark = "x"},
+        Plot(
+            {"only marks", mark = "x"},
             Table([
                 :x => log10.(vec(rs)),
                 :y => log10.(vec([1 / (b * r^a) + 1 for r in rs])),
-            ])))
+            ]),
+        ),
+    )
     display(a)
 
     # fld = fieldfromintegpoints(femm, geom, u, :Cauchy, 1)
@@ -125,36 +129,37 @@ function ESNICE_vibration()
     femm = FEMMDeforLinearESNICET4(MR, IntegDomain(fes, NodalSimplexRule(3)), material)
     associategeometry!(femm, geom)
     @show minimum(vec(femm.nphis)), maximum(vec(femm.nphis))
-    @pgf a = Axis({
+    @pgf a = Axis(
+        {
             xlabel = "Entity",
             ylabel = "Stabilization factor",
             grid = "major",
             legend_pos = "north east",
         },
-        Plot({mark = "circle"}, Table([:x => vec(1:count(fes)), :y => vec(femm.ephis)])))
+        Plot({mark = "circle"}, Table([:x => vec(1:count(fes)), :y => vec(femm.ephis)])),
+    )
     display(a)
     K = stiffness(femm, geom, u)
     M = mass(femm, geom, u)
-    d, v, nconv = eigs(K + OmegaShift * M,
-        M;
-        nev = neigvs,
-        which = :SM,
-        explicittransform = :none)
+    d, v, nconv =
+        eigs(K + OmegaShift * M, M; nev = neigvs, which = :SM, explicittransform = :none)
     d = d .- OmegaShift
     fs = real(sqrt.(complex(d))) / (2 * pi)
     println("Eigenvalues: $fs [Hz]")
 
     vectors = []
-    for i in 7:length(fs)
+    for i = 7:length(fs)
         scattersysvec!(u, v[:, i])
         push!(vectors, ("Mode_$i", deepcopy(u.values)))
     end
     File = "alum_cyl_mode_shapes.vtk"
-    vtkexportmesh(File,
+    vtkexportmesh(
+        File,
         connasarray(fes),
         fens.xyz,
         FinEtools.MeshExportModule.VTK.T4;
-        vectors = vectors)
+        vectors = vectors,
+    )
     @async run(`"paraview.exe" $File`)
 
     true

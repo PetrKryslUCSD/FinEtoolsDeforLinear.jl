@@ -12,14 +12,20 @@ function multimaterial_nas()
     Vibration modes of block composed of two materials. NASTRAN input file.
     """)
 
-    materials = Dict(1 => (name = "steel",
+    materials = Dict(
+        1 => (
+            name = "steel",
             E = 205000 * phun("MPa"),
             nu = 0.3,
-            rho = 7850 * phun("KG*M^-3")),
-        2 => (name = "aluminum",
+            rho = 7850 * phun("KG*M^-3"),
+        ),
+        2 => (
+            name = "aluminum",
             E = 70000 * phun("MPa"),
             nu = 0.34,
-            rho = 2700 * phun("KG*M^-3")))
+            rho = 2700 * phun("KG*M^-3"),
+        ),
+    )
     OmegaShift = (2 * pi * 100)^2 # to resolve rigid body modes
     neigvs = 20
 
@@ -40,9 +46,11 @@ function multimaterial_nas()
         pid = pids[i]
         @show E, nu, rho = materials[pid].E, materials[pid].nu, materials[pid].rho
         material = MatDeforElastIso(MR, rho, E, nu, 0.0)
-        femm = FEMMDeforLinearESNICET4(MR,
+        femm = FEMMDeforLinearESNICET4(
+            MR,
             IntegDomain(fesets[i], NodalSimplexRule(3)),
-            material)
+            material,
+        )
         femm = associategeometry!(femm, geom)
         K += stiffness(femm, geom, u)
         M += mass(femm, geom, u)

@@ -10,31 +10,31 @@ function q4_stress()
 
     E = 1.0
     nu = 1.0 / 3
-    alpha, beta, gamma, delta, eta, phi = 1.0 / 30,
-    1.0 / 34,
-    -1.0 / 21,
-    -1.0 / 51,
-    -1.0 / 26,
-    -1.0 / 35
+    alpha, beta, gamma, delta, eta, phi =
+        1.0 / 30, 1.0 / 34, -1.0 / 21, -1.0 / 51, -1.0 / 26, -1.0 / 35
     ux(x, y) = alpha + beta * x + gamma * y
     uy(x, y) = delta + eta * x + phi * y
     MR = DeforModelRed2DStress
 
-    fens = FENodeSet([1.0 -0.3;
-        2.3 -0.3;
-        2.3 0.95;
-        1.0 0.95;
-        1.4 0.05;
-        1.9 -0.03;
-        1.7 0.5;
-        1.3 0.6])
+    fens = FENodeSet(
+        [
+            1.0 -0.3
+            2.3 -0.3
+            2.3 0.95
+            1.0 0.95
+            1.4 0.05
+            1.9 -0.03
+            1.7 0.5
+            1.3 0.6
+        ],
+    )
     fes = FESetQ4([1 2 6 5; 6 2 3 7; 7 3 4 8; 8 4 1 5; 5 6 7 8])
 
     geom = NodalField(fens.xyz)
     u = NodalField(zeros(size(fens.xyz, 1), 2)) # displacement field
 
     # Apply prescribed displacements to exterior nodes
-    for i in 1:4
+    for i = 1:4
         setebc!(u, [i], 1, ux(fens.xyz[i, :]...))
         setebc!(u, [i], 2, uy(fens.xyz[i, :]...))
     end
@@ -52,14 +52,19 @@ function q4_stress()
     U = K \ (F)
     scattersysvec!(u, U[:])
 
-    for i in 5:8
+    for i = 5:8
         uexact = [ux(fens.xyz[i, :]...), uy(fens.xyz[i, :]...)]
         println("u.values[$i, :] = $(u.values[i, :]), uexact = [$(uexact)]")
     end
 
     File = "a.vtk"
-    vtkexportmesh(File, fes.conn, geom.values,
-        FinEtools.MeshExportModule.Q4; vectors = [("u", u.values)])
+    vtkexportmesh(
+        File,
+        fes.conn,
+        geom.values,
+        FinEtools.MeshExportModule.Q4;
+        vectors = [("u", u.values)],
+    )
 
     true
 end # cookstress
@@ -69,31 +74,31 @@ function q4_stress_export()
 
     E = 1.0
     nu = 1.0 / 3
-    alpha, beta, gamma, delta, eta, phi = 1.0 / 30,
-    1.0 / 34,
-    -1.0 / 21,
-    -1.0 / 51,
-    -1.0 / 26,
-    -1.0 / 35
+    alpha, beta, gamma, delta, eta, phi =
+        1.0 / 30, 1.0 / 34, -1.0 / 21, -1.0 / 51, -1.0 / 26, -1.0 / 35
     ux(x, y) = alpha + beta * x + gamma * y
     uy(x, y) = delta + eta * x + phi * y
     MR = DeforModelRed2DStress
 
-    fens = FENodeSet([1.0 -0.3;
-        2.3 -0.3;
-        2.3 0.95;
-        1.0 0.95;
-        1.4 0.05;
-        1.9 -0.03;
-        1.7 0.5;
-        1.3 0.6])
+    fens = FENodeSet(
+        [
+            1.0 -0.3
+            2.3 -0.3
+            2.3 0.95
+            1.0 0.95
+            1.4 0.05
+            1.9 -0.03
+            1.7 0.5
+            1.3 0.6
+        ],
+    )
     fes = FESetQ4([1 2 6 5; 6 2 3 7; 7 3 4 8; 8 4 1 5; 5 6 7 8])
 
     geom = NodalField(fens.xyz)
     u = NodalField(zeros(size(fens.xyz, 1), 2)) # displacement field
 
     # Apply prescribed displacements to exterior nodes
-    for i in 1:4
+    for i = 1:4
         setebc!(u, [i], 1, ux(fens.xyz[i, :]...))
         setebc!(u, [i], 2, uy(fens.xyz[i, :]...))
     end
@@ -111,7 +116,7 @@ function q4_stress_export()
     U = K \ (F)
     scattersysvec!(u, U[:])
 
-    for i in 5:8
+    for i = 5:8
         uexact = [ux(fens.xyz[i, :]...), uy(fens.xyz[i, :]...)]
         println("u.values[$i, :] = $(u.values[i, :]), uexact = [$(uexact)]")
     end
@@ -133,11 +138,13 @@ function q4_stress_export()
     MATERIAL(AE, "elasticity")
     ELASTIC(AE, E, nu)
     STEP_PERTURBATION_STATIC(AE)
-    BOUNDARY(AE,
+    BOUNDARY(
+        AE,
         "ASSEM1.INSTNC1",
         1:4,
         fill(true, 4, 2),
-        [[ux(fens.xyz[i, :]...) for i in 1:4] [uy(fens.xyz[i, :]...) for i in 1:4]])
+        [[ux(fens.xyz[i, :]...) for i = 1:4] [uy(fens.xyz[i, :]...) for i = 1:4]],
+    )
     END_STEP(AE)
     close(AE)
 
