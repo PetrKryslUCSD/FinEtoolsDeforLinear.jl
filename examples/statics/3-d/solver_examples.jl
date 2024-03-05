@@ -8,6 +8,7 @@ using Statistics: mean
 using LinearAlgebra
 using SparseArrays
 using LinearSolve
+using IncompleteLU
 using Printf
 using SymRCM
 using UnicodePlots
@@ -34,7 +35,7 @@ function getfrcL!(forceout, XYZ, tangents, feid, qpid)
     copyto!(forceout, [0.0; 0.0; magn])
 end
 
-function example(n = 10, solver = :suitesparse)
+function example(n = 10, precond = :ilu, alg = :cg)
     elementtag = "H8"
     println("""
     Stubby corbel example. Element: $(elementtag)
@@ -95,214 +96,21 @@ function example(n = 10, solver = :suitesparse)
     
     Tipl = selectnode(fens, box = [0 W L L 0 H], inflate = htol)
 
-    # if solver == :suitesparse || solver == :default
-    #     # @show methods(SuiteSparse.CHOLMOD.ldlt, (typeof(K), ))
-    #     # @time K = SuiteSparse.CHOLMOD.ldlt(K)
-    #     @time K = SuiteSparse.CHOLMOD.cholesky(K)
-    #     @show nnz(K)
-    #     # @time K = SparseArrays.ldlt(K)
-    #     # @time K = cholesky(K)
-    #     @time U = K \ (F)
-    # elseif solver == :cg
-    #     n = size(K_ff, 1)
-    #     mK_ffd = mean(diag(K_ff))
-    #     @time factor = ilu(K_ff, τ = mK_ffd / 100.0) # This may work for compressible materials
-    #     # @time factor = ilu(K, τ = mKd / 1000000.0) # This may work for incompressible materials
-    #     # factor = ilu0(K)
-    #     @show nnz(factor) / nnz(K_ff)
-    #     opM = LinearOperator(Float64, n, n, false, false, (y, v) -> ldiv!(y, factor, v))
-    #     @time (U, stats) = Krylov.cg(K_ff, F_f; M = opM, itmax = Int(round(n / 2)), verbose = 1)
-    # elseif solver == :cgldl
-    #     n = size(K, 1)
-    #     atol = 1e-10
-    #     rtol = 0.0
-    #     memory = 2000
-    #     @time P = ildl(K, memory = memory)
-    #     # @time U, stats = bicgstab(K, F, N=P, atol=atol, rtol=rtol, verbose=1)
-    #     @time U, stats = cg(K, F, M = P, atol = atol, rtol = rtol, verbose = 1)
-    #     @show stats
-    # elseif solver == :scaledcg
-    #     n = size(K, 1)
-    #     idKs = Diagonal(1.0 ./ sqrt.(diag(K)))
-    #     sK = idKs * K * idKs
-    #     @show mKd = mean(diag(sK))
-    #     # @time factor = ilu(sK, τ = 0.01) # This may work for compressible materials
-    #     @time factor = ilu(sK, τ = 0.000001) # This may work for incompressible materials
-    #     # @time factor = ilu0(sK)
-    #     @show nnz(factor) / nnz(K)
-    #     opM = LinearOperator(Float64, n, n, false, false, (y, v) -> ldiv!(y, factor, v))
-    #     @time (U, stats) =
-    #         Krylov.cg(sK, idKs * F; M = opM, itmax = Int(round(n / 2)), verbose = 1)
-    #     U = Vector(idKs * U)
-    # elseif solver == :skyline
-    #     I, J, V = findnz(K)
-    #     @show bw = maximum(abs.(I .- J)) + 1
-    #     M = size(K, 1)
-    #     K = nothing
-    #     GC.gc()
-    #     sky = SkylineSolvers.Ldlt.SkylineMatrix(I, J, V, M)
-    #     I = nothing
-    #     J = nothing
-    #     V = nothing
-    #     GC.gc()
-    #     @show SkylineSolvers.Ldlt.nnz(sky)
-    #     @time SkylineSolvers.Ldlt.factorize!(sky)
-    #     @time U = SkylineSolvers.Ldlt.solve(sky, F)
-    # elseif solver == :ldlfactorizations
-    #     @time factors = LDLFactorizations.ldlt(K)
-    #     @time U = factors \ F
-    # elseif solver == :mor0
-    #     Nc = 32
-    #     nbf1max = 4
-    #     mixprop = 0.01
-    #     partitioning = nodepartitioning(fens, Nc)
-    #     mor = CoNCData(fens, partitioning)
-    #     Phi = transfmatrix(mor, LegendreBasis, nbf1max, u)
-    #     PhiT = Phi'
-    #     Kr = transfm(K, Phi, PhiT)
-    #     @show size(Kr)
-    #     Krfactor = lu(Kr)
-    #     Ur = Phi * (Krfactor \ (PhiT * F))
-    #     scattersysvec!(u, Ur[:])
-    #     utip = mean(u.values[Tipl, 3], dims = 1)
-    #     println("First Guess of Deflection: $(utip), compared to $(uzex)")
-    #     R = F - K * Ur
-    #     n = size(K, 1)
-    #     Kdinv = 1.0 ./ diag(K)
-    #     morprecond(y, v) = begin
-    #         y .= (1 - mixprop) * (Kdinv .* v)
-    #         y .+= mixprop * (Phi * (Krfactor \ (PhiT * v)))
-    #     end
-    #     morprecondnomix(y, v) = begin
-    #         y .= (Kdinv .* v) + (Phi * (Krfactor \ (PhiT * v)))
-    #     end
-    #     opM = LinearOperator(Float64, n, n, false, false, morprecond)
-    #     U = deepcopy(Ur)
-    #     for iter = 1:50
-    #         @show iter
-    #         (DU, stats) = Krylov.cg(K, F - K * U; M = opM, itmax = 5, verbose = 0)
-    #         U += DU
-    #         @show norm(DU) / norm(U)
-    #         scattersysvec!(u, U[:])
-    #         utip = mean(u.values[Tipl, 3], dims = 1)
-    #         println("Iterated Deflection: $(utip), compared to $(uzex)")
-    #     end
-    # elseif solver == :mor1
-    #     rtol = 1.0e-9
-    #     Nc = 32
-    #     nbf1max = 4
-    #     mixprop = 1.0
-    #     partitioning = nodepartitioning(fens, Nc)
-    #     mor = CoNCData(fens, partitioning)
-    #     Phi = transfmatrix(mor, LegendreBasis, nbf1max, u)
-    #     PhiT = Phi'
-    #     Kr = transfm(K, Phi, PhiT)
-    #     @show size(Kr)
-    #     Krfactor = lu(Kr)
-    #     Kdinv = 1.0 ./ diag(K)
-    #     # invKrd = fill(0.0, size(K, 1))
-    #     # for i in 1:size(K, 1)
-    #     #     invKrd[i] = @views dot(vec(Phi[i, :]), Krfactor \ Vector(Phi[i, :]))
-    #     # end
-    #     # @show norm(invKrd), norm(Kdinv)
-    #     # Kdinv .*= norm(invKrd) / norm(Kdinv)
-    #     # trace1 = scatter(x = 1:length(invKrd),  
-    #     #     y = invKrd,
-    #     #     mode="points",
-    #     #     line_width=1.5,
-    #     #     line_color="RoyalBlue")
-    #     # trace2 = scatter(x = 1:length(invKrd),  
-    #     #     y = Kdinv,
-    #     #     mode="lines",
-    #     #     line_width=1.5,
-    #     #     line_color="red")
-    #     # data = [trace1, trace2]
-    #     # # data = [trace2]
-    #     # layout = Layout(;title="Diagonals")
-    #     # display(plot(data, layout))
-    #     Ur = Phi * (Krfactor \ (PhiT * F))
-    #     scattersysvec!(u, Ur[:])
-    #     utip = mean(u.values[Tipl, 3], dims = 1)
-    #     println("First Guess of Deflection: $(utip), compared to $(uzex)")
-    #     R = F - K * Ur
-    #     n = size(K, 1)
-    #     # morprecondnomix(y, v) = begin
-    #     #     y .= (Kdinv .* v) - (invKrd .* v) + (Phi * (Krfactor \ (PhiT * v)))
-    #     # end
-    #     opM = LinearOperator(
-    #         Float64,
-    #         n,
-    #         n,
-    #         false,
-    #         false,
-    #         (y, v) -> y .= mixprop .* (Kdinv .* v) .+ (Phi * (Krfactor \ (PhiT * v))),
-    #     )
-    #     U = deepcopy(Ur)
-    #     utipprev = utip
-    #     @time for iter = 1:50
-    #         @show iter
-    #         (DU, stats) = Krylov.cg(K, F - K * U; M = opM, itmax = 5, verbose = 0)
-    #         U += DU
-    #         @show norm(DU) / norm(U)
-    #         scattersysvec!(u, U[:])
-    #         utip = mean(u.values[Tipl, 3], dims = 1)
-    #         println("Iterated Deflection: $(utip), compared to $(uzex)")
-    #         if norm(utip - utipprev) / norm(utip) < rtol
-    #             break
-    #         end
-    #         utipprev = utip
-    #     end
-    # elseif solver == :mor
-    #     Nc = 16
-    #     nbf1max = 4
-    #     mixprop = 0.05
-    #     partitioning = nodepartitioning(fens, Nc)
-    #     mor = CoNCData(fens, partitioning)
-    #     Phi = transfmatrix(mor, LegendreBasis, nbf1max, u)
-    #     PhiT = Phi'
-    #     Kr = transfm(K, Phi, PhiT)
-    #     @show size(Kr)
-    #     Ur = Phi * (Kr \ (PhiT * F))
-    #     scattersysvec!(u, Ur[:])
-    #     utip = mean(u.values[Tipl, 3], dims = 1)
-    #     println("First Guess of Deflection: $(utip), compared to $(uzex)")
-    #     Phi = hcat(Ur)
-    #     U = deepcopy(Ur)
-    #     Kd = Diagonal(diag(K))
-    #     n = size(K, 1)
+    if precond == :ilu
+        mK_ffd = mean(diag(K_ff))
+        PRECND = ilu(K_ff, τ = mK_ffd / 100.0)
+    elseif precond == :kdiag
+        PRECND = Diagonal(diag(K_ff))
+    end
 
-    #     for iter = 1:50
-    #         @show iter
-    #         Kr = transfm(K, Phi, Phi')
-    #         # Krd = Diagonal(diag(Phi * Kr * Phi'))
-    #         # @show mean(diag(Kd)), mean(diag(Krd))
-    #         # @show norm(diag(Kd) - diag(Krd)), norm(diag(Kd))
-    #         opM = LinearOperator(
-    #             Float64,
-    #             n,
-    #             n,
-    #             false,
-    #             false,
-    #             (y, v) -> morprecond3nomix(y, v, Phi, Kd, Kr, mixprop),
-    #         )
-    #         @time (DU, stats) = Krylov.cg(K, F - K * U; M = opM, itmax = 10, verbose = 0)
-    #         @show norm(DU) / norm(U)
-    #         Phi = hcat(Phi, DU)
-    #         factors = qr(Phi)
-    #         Phi = Matrix(factors.Q)
-    #         U += DU
-    #         scattersysvec!(u, U[:])
-    #         utip = mean(u.values[Tipl, 3], dims = 1)
-    #         println("Iterated Deflection: $(utip), compared to $(uzex)")
-    #     end
+    if alg == :cg
+        ALG = KrylovJL_CG
+    elseif alg == :gmres
+        ALG = KrylovJL_GMRES
+    end
 
-    # else
-    #     @error "Solver not recognized"
-    # end
-
-    Pl = Diagonal(diag(K_ff))
     @time prob = LinearProblem(K_ff, F_f)
-    @time sol = solve(prob, KrylovJL_GMRES(), Pl=Pl)
+    @time sol = solve(prob, ALG(), Pl=PRECND)
     scattersysvec!(u, sol.u[:])
 
     utip = mean(u.values[Tipl, 3], dims = 1)
@@ -311,7 +119,7 @@ function example(n = 10, solver = :suitesparse)
     File = "example-n=$(n).vtk"
     vtkexportmesh(File, fens, fes; vectors = [("u", u.values)])
     @async run(`"paraview.exe" $File`)
-
+ 
     true
 end # example
 
