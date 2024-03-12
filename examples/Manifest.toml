@@ -866,7 +866,9 @@ version = "4.2.7+0"
 
 [[deps.ParFEM]]
 deps = ["ChunkSplitters", "FinEtools", "SparseArrays"]
-path = "../../ParFEM.jl"
+git-tree-sha1 = "0e6648063e6fdec99d77c70abb3748b8b77eb3a1"
+repo-rev = "main"
+repo-url = "https://github.com/PetrKryslUCSD/ParFEM.jl.git"
 uuid = "6d2818ca-ed81-4c53-b1fa-1f68c2fd5913"
 version = "0.1.2"
 
