@@ -1031,10 +1031,10 @@ uuid = "36c8627f-9965-5494-a995-c6b170f724f3"
 version = "1.52.1+0"
 
 [[deps.ParFEM]]
-deps = ["FinEtools", "SparseArrays"]
+deps = ["ChunkSplitters", "FinEtools", "SparseArrays"]
 path = "../../ParFEM.jl"
 uuid = "6d2818ca-ed81-4c53-b1fa-1f68c2fd5913"
-version = "0.1.1"
+version = "0.1.2"
 
 [[deps.Parameters]]
 deps = ["OrderedCollections", "UnPack"]

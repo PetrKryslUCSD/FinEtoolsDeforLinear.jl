@@ -20,7 +20,8 @@ using PlotlyJS
 using Random
 using DataDrop
 using ChunkSplitters
-using ParFEM: make_assembler, start_assembler!, make_task_assemblers, parallel_matrix_assembly, csc_matrix_pattern, add_to_matrix!
+using ParFEM: make_assembler, start_assembler!, make_task_assemblers, parallel_matrix_assembly, csc_matrix_pattern, add_to_matrix!, subdomainfemms
+using ParFEM: parallel_make_csc_matrix
 
 # Isotropic material
 E = 1000.0
@@ -186,17 +187,18 @@ function example_wop(n = 10; ntasks = Threads.nthreads(), precond = :ilu, alg = 
         stiffness(femm, assembler, geom, u)
     end
 
-    femms = FEMMDeforLinear[]
-    @time for (ch, j) in chunks(1:count(fes), ntasks)
-        push!(femms, FEMMDeforLinear(MR, IntegDomain(subset(fes, ch), GaussRule(3, 2)), material))
+    function createsubdomain(fessubset)
+        FEMMDeforLinear(MR, IntegDomain(fessubset, GaussRule(3, 2)), material)
     end
 
-    @time assembler = make_assembler(femms, SysmatAssemblerSparse, u)
-    @time start_assembler!(assembler)
-    @time assemblers = make_task_assemblers(femms, assembler, SysmatAssemblerSparse, u)
-    @time parallel_matrix_assembly(femms, assemblers, matrixcomputation!)
-    @time K = csc_matrix_pattern(fes, u)
-    @time add_to_matrix!(K,  assembler)
+    @time K = parallel_make_csc_matrix(fes, u, createsubdomain, matrixcomputation!, ntasks)
+    # femms = subdomainfemms(fes, ntasks, createsubdomain)
+    # @time assembler = make_assembler(femms, SysmatAssemblerSparse, u)
+    # @time start_assembler!(assembler)
+    # @time assemblers = make_task_assemblers(femms, assembler, SysmatAssemblerSparse, u)
+    # @time parallel_matrix_assembly(femms, assemblers, matrixcomputation!)
+    # @time K = csc_matrix_pattern(fes, u)
+    # @time add_to_matrix!(K,  assembler)
 
     K_ff = matrix_blocked_ff(K, nfreedofs(u))
     K = nothing
