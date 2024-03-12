@@ -51,6 +51,12 @@ function run_example(N = 10, ntasks = 2, do_serial = false)
         stiffness(femm, assembler, geom, u)
     end
 
+    femms = FEMMDeforLinear[]
+    @time for (ch, j) in chunks(1:count(fes), ntasks)
+        push!(femms, FEMMDeforLinear(MR, IntegDomain(subset(fes, ch), GaussRule(3, 2)), material))
+    end
+
+
     @time assembler = make_assembler(femms, SysmatAssemblerSparseSymm, u)
     @time start_assembler!(assembler)
     @time assemblers = make_task_assemblers(femms, assembler, SysmatAssemblerSparseSymm, u)
