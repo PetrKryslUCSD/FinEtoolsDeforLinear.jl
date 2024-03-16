@@ -19,6 +19,7 @@ using ILUZero
 # using SkylineSolvers
 using LDLFactorizations
 using LimitedLDLFactorizations, LinearOperators, Krylov
+using FinEtoolsMultithreading.Exports
 using DataDrop
 import CoNCMOR: CoNCData, transfmatrix, LegendreBasis, SineCosineBasis
 
@@ -609,6 +610,146 @@ function stubby_corbel_H8_big_ms(n = 10, solver = :suitesparse)
         @error "Solver not recognized"
     end
     scattersysvec!(u, U[:])
+
+    utip = mean(u.values[Tipl, 3], dims = 1)
+    println("Deflection: $(utip), compared to $(uzex)")
+
+    File = "stubby_corbel_H8_big_ms.vtk"
+    vtkexportmesh(File, fens, fes; vectors = [("u", u.values)])
+    @async run(`"paraview.exe" $File`)
+
+    # modeldata["postprocessing"] = FDataDict("file"=>"hughes_cantilever_stresses_$(elementtag)", "outputcsys"=>CSys(3, 3, updatecs!), "quantity"=>:Cauchy, "component"=>[5])
+    # modeldata = exportstresselementwise(modeldata)
+
+    # modeldata["postprocessing"] = FDataDict("file"=>"hughes_cantilever_stresses_$(elementtag)",
+    # "outputcsys"=>CSys(3, 3, updatecs!), "quantity"=>:Cauchy,
+    # "component"=>collect(1:6))
+    # modeldata = exportstresselementwise(modeldata)
+    # stressfields = ElementalField[modeldata["postprocessing"]["exported"][1]["field"]]
+
+    true
+end # stubby_corbel_H8_big_ms
+
+function stubby_corbel_H8_big_ms_parallel(N = 10, ntasks = Threads.nthreads(), assembly_only = false)
+    elementtag = "MSH8"
+    println("""
+    Stubby corbel example. Element: $(elementtag)
+    """)
+
+    times = Dict{String, Float64}()
+    
+    t1 = time()
+    fens, fes = H8block(W, L, H, N, 2 * N, 2 * N)
+    times["MeshGeneration"] = time() - t1
+    println("Number of elements: $(count(fes))")
+    bfes = meshboundary(fes)
+    # end cross-section surface  for the shear loading
+    sectionL = selectelem(fens, bfes; facing = true, direction = [0.0 +1.0 0.0])
+    # 0 cross-section surface  for the reactions
+    section0 = selectelem(fens, bfes; facing = true, direction = [0.0 -1.0 0.0])
+    # 0 cross-section surface  for the reactions
+    sectionlateral = selectelem(fens, bfes; facing = true, direction = [1.0 0.0 0.0])
+
+    MR = DeforModelRed3D
+    material = MatDeforElastIso(MR, 0.0, E, nu, CTE)
+
+    # Material orientation matrix
+    csmat = [i == j ? one(Float64) : zero(Float64) for i = 1:3, j = 1:3]
+
+    function updatecs!(csmatout, XYZ, tangents, feid, qpid)
+        copyto!(csmatout, csmat)
+    end
+
+    geom = NodalField(fens.xyz)
+    u = NodalField(zeros(size(fens.xyz, 1), 3)) # displacement field
+
+    lx0 = connectednodes(subset(bfes, section0))
+    setebc!(u, lx0, true, 1, 0.0)
+    setebc!(u, lx0, true, 2, 0.0)
+    setebc!(u, lx0, true, 3, 0.0)
+    lx1 = connectednodes(subset(bfes, sectionlateral))
+    setebc!(u, lx1, true, 1, 0.0)
+    applyebc!(u)
+    numberdofs!(u)
+    # numberdofs!(u)
+    println("nfreedofs(u) = $(nfreedofs(u))")
+
+    fi = ForceIntensity(Float64, 3, getfrcL!)
+    el2femm = FEMMBase(IntegDomain(subset(bfes, sectionL), GaussRule(2, 2)))
+    F = distribloads(el2femm, geom, u, fi, 2)
+    F_f = vector_blocked_f(F, nfreedofs(u))
+
+    
+    # femm = FEMMDeforLinear(MR, IntegDomain(fes, GaussRule(3, 2)), material)
+    femm = FEMMDeforLinearMSH8(MR, IntegDomain(fes, GaussRule(3, 2)), material)
+
+    function createsubdomain(fessubset)
+        FEMMDeforLinearMSH8(MR, IntegDomain(fessubset, GaussRule(3, 2)), material)
+    end
+
+    function matrixcomputation!(femm, assembler)
+        associategeometry!(femm, geom)
+        stiffness(femm, assembler, geom, u)
+    end
+        
+    t1 = time()
+    n2e = FENodeToFEMap(fes.conn, nnodes(u))
+    times["FENodeToFEMap"] = time() - t1
+    println("Make node to element map = $(times["FENodeToFEMap"]) [s]")
+
+    println("stiffness")
+    GC.enable(false)
+
+    t0 = time(); 
+
+    t1 = time()
+    assembler = fill_assembler(fes, u, createsubdomain, matrixcomputation!, ntasks)
+    times["FillAssembler"] = time() - t1
+    println("    Fill assembler = $(times["FillAssembler"]) [s]")
+
+    t1 = time()
+    n2n = FENodeToNeighborsMap(n2e, fes.conn)
+    times["FENodeToNeighborsMap"] = time() - t1
+    println("    Make node to neighbor map = $(times["FENodeToNeighborsMap"]) [s]")
+
+    t1 = time()
+    K = sparse_symmetric_zero(u, n2n, :CSC)
+    times["SparseZero"] = time() - t1
+    println("    Make sparse zero = $(times["SparseZero"]) [s]")
+
+    t1 = time()
+    add_to_matrix!(K, assembler)
+    times["AddToMatrix"] = time() - t1
+    println("    Add to matrix = $(times["AddToMatrix"]) [s]")
+
+    times["TotalAssembly"] = time() - t0
+    println("Assembly total = $(times["TotalAssembly"]) [s]")
+
+    GC.enable(true)
+
+    K_ff = matrix_blocked_ff(K, nfreedofs(u))
+    F_f = vector_blocked_f(F, nfreedofs(u))
+    println("Stiffness: number of non zeros = $(nnz(K_ff)) [ND]")
+    println("Sparsity = $(nnz(K_ff)/size(K_ff, 1)/size(K_ff, 2)) [ND]")
+    
+    if assembly_only
+        isdir("$(N)") || mkdir("$(N)")
+        DataDrop.store_json(joinpath(
+            "$(N)", "stubby_corbel_H8_big_ms_parallel-timing-nth=$(Threads.nthreads())"), 
+            times
+        )
+        return
+    end
+    
+    Tipl = selectnode(fens, box = [0 W L L 0 H], inflate = htol)
+
+    @time K_ff_factors = SuiteSparse.CHOLMOD.cholesky(K_ff)
+    @show nnz(K_ff_factors)
+    # @time K = SparseArrays.ldlt(K)
+    # @time K = cholesky(K)
+    @time U_f = K_ff_factors \ (F_f)
+
+    scattersysvec!(u, U_f[:])
 
     utip = mean(u.values[Tipl, 3], dims = 1)
     println("Deflection: $(utip), compared to $(uzex)")
