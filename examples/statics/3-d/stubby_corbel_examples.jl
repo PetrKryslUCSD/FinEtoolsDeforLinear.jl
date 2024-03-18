@@ -636,11 +636,11 @@ function stubby_corbel_H8_big_ms_parallel(N = 10, ntasks = Threads.nthreads(), a
     Stubby corbel example. Element: $(elementtag)
     """)
 
-    times = Dict{String, Float64}()
+    times = Dict{String, Vector{Float64}}()
     
     t1 = time()
     fens, fes = H8block(W, L, H, N, 2 * N, 2 * N)
-    times["MeshGeneration"] = time() - t1
+    times["MeshGeneration"] = [time() - t1]
     println("Number of elements: $(count(fes))")
     bfes = meshboundary(fes)
     # end cross-section surface  for the shear loading
@@ -694,7 +694,7 @@ function stubby_corbel_H8_big_ms_parallel(N = 10, ntasks = Threads.nthreads(), a
         
     t1 = time()
     n2e = FENodeToFEMap(fes.conn, nnodes(u))
-    times["FENodeToFEMap"] = time() - t1
+    times["FENodeToFEMap"] = [time() - t1]
     println("Make node to element map = $(times["FENodeToFEMap"]) [s]")
 
     println("stiffness")
@@ -704,25 +704,25 @@ function stubby_corbel_H8_big_ms_parallel(N = 10, ntasks = Threads.nthreads(), a
 
     t1 = time()
     assembler = fill_assembler(fes, u, createsubdomain, matrixcomputation!, ntasks)
-    times["FillAssembler"] = time() - t1
+    times["FillAssembler"] = [time() - t1]
     println("    Fill assembler = $(times["FillAssembler"]) [s]")
 
     t1 = time()
     n2n = FENodeToNeighborsMap(n2e, fes.conn)
-    times["FENodeToNeighborsMap"] = time() - t1
+    times["FENodeToNeighborsMap"] = [time() - t1]
     println("    Make node to neighbor map = $(times["FENodeToNeighborsMap"]) [s]")
 
     t1 = time()
     K = sparse_symmetric_zero(u, n2n, :CSC)
-    times["SparseZero"] = time() - t1
+    times["SparseZero"] = [time() - t1]
     println("    Make sparse zero = $(times["SparseZero"]) [s]")
 
     t1 = time()
     add_to_matrix!(K, assembler)
-    times["AddToMatrix"] = time() - t1
+    times["AddToMatrix"] = [time() - t1]
     println("    Add to matrix = $(times["AddToMatrix"]) [s]")
 
-    times["TotalAssembly"] = time() - t0
+    times["TotalAssembly"] = [time() - t0]
     println("Assembly total = $(times["TotalAssembly"]) [s]")
 
     GC.enable(true)
@@ -734,10 +734,14 @@ function stubby_corbel_H8_big_ms_parallel(N = 10, ntasks = Threads.nthreads(), a
     
     if assembly_only
         isdir("$(N)") || mkdir("$(N)")
-        DataDrop.store_json(joinpath(
-            "$(N)", "stubby_corbel_H8_big_ms_parallel-timing-nth=$(Threads.nthreads())"), 
-            times
-        )
+        n = DataDrop.with_extension(joinpath("$(N)", "stubby_corbel_H8_big_ms_parallel-timing-nth=$(Threads.nthreads())"), "json")
+        if isfile(n)
+            storedtimes = DataDrop.retrieve_json(n)
+            for k in keys(storedtimes)
+                times[k] = cat(times[k], storedtimes[k], dims = 1)
+            end
+        end
+        DataDrop.store_json(n, times)
         return
     end
     
