@@ -718,7 +718,7 @@ function stubby_corbel_H8_big_ms_parallel(N = 10, ntasks = Threads.nthreads(), a
     println("    Make sparse zero = $(times["SparseZero"]) [s]")
 
     t1 = time()
-    add_to_matrix!(K, assembler)
+    add_to_matrix!(K, assembler, ntasks)
     times["AddToMatrix"] = [time() - t1]
     println("    Add to matrix = $(times["AddToMatrix"]) [s]")
 
@@ -734,7 +734,7 @@ function stubby_corbel_H8_big_ms_parallel(N = 10, ntasks = Threads.nthreads(), a
     
     if assembly_only
         isdir("$(N)") || mkdir("$(N)")
-        n = DataDrop.with_extension(joinpath("$(N)", "stubby_corbel_H8_big_ms_parallel-timing-nth=$(Threads.nthreads())"), "json")
+        n = DataDrop.with_extension(joinpath("$(N)", "stubby_corbel_H8_big_ms_parallel-timing-nth=$(ntasks)"), "json")
         if isfile(n)
             storedtimes = DataDrop.retrieve_json(n)
             for k in keys(storedtimes)
@@ -746,8 +746,8 @@ function stubby_corbel_H8_big_ms_parallel(N = 10, ntasks = Threads.nthreads(), a
     end
     
     Tipl = selectnode(fens, box = [0 W L L 0 H], inflate = htol)
-
-    @time K_ff_factors = SuiteSparse.CHOLMOD.cholesky(K_ff)
+    @show norm(K_ff - K_ff') / norm(K_ff)
+    @time K_ff_factors = SuiteSparse.CHOLMOD.cholesky(Symmetric(K_ff))
     @show nnz(K_ff_factors)
     # @time K = SparseArrays.ldlt(K)
     # @time K = cholesky(K)
@@ -760,7 +760,7 @@ function stubby_corbel_H8_big_ms_parallel(N = 10, ntasks = Threads.nthreads(), a
 
     File = "stubby_corbel_H8_big_ms.vtk"
     vtkexportmesh(File, fens, fes; vectors = [("u", u.values)])
-    @async run(`"paraview.exe" $File`)
+    # @async run(`"paraview.exe" $File`)
 
     # modeldata["postprocessing"] = FDataDict("file"=>"hughes_cantilever_stresses_$(elementtag)", "outputcsys"=>CSys(3, 3, updatecs!), "quantity"=>:Cauchy, "component"=>[5])
     # modeldata = exportstresselementwise(modeldata)
