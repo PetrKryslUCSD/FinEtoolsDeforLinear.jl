@@ -718,7 +718,7 @@ function stubby_corbel_H8_big_ms_parallel(N = 10, ntasks = Threads.nthreads(), a
     println("    Make sparse zero = $(times["SparseZero"]) [s]")
 
     t1 = time()
-    add_to_matrix!(K, assembler, ntasks, algorithm)
+    add_to_matrix!(K, assembler, ntasks; algorithm = algorithm)
     times["AddToMatrix"] = [time() - t1]
     println("    Add to matrix = $(times["AddToMatrix"]) [s]")
 

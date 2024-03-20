@@ -363,11 +363,11 @@ version = "3.0.0"
 
 [[deps.FinEtoolsMultithreading]]
 deps = ["ChunkSplitters", "FinEtools", "LinearAlgebra", "SparseArrays", "SparseMatricesCSR", "Test", "ThreadedScans"]
-git-tree-sha1 = "43943197af70434c1eaec9d10a224f65edeafd8d"
+git-tree-sha1 = "dfe38b4cd3d544491d10df581435f7fbd3e51f11"
 repo-rev = "main"
 repo-url = "https://github.com/PetrKryslUCSD/FinEtoolsMultithreading.jl.git"
 uuid = "6d2818ca-ed81-4c53-b1fa-1f68c2fd5913"
-version = "0.1.11"
+version = "0.1.12"
 
 [[deps.FixedPointNumbers]]
 deps = ["Statistics"]
