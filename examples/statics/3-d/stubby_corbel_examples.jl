@@ -630,7 +630,7 @@ function stubby_corbel_H8_big_ms(n = 10, solver = :suitesparse)
     true
 end # stubby_corbel_H8_big_ms
 
-function stubby_corbel_H8_big_ms_parallel(N = 10, ntasks = Threads.nthreads(), assembly_only = false)
+function stubby_corbel_H8_big_ms_parallel(N = 10, ntasks = Threads.nthreads(), assembly_only = false, algorithm = 1)
     elementtag = "MSH8"
     println("""
     Stubby corbel example. Element: $(elementtag)
@@ -734,7 +734,7 @@ function stubby_corbel_H8_big_ms_parallel(N = 10, ntasks = Threads.nthreads(), a
     
     if assembly_only
         isdir("$(N)") || mkdir("$(N)")
-        n = DataDrop.with_extension(joinpath("$(N)", "stubby_corbel_H8_big_ms_parallel-timing-nth=$(ntasks)"), "json")
+        n = DataDrop.with_extension(joinpath("$(N)", "stubby_corbel_H8_big_ms_parallel-timing-alg=$(algorithm)-nth=$(ntasks)"), "json")
         if isfile(n)
             storedtimes = DataDrop.retrieve_json(n)
             for k in keys(storedtimes)

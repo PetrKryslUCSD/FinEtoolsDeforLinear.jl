@@ -12,9 +12,9 @@ version = "0.5.3"
 
 [[deps.Adapt]]
 deps = ["LinearAlgebra", "Requires"]
-git-tree-sha1 = "cea4ac3f5b4bc4b3000aa55afb6e5626518948fa"
+git-tree-sha1 = "6a55b747d1812e699320963ffde36f1ebdda4099"
 uuid = "79e6a3ab-5dfb-504d-930d-738a2a938a0e"
-version = "4.0.3"
+version = "4.0.4"
 weakdeps = ["StaticArrays"]
 
     [deps.Adapt.extensions]
@@ -363,11 +363,11 @@ version = "3.0.0"
 
 [[deps.FinEtoolsMultithreading]]
 deps = ["ChunkSplitters", "FinEtools", "LinearAlgebra", "SparseArrays", "SparseMatricesCSR", "Test", "ThreadedScans"]
-git-tree-sha1 = "85e46a9d6ba7c85912ba5d8507ab9070538eaa1d"
+git-tree-sha1 = "43943197af70434c1eaec9d10a224f65edeafd8d"
 repo-rev = "main"
 repo-url = "https://github.com/PetrKryslUCSD/FinEtoolsMultithreading.jl.git"
 uuid = "6d2818ca-ed81-4c53-b1fa-1f68c2fd5913"
-version = "0.1.10"
+version = "0.1.11"
 
 [[deps.FixedPointNumbers]]
 deps = ["Statistics"]
