@@ -20,7 +20,7 @@ using ILUZero
 using LDLFactorizations
 using LimitedLDLFactorizations, LinearOperators, Krylov
 using FinEtoolsMultithreading.Exports
-using FinEtoolsMultithreading: domain_decomposition, parallel_matrix_assembly!, SysmatAssemblerSparsePatt, associate_pattern
+using FinEtoolsMultithreading: domain_decomposition, parallel_matrix_assembly!, SysmatAssemblerSparsePatt
 using DataDrop
 import CoNCMOR: CoNCData, transfmatrix, LegendreBasis, SineCosineBasis
 
@@ -701,30 +701,28 @@ function stubby_corbel_H8_big_ms_parallel(N = 10,
     t0 = time(); 
 
     t1 = time()
-    element_colors, unique_colors = element_coloring(fes, n2e)
+    coloring = element_coloring(fes, n2e)
     times["ElementColors"] = [time() - t1]
     println("    Compute element colors = $(times["ElementColors"]) [s]")
 
     t1 = time()
-    n2n = FENodeToNeighborsMap(n2e, fes.conn)
+    n2n = FENodeToNeighborsMap(n2e, fes)
     times["FENodeToNeighborsMap"] = [time() - t1]
     println("    Make node to neighbor map = $(times["FENodeToNeighborsMap"]) [s]")
 
     t1 = time()
-    K = sparse_symmetric_csc_pattern(u.dofnums, nalldofs(u), n2n, zero(eltype(u.values)))
+    K_pattern = sparse_symmetric_csc_pattern(u.dofnums, nalldofs(u), n2n, zero(eltype(u.values)))
     times["SparsityPattern"] = [time() - t1]
     println("    Sparsity pattern = $(times["SparsityPattern"]) [s]")
 
     t1 = time()
-    decomposition = domain_decomposition(fes, ntasks, element_colors, unique_colors, createsubdomain)
+    decomposition = domain_decomposition(fes, coloring, createsubdomain, ntasks)
     times["DomainDecomposition"] = [time() - t1]
     println("    Domain decomposition = $(times["DomainDecomposition"]) [s]")
 
     t1 = time()
-    assembler = SysmatAssemblerSparsePatt(0.0)
-    associate_pattern(assembler, K)
     K = parallel_matrix_assembly!(
-        assembler,
+        SysmatAssemblerSparsePatt(K_pattern),
         decomposition,
         matrixcomputation!,
         ntasks
