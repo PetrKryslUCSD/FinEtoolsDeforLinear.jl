@@ -20,6 +20,7 @@ using ILUZero
 using LDLFactorizations
 using LimitedLDLFactorizations, LinearOperators, Krylov
 using FinEtoolsMultithreading.Exports
+using FinEtoolsMultithreading: domain_decomposition, parallel_matrix_assembly!, SysmatAssemblerSparsePatt, associate_pattern
 using DataDrop
 import CoNCMOR: CoNCData, transfmatrix, LegendreBasis, SineCosineBasis
 
@@ -630,7 +631,8 @@ function stubby_corbel_H8_big_ms(n = 10, solver = :suitesparse)
     true
 end # stubby_corbel_H8_big_ms
 
-function stubby_corbel_H8_big_ms_parallel(N = 10, ntasks = Threads.nthreads(), assembly_only = false, algorithm = 1)
+function stubby_corbel_H8_big_ms_parallel(N = 10, 
+    ntasks = Threads.nthreads(), assembly_only = false)
     elementtag = "MSH8"
     println("""
     Stubby corbel example. Element: $(elementtag)
@@ -679,10 +681,6 @@ function stubby_corbel_H8_big_ms_parallel(N = 10, ntasks = Threads.nthreads(), a
     F = distribloads(el2femm, geom, u, fi, 2)
     F_f = vector_blocked_f(F, nfreedofs(u))
 
-    
-    # femm = FEMMDeforLinear(MR, IntegDomain(fes, GaussRule(3, 2)), material)
-    femm = FEMMDeforLinearMSH8(MR, IntegDomain(fes, GaussRule(3, 2)), material)
-
     function createsubdomain(fessubset)
         FEMMDeforLinearMSH8(MR, IntegDomain(fessubset, GaussRule(3, 2)), material)
     end
@@ -691,21 +689,21 @@ function stubby_corbel_H8_big_ms_parallel(N = 10, ntasks = Threads.nthreads(), a
         associategeometry!(femm, geom)
         stiffness(femm, assembler, geom, u)
     end
-        
+
     t1 = time()
     n2e = FENodeToFEMap(fes.conn, nnodes(u))
     times["FENodeToFEMap"] = [time() - t1]
     println("Make node to element map = $(times["FENodeToFEMap"]) [s]")
 
-    println("stiffness")
+    println("Stiffness =============================================================")
     GC.enable(false)
 
     t0 = time(); 
 
     t1 = time()
-    assembler = fill_assembler(fes, u, createsubdomain, matrixcomputation!, ntasks)
-    times["FillAssembler"] = [time() - t1]
-    println("    Fill assembler = $(times["FillAssembler"]) [s]")
+    element_colors, unique_colors = element_coloring(fes, n2e)
+    times["ElementColors"] = [time() - t1]
+    println("    Compute element colors = $(times["ElementColors"]) [s]")
 
     t1 = time()
     n2n = FENodeToNeighborsMap(n2e, fes.conn)
@@ -713,14 +711,26 @@ function stubby_corbel_H8_big_ms_parallel(N = 10, ntasks = Threads.nthreads(), a
     println("    Make node to neighbor map = $(times["FENodeToNeighborsMap"]) [s]")
 
     t1 = time()
-    K = sparse_symmetric_zero(u, n2n, :CSC)
-    times["SparseZero"] = [time() - t1]
-    println("    Make sparse zero = $(times["SparseZero"]) [s]")
+    K = sparse_symmetric_csc_pattern(u.dofnums, nalldofs(u), n2n, zero(eltype(u.values)))
+    times["SparsityPattern"] = [time() - t1]
+    println("    Sparsity pattern = $(times["SparsityPattern"]) [s]")
 
     t1 = time()
-    add_to_matrix!(K, assembler, ntasks; algorithm = algorithm)
-    times["AddToMatrix"] = [time() - t1]
-    println("    Add to matrix = $(times["AddToMatrix"]) [s]")
+    decomposition = domain_decomposition(fes, ntasks, element_colors, unique_colors, createsubdomain)
+    times["DomainDecomposition"] = [time() - t1]
+    println("    Domain decomposition = $(times["DomainDecomposition"]) [s]")
+
+    t1 = time()
+    assembler = SysmatAssemblerSparsePatt(0.0)
+    associate_pattern(assembler, K)
+    K = parallel_matrix_assembly!(
+        assembler,
+        decomposition,
+        matrixcomputation!,
+        ntasks
+    )
+    times["AssemblyOfValues"] = [time() - t1]
+    println("    Add to matrix = $(times["AssemblyOfValues"]) [s]")
 
     times["TotalAssembly"] = [time() - t0]
     println("Assembly total = $(times["TotalAssembly"]) [s]")
@@ -734,7 +744,7 @@ function stubby_corbel_H8_big_ms_parallel(N = 10, ntasks = Threads.nthreads(), a
     
     if assembly_only
         isdir("$(N)") || mkdir("$(N)")
-        n = DataDrop.with_extension(joinpath("$(N)", "stubby_corbel_H8_big_ms_parallel-timing-alg=$(algorithm)-nth=$(ntasks)"), "json")
+        n = DataDrop.with_extension(joinpath("$(N)", "stubby_corbel_H8_big_ms_parallel-timing-nth=$(ntasks)"), "json")
         if isfile(n)
             storedtimes = DataDrop.retrieve_json(n)
             for k in keys(storedtimes)

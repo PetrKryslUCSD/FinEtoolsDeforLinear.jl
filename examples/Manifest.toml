@@ -351,9 +351,9 @@ version = "1.9.3"
 
 [[deps.FinEtools]]
 deps = ["ChunkSplitters", "DataDrop", "DelimitedFiles", "HDF5", "LinearAlgebra", "LoopVectorization", "Printf", "Random", "SparseArrays", "Statistics", "SymRCM", "Test", "Unicode", "WriteVTK"]
-git-tree-sha1 = "e81248b0e403b6313a6c467460e9151c5a2a914b"
+git-tree-sha1 = "3db23f60da7719d2f8dfe59906312c972f337ef9"
 uuid = "91bb5406-6c9a-523d-811d-0644c4229550"
-version = "8.0.6"
+version = "8.0.8"
 
 [[deps.FinEtoolsDeforLinear]]
 deps = ["Arpack", "FinEtools", "LinearAlgebra", "SparseArrays", "Statistics", "SuiteSparse", "Test"]
@@ -363,11 +363,11 @@ version = "3.0.0"
 
 [[deps.FinEtoolsMultithreading]]
 deps = ["ChunkSplitters", "FinEtools", "LinearAlgebra", "SparseArrays", "SparseMatricesCSR", "Test", "ThreadedScans"]
-git-tree-sha1 = "dfe38b4cd3d544491d10df581435f7fbd3e51f11"
+git-tree-sha1 = "e8986496a592abcc727308e207c6c07a0d0aed0e"
 repo-rev = "main"
 repo-url = "https://github.com/PetrKryslUCSD/FinEtoolsMultithreading.jl.git"
 uuid = "6d2818ca-ed81-4c53-b1fa-1f68c2fd5913"
-version = "0.1.12"
+version = "0.2.0"
 
 [[deps.FixedPointNumbers]]
 deps = ["Statistics"]
@@ -523,9 +523,9 @@ version = "0.21.4"
 
 [[deps.JuliaInterpreter]]
 deps = ["CodeTracking", "InteractiveUtils", "Random", "UUIDs"]
-git-tree-sha1 = "7b762d81887160169ddfc93a47e5fd7a6a3e78ef"
+git-tree-sha1 = "0015726aa3eb28973fbbdbb7ca2ed6396ffe3a23"
 uuid = "aa1ae85d-cabe-5617-a682-6adf51b2e16a"
-version = "0.9.29"
+version = "0.9.30"
 
 [[deps.KLU]]
 deps = ["LinearAlgebra", "SparseArrays", "SuiteSparse_jll"]
