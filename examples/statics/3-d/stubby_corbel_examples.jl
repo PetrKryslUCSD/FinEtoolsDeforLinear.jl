@@ -724,8 +724,7 @@ function stubby_corbel_H8_big_ms_parallel(N = 10,
     K = parallel_matrix_assembly!(
         SysmatAssemblerSparsePatt(K_pattern),
         decomposition,
-        matrixcomputation!,
-        ntasks
+        matrixcomputation!
     )
     times["AssemblyOfValues"] = [time() - t1]
     println("    Add to matrix = $(times["AssemblyOfValues"]) [s]")
