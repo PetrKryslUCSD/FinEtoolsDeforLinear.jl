@@ -20,7 +20,9 @@ using ILUZero
 using LDLFactorizations
 using LimitedLDLFactorizations, LinearOperators, Krylov
 using FinEtoolsMultithreading.Exports
-using FinEtoolsMultithreading: domain_decomposition, parallel_matrix_assembly!, SysmatAssemblerSparsePatt
+using FinEtoolsMultithreading: domain_decomposition, 
+          parallel_matrix_assembly!, SysmatAssemblerSparsePatt
+using FinEtoolsMultithreading          
 using DataDrop
 import CoNCMOR: CoNCData, transfmatrix, LegendreBasis, SineCosineBasis
 
