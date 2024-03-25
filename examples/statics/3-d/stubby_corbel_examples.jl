@@ -701,7 +701,12 @@ function stubby_corbel_H8_big_ms_parallel(N = 10,
     t0 = time(); 
 
     t1 = time()
-    coloring = element_coloring(fes, n2e)
+    n2n = FEElemToNeighborsMap(n2e, fes)
+    times["FEElemToNeighborsMap"] = [time() - t1]
+    println("    Make element to neighbor map = $(times["FEElemToNeighborsMap"]) [s]")
+
+    t1 = time()
+    coloring = FinEtoolsMultithreading.element_coloring(fes, e2e)
     times["ElementColors"] = [time() - t1]
     println("    Compute element colors = $(times["ElementColors"]) [s]")
 
