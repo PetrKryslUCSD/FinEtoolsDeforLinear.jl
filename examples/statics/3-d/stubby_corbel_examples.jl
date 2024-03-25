@@ -703,7 +703,7 @@ function stubby_corbel_H8_big_ms_parallel(N = 10,
     t0 = time(); 
 
     t1 = time()
-    n2n = FEElemToNeighborsMap(n2e, fes)
+    e2e = FEElemToNeighborsMap(n2e, fes)
     times["FEElemToNeighborsMap"] = [time() - t1]
     println("    Make element to neighbor map = $(times["FEElemToNeighborsMap"]) [s]")
 
