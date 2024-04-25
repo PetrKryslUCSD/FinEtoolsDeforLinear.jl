@@ -359,9 +359,9 @@ version = "8.0.13"
 
 [[deps.FinEtoolsDeforLinear]]
 deps = ["Arpack", "FinEtools", "LinearAlgebra", "SparseArrays", "Statistics", "SuiteSparse", "Test"]
-git-tree-sha1 = "5f38c79475d3e85795a099eb7ec7a5119c5620ea"
+path = ".."
 uuid = "e9187c00-8bdd-11e9-1e70-7ba8303116a2"
-version = "3.0.0"
+version = "3.0.2"
 
 [[deps.FinEtoolsMultithreading]]
 deps = ["ChunkSplitters", "FinEtools", "LinearAlgebra", "SparseArrays", "SparseMatricesCSR", "Test", "ThreadedScans"]
