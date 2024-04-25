@@ -157,12 +157,12 @@ function rltb_H8_sri_by_hand()
     
 
     # First compute the bulk portion of the stiffness matrix
-    material.D .= FinEtoolsDeforLinear.MatDeforElastIsoModule.tangent_moduli_bulk(E, nu)
+    material.D .= FinEtoolsDeforLinear.MatDeforElastIsoModule.bulk_split_tangent_moduli_bulk(E, nu)
     femm = FEMMDeforLinear(MR, IntegDomain(fes, GaussRule(3, 1)), material)
     associategeometry!(femm, geom)
     K = stiffness(femm, geom, u)
     # Next add the shear portion of the stiffness matrix
-    material.D .= FinEtoolsDeforLinear.MatDeforElastIsoModule.tangent_moduli_shear_bulk(E, nu)
+    material.D .= FinEtoolsDeforLinear.MatDeforElastIsoModule.bulk_split_tangent_moduli_shear(E, nu)
     femm = FEMMDeforLinear(MR, IntegDomain(fes, GaussRule(3, 2)), material)
     associategeometry!(femm, geom)
     K += stiffness(femm, geom, u)

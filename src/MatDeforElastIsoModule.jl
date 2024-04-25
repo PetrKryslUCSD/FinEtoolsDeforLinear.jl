@@ -715,7 +715,7 @@ end
 # Calculate the part of the material stiffness matrix that corresponds to
 # the lambda Lame coefficient.
 # Note: makes sense only for isotropic materials.
-function tangent_moduli_lambda(E, nu)
+function lambda_split_tangent_moduli_lambda(E, nu)
     lambda = E * nu / (1 + nu) / (1 - 2*(nu));
     m1 = [1 1 1 0 0 0]';
     return lambda * m1 * m1';
@@ -725,7 +725,7 @@ end
 # Calculate the part of the material stiffness matrix that corresponds to
 # the mu Lame coefficient.
 # Note: makes sense only for isotropic materials.
-function tangent_moduli_shear_lambda(E, nu)
+function lambda_split_tangent_moduli_shear(E, nu)
     mu     = E / (2 * (1 + nu));
     mI = diag([1 1 1 0.5 0.5 0.5]);
     return 2 * mu * mI;
@@ -735,7 +735,7 @@ end
 # Calculate the part of the material stiffness matrix that corresponds to
 # the bulk modulus.
 # Note: makes sense only for isotropic materials.
-function tangent_moduli_bulk(E, nu)
+function bulk_split_tangent_moduli_bulk(E, nu)
     B = E / 3 / (1 - 2*(nu));
     m1 = [1 1 1 0 0 0]';
     return B * m1 * m1';
@@ -744,7 +744,7 @@ end
 # Bulk-shear split of the matrix of tangent moduli.
 # Calculate the part of the material stiffness matrix that correspond to shear.
 # Note: makes sense only for isotropic materials.
-function tangent_moduli_shear_bulk(E, nu)
+function bulk_split_tangent_moduli_shear(E, nu)
     G = E / (2 * (1 + nu))
     return G * [2/3*[2 -1 -1; -1 2 -1; -1 -1 2] zeros(3, 3); zeros(3, 3) I(3)]
 end
