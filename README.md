@@ -14,11 +14,10 @@ statics and dynamics (modal analysis, steady-state vibration).
 
 ## News
 
+- 04/25/2024: Add utilities for split of isotropic elastic moduli.
 - 02/25/2024: Update documentation.
 - 02/01/2024: Improve test coverage of IM and ESNICE elements.
 - 01/08/2024: Fix bug in the modal analysis algorithm.
-- 12/31/2023: Update for Julia 1.10.
-- 12/22/2023: Merge the tutorials into the package tree.
 
 
 [Past news](#past-news)
@@ -60,6 +59,8 @@ be executed as described in the  [conceptual guide to
 
 ## <a name="past-news"></a>Past news
 
+- 12/31/2023: Update for Julia 1.10.
+- 12/22/2023: Merge the tutorials into the package tree.
 - 10/23/2023: Remove dependency on FinEtools predefined types (except for the data dictionary in the algorithm module).
 - 06/21/2023: Update for FinEtools 7.0.
 - 08/15/2022: Updated all examples.
