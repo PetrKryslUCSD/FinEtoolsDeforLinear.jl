@@ -20,7 +20,7 @@ using FinEtoolsDeforLinear.MatDeforLinearElasticModule: AbstractMatDeforLinearEl
 using LinearAlgebra: Transpose, Diagonal, mul!
 At_mul_B!(C, A, B) = mul!(C, Transpose(A), B)
 A_mul_B!(C, A, B) = mul!(C, A, B)
-using LinearAlgebra: eigen, eigvals, norm, cholesky, cross, dot
+using LinearAlgebra: eigen, eigvals, norm, cholesky, cross, dot, I
 
 """
     struct MatDeforElastIso{
@@ -71,6 +71,13 @@ end
     ) where {MR<:AbstractDeforModelRed,N<:Number}
 
 Create an isotropic elastic material providing all material parameters.
+
+## Arguments
+- `mr::Type{MR}`: The type of the deformation model.
+- `mass_density::N`: The mass density of the material.
+- `E::N`: The Young's modulus of the material.
+- `nu::N`: The Poisson's ratio of the material.
+- `CTE::N`: The coefficient of thermal expansion of the material.
 """
 function MatDeforElastIso(
     mr::Type{MR},
@@ -703,5 +710,44 @@ function MatDeforElastIso(mr::Type{DeforModelRed1DStress}, args::NTuple{4,FT}) w
         thermalstrain1d!,
     )
 end
+
+# Lame split of the matrix of tangent moduli.
+# Calculate the part of the material stiffness matrix that corresponds to
+# the lambda Lame coefficient.
+# Note: makes sense only for isotropic materials.
+function tangent_moduli_lambda(E, nu)
+    lambda = E * nu / (1 + nu) / (1 - 2*(nu));
+    m1 = [1 1 1 0 0 0]';
+    return lambda * m1 * m1';
+end
+
+# Lame split of the matrix of tangent moduli.
+# Calculate the part of the material stiffness matrix that corresponds to
+# the mu Lame coefficient.
+# Note: makes sense only for isotropic materials.
+function tangent_moduli_shear_lambda(E, nu)
+    mu     = E / (2 * (1 + nu));
+    mI = diag([1 1 1 0.5 0.5 0.5]);
+    return 2 * mu * mI;
+end
+
+# Bulk-shear split of the matrix of tangent moduli.
+# Calculate the part of the material stiffness matrix that corresponds to
+# the bulk modulus.
+# Note: makes sense only for isotropic materials.
+function tangent_moduli_bulk(E, nu)
+    B = E / 3 / (1 - 2*(nu));
+    m1 = [1 1 1 0 0 0]';
+    return B * m1 * m1';
+end
+
+# Bulk-shear split of the matrix of tangent moduli.
+# Calculate the part of the material stiffness matrix that correspond to shear.
+# Note: makes sense only for isotropic materials.
+function tangent_moduli_shear_bulk(E, nu)
+    G = E / (2 * (1 + nu))
+    return G * [2/3*[2 -1 -1; -1 2 -1; -1 -1 2] zeros(3, 3); zeros(3, 3) I(3)]
+end
+
 
 end
