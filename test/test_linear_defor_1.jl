@@ -137,7 +137,7 @@ function test()
     @test norm(sA - [-93.8569]) < 1.0e-2
 
     # Loop over only those elements that share the node nA
-    fen2fe = FENodeToFEMap(connasarray(fes), nnodes(geom))
+    fen2fe = FENodeToFEMap(fes, nnodes(geom))
     function inspector(idat, elnum, conn, xe, out, xq)
         # println("loc = $(  xq  ) : $(  transpose(out)/phun("MEGA*Pa")  )")
         return idat
@@ -413,16 +413,13 @@ function test()
 
     ##
     # And  the solution for the free degrees of freedom is obtained.
-    U = (K + H) \ F
-    scattersysvec!(u, U[:])
-
+    solve_blocked!(u, K+H, F)  
 
     ##
     # The stress  is recovered from the stress calculated at the
     # integration points.
 
     fld = fieldfromintegpoints(femm, geom, u, dT, :Cauchy, 3)
-
 
     ##
     # Now that we have the nodal field  for the axial stress, we can plot
@@ -689,9 +686,7 @@ function test()
     femm = FEMMDeforLinear(MR, IntegDomain(fes, GaussRule(2, 2), axisymmetric), material)
 
     K = stiffness(femm, geom, u)
-    #K=cholesky(K)
-    U = K \ (F2)
-    scattersysvec!(u, U[:])
+    solve_blocked!(u, K, F2)
 
     # Transfer the solution of the displacement to the nodes on the
     # internal cylindrical surface and convert to
@@ -1396,7 +1391,7 @@ function test()
     # println("Stress at point A: $(sA) i. e.  $( sAn*100  )% of reference value")
     @test abs(sA[1] - (-93.8569)) < 1e-3
 
-    fen2fe = FENodeToFEMap(connasarray(fes), nnodes(geom))
+    fen2fe = FENodeToFEMap(fes, nnodes(geom))
     function inspector(idat, elnum, conn, xe, out, xq)
         # println("loc = $(  xq  ) : $(  transpose(out)/phun("MEGA*Pa")  )")
         return idat

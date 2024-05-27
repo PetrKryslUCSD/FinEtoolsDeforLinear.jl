@@ -327,7 +327,7 @@ function test()
     # println("Stress at point A: $(sA) i. e.  $( sAn*100  )% of reference value")
     @test abs(sA[1] - (-93.8569)) < 1.0e-3
 
-    fen2fe = FENodeToFEMap(connasarray(fes), nnodes(geom))
+    fen2fe = FENodeToFEMap(fes, nnodes(geom))
     function inspector(idat, elnum, conn, xe, out, xq)
         println("loc = $(  xq  ) : $(  transpose(out)/phun("MEGA*Pa")  )")
         return idat
@@ -471,7 +471,7 @@ function test()
     # println("Stress at point A: $(sA) i. e.  $( sAn*100  )% of reference value")
     @test abs(sA[1] - (-93.8569)) < 1.0e-3
 
-    fen2fe = FENodeToFEMap(connasarray(fes), nnodes(geom))
+    fen2fe = FENodeToFEMap(fes, nnodes(geom))
     function inspector(idat, elnum, conn, xe, out, xq)
         println("loc = $(  xq  ) : $(  transpose(out)/phun("MEGA*Pa")  )")
         return idat
@@ -613,7 +613,7 @@ function test()
     sAn = fld.values[nA] / sigmaA
     # println("Stress at point A: $(sA) i. e.  $( sAn*100  )% of reference value")
 
-    fen2fe = FENodeToFEMap(connasarray(fes), nnodes(geom))
+    fen2fe = FENodeToFEMap(fes, nnodes(geom))
     function inspector(idat, elnum, conn, xe, out, xq)
         # println("loc = $(  xq  ) : $(  transpose(out)/phun("MEGA*Pa")  )")
         return idat
@@ -840,7 +840,7 @@ function test()
     sAn = fld.values[nA] / sigmaA
     # println("Stress at point A: $(sA) i. e.  $( sAn*100  )% of reference value")
 
-    fen2fe = FENodeToFEMap(connasarray(fes), nnodes(geom))
+    fen2fe = FENodeToFEMap(fes, nnodes(geom))
     function inspector(idat, elnum, conn, xe, out, xq)
         # println("loc = $(  xq  ) : $(  transpose(out)/phun("MEGA*Pa")  )")
         return idat
