@@ -357,7 +357,7 @@ function test()
     # println("Stress at point A: $(sA) i. e.  $( sAn*100  )% of reference value")
     @test norm(sA .- -93.8569) < 1.0e-4
 
-    fen2fe = FENodeToFEMap(connasarray(fes), nnodes(geom))
+    fen2fe = FENodeToFEMap(fes, nnodes(geom))
     function inspector(idat, elnum, conn, xe, out, xq)
         #   println("loc = $(  xq  ) : $(  transpose(out)/phun("MEGA*Pa")  )")
         return idat
