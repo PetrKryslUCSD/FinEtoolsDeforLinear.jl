@@ -14,9 +14,7 @@ statics and dynamics (modal analysis, steady-state vibration).
 
 ## News
 
-- 05/27/2024: Remove unsupported functions. Adjust to FinEtools 8.
-- 04/25/2024: Add utilities for split of isotropic elastic moduli.
-
+- 11/18/2025: Update version.
 
 
 [Past news](#past-news)
@@ -58,6 +56,8 @@ be executed as described in the  [conceptual guide to
 
 ## <a name="past-news"></a>Past news
 
+- 05/27/2024: Remove unsupported functions. Adjust to FinEtools 8.
+- 04/25/2024: Add utilities for split of isotropic elastic moduli.
 - 02/25/2024: Update documentation.
 - 02/01/2024: Improve test coverage of IM and ESNICE elements.
 - 01/08/2024: Fix bug in the modal analysis algorithm.
