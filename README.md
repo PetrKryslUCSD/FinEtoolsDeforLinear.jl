@@ -14,7 +14,7 @@ statics and dynamics (modal analysis, steady-state vibration).
 
 ## News
 
-- 11/18/2025: Update version.
+- 11/18/2025: Update version. Update documentation.
 
 
 [Past news](#past-news)
