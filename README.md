@@ -14,6 +14,7 @@ statics and dynamics (modal analysis, steady-state vibration).
 
 ## News
 
+- 06/18/2026: Add structural damping example. Update version.
 - 11/18/2025: Update version. Update documentation.
 
 
